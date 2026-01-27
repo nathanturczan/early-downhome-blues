@@ -652,13 +652,15 @@ button:active {
     .main-content {
         overflow: visible;
         flex: none;
-        padding-bottom: 80px;
+        padding-bottom: 20px;
     }
     .drone-section {
-        padding-bottom: 90px;
+        padding-bottom: 120px;
+        margin-bottom: 60px;
     }
     body.midi-minimized .drone-section {
-        padding-bottom: 40px;
+        padding-bottom: 50px;
+        margin-bottom: 30px;
     }
     .history {
         text-align: center;
@@ -864,9 +866,10 @@ button:active {
         padding: 8px 10px;
     }
     .drone-section {
-        padding: 10px 15px 30px 15px;
+        padding: 10px 15px 40px 15px;
         margin-left: -12px;
         margin-right: -12px;
+        margin-bottom: 20px;
     }
     .drone-btn {
         padding: 10px 6px;
