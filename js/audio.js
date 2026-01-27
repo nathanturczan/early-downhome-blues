@@ -240,9 +240,10 @@ function initDrone() {
 
 // For IV and V chords, fifth and seventh need to be an octave higher
 export function getEffectiveOctave(degree, octave) {
-    if (currentChord === 'I') return octave;
-    if (degree === 'fifth' || degree === 'seventh') {
-        return octave + 1;
+    if (currentChord === 'IV' || currentChord === 'V') {
+        if (degree === 'fifth' || degree === 'seventh') {
+            return octave + 1;
+        }
     }
     return octave;
 }
