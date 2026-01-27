@@ -7,388 +7,9 @@
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="stylesheet" href="https://use.typekit.net/zex5snw.css">
+    <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/tone@14"></script>
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        html, body {
-            overflow: hidden;
-            position: fixed;
-            width: 100%;
-            height: 100%;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: rgb(247, 239, 215);
-            color: #222;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        .header {
-            width: 100%;
-            padding: 20px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .header-icon {
-            height: 14vw;
-            width: 14vw;
-            max-height: 80px;
-            max-width: 80px;
-            border-radius: 8px;
-            object-fit: cover;
-        }
-        .header-text {
-            flex: 1;
-        }
-        h1 {
-            font-family: "willow-std", serif;
-            font-weight: 400;
-            font-style: normal;
-            font-size: 12vw;
-            line-height: 0.85;
-            white-space: nowrap;
-        }
-        .title-early-downhome {
-            color: rgb(145, 56, 47);
-        }
-        .title-blues {
-            color: rgb(34, 31, 32);
-        }
-        .subtitle {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            font-weight: 400;
-            color: rgb(34, 31, 32);
-            font-size: 2.5vw;
-        }
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 10px 20px;
-            gap: 10px;
-        }
-        .notation-container {
-            flex-shrink: 0;
-            background: #fff;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #ddd;
-        }
-        #notation {
-            width: 100%;
-        }
-        #notation svg rect {
-            stroke: none !important;
-            stroke-width: 0 !important;
-            outline: none !important;
-        }
-        .controls {
-            flex-shrink: 0;
-            display: flex;
-            gap: 15px;
-            align-items: stretch;
-            justify-content: center;
-        }
-        .note-box {
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            background: rgba(255,255,255,0.5);
-            padding: 10px 15px;
-            position: relative;
-        }
-        .note-box.current {
-            width: 120px;
-        }
-        .note-box.paths {
-            width: 420px;
-        }
-        .note-box-label {
-            position: absolute;
-            top: -8px;
-            left: 10px;
-            background: rgb(247, 239, 215);
-            padding: 0 6px;
-            font-size: 0.65em;
-            color: #888;
-            text-transform: uppercase;
-        }
-        .note-display {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-width: 80px;
-        }
-        .current-note {
-            font-size: 2em;
-            font-family: 'Times New Roman', serif;
-            color: rgb(145, 56, 47);
-        }
-        .quarter-flat {
-            display: inline-block;
-            transform: scaleX(-1);
-        }
-        .note-info {
-            color: #888;
-            font-size: 0.75em;
-        }
-        .paths-box {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            height: 100%;
-            justify-content: space-between;
-        }
-        .paths-notes {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            min-height: 32px;
-        }
-        .sink-message {
-            color: #888;
-            font-size: 0.85em;
-            font-style: italic;
-        }
-        .path-note {
-            font-family: 'Times New Roman', serif;
-            font-size: 1.2em;
-            padding: 4px 10px;
-            background: rgba(145, 56, 47, 0.1);
-            border: 1px solid rgba(145, 56, 47, 0.3);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 32px;
-            line-height: 1;
-        }
-        .path-note:hover {
-            background: rgba(145, 56, 47, 0.2);
-            border-color: rgb(145, 56, 47);
-        }
-        button {
-            padding: 8px 16px;
-            font-size: 0.9em;
-            background: rgb(145, 56, 47);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        button:hover {
-            background: rgb(165, 76, 67);
-        }
-        button:active {
-            background: rgb(125, 46, 37);
-        }
-        .history {
-            flex-shrink: 0;
-            padding: 8px 12px;
-            background: rgba(0,0,0,0.03);
-            border-radius: 6px;
-        }
-        .history h3 {
-            font-size: 0.7em;
-            color: #888;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-        }
-        .history-notes {
-            font-family: 'Times New Roman', serif;
-            font-size: 0.9em;
-            line-height: 1.4;
-        }
-        .history-note {
-            display: inline-block;
-            padding: 1px 4px;
-            margin: 1px;
-            background: rgba(145, 56, 47, 0.1);
-            border-radius: 3px;
-        }
-        .history-note.current {
-            background: rgb(145, 56, 47);
-            color: white;
-        }
-        .description-wrapper {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .description {
-            color: #666;
-            font-size: 0.85em;
-            line-height: 1.4;
-            padding: 10px 12px;
-            background: rgba(0,0,0,0.03);
-            border-radius: 6px;
-            text-align: center;
-            max-width: 500px;
-        }
-
-        /* Drone section */
-        .drone-section {
-            flex-shrink: 0;
-            padding: 10px 20px 70px 20px;
-            background: rgb(54, 51, 50);
-            margin-top: auto;
-            margin-left: -20px;
-            margin-right: -20px;
-            margin-bottom: 0;
-        }
-        .drone-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        .drone-title {
-            font-size: 0.7em;
-            color: #888;
-            text-transform: uppercase;
-        }
-        .inflect-toggle {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 0.65em;
-            color: #888;
-        }
-        .inflect-toggle input {
-            cursor: pointer;
-        }
-        .inflect-toggle label {
-            cursor: pointer;
-        }
-        .drone-rows {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .drone-row {
-            display: flex;
-            gap: 4px;
-            align-items: center;
-        }
-        .drone-label {
-            width: 30px;
-            font-size: 0.65em;
-            color: #888;
-            text-align: right;
-            padding-right: 4px;
-        }
-        .drone-buttons {
-            display: flex;
-            gap: 3px;
-            flex: 1;
-        }
-        .drone-btn {
-            flex: 1;
-            padding: 6px 4px;
-            font-size: 0.7em;
-            background: rgba(255,255,255,0.1);
-            color: #888;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.15s;
-        }
-        .drone-btn:hover {
-            background: rgba(255,255,255,0.15);
-        }
-        .drone-btn.active {
-            background: rgba(145, 56, 47, 0.8);
-            color: white;
-            border-color: rgb(145, 56, 47);
-        }
-
-        /* MIDI Footer */
-        .midi-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgb(54, 51, 50);
-            padding: 8px 20px;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-        }
-        .midi-footer .midi-select {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .midi-footer .midi-select label {
-            font-size: 0.65em;
-            color: #888;
-            text-transform: uppercase;
-        }
-        .midi-footer .midi-select select {
-            background: rgba(255,255,255,0.1);
-            color: #ddd;
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            min-width: 140px;
-            cursor: pointer;
-        }
-        .midi-footer .midi-select select:focus {
-            outline: none;
-            border-color: rgb(145, 56, 47);
-        }
-        .midi-hint {
-            font-size: 0.6em;
-            color: #666;
-            margin-top: 4px;
-        }
-        .main-content {
-            padding-bottom: 0;
-        }
-
-        /* Audio Toggle Button */
-        .audio-toggle {
-            background: none;
-            border: none;
-            padding: 0;
-            cursor: pointer;
-            color: rgb(145, 56, 47);
-            opacity: 0.6;
-            transition: opacity 0.2s;
-        }
-        .audio-toggle:hover {
-            opacity: 1;
-            background: none;
-        }
-        .audio-toggle.is-on {
-            opacity: 1;
-        }
-        .audio-icon {
-            width: auto;
-            height: 10vw;
-            max-height: 70px;
-            display: block;
-        }
-        .audio-toggle.is-on .audio-slash {
-            display: none;
-        }
-    </style>
 </head>
 <body>
     <div class="header">
@@ -400,6 +21,12 @@
             </h1>
             <p class="subtitle">Walking the Blues Scale</p>
         </div>
+        <button id="info-btn" class="info-btn" type="button" aria-label="Information">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                <text x="12" y="17" text-anchor="middle" fill="currentColor" font-size="14" font-family="Georgia, serif" font-style="italic">i</text>
+            </svg>
+        </button>
         <button id="audio-toggle" class="audio-toggle is-off" type="button" aria-label="Toggle audio">
             <svg class="audio-icon" viewBox="50 120 600 820" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                 <g transform="matrix(-1 0 0 -1 669.57 1049.9)">
@@ -415,46 +42,43 @@
     </div>
 
     <div class="main-content">
-        <div class="notation-container">
-            <div id="notation"></div>
-        </div>
+        <div class="top-row">
+            <div class="left-panel">
+                <div class="notation-container">
+                    <div id="notation"></div>
+                </div>
 
-        <div class="controls">
-            <div class="note-box current">
-                <span class="note-box-label">Current Note</span>
-                <div class="note-display">
-                    <div class="current-note" id="currentNote">g</div>
-                    <div class="note-info" id="noteInfo">392.00 Hz</div>
+                <div class="controls">
+                    <div class="note-box current">
+                        <span class="note-box-label">Current Note</span>
+                        <div class="note-display">
+                            <div class="current-note" id="currentNote">g</div>
+                            <div class="note-info" id="noteInfo">392.00 Hz</div>
+                        </div>
+                    </div>
+                    <div class="note-box paths">
+                        <span class="note-box-label">Paths</span>
+                        <div class="paths-box">
+                            <div class="paths-notes" id="pathsNotes"></div>
+                            <button id="nextBtn">Random</button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="note-box paths">
-                <span class="note-box-label">Paths</span>
-                <div class="paths-box">
-                    <div class="paths-notes" id="pathsNotes"></div>
-                    <button id="nextBtn">Random</button>
-                </div>
-            </div>
-        </div>
 
-        <div class="history">
-            <h3>History</h3>
-            <div class="history-notes" id="history"></div>
-        </div>
-
-        <div class="description-wrapper">
-            <p class="description">
-                Randomly walk through Jeff Todd Titon's pitch network from
-                <em>Early Downhome Blues</em> (Fig. 64). Click notes or use the button to explore the mode.
-            </p>
-        </div>
-
-        <!-- Drone Section -->
-        <div class="drone-section">
+            <!-- Drone Section -->
+            <div class="drone-section">
             <div class="drone-header">
                 <div class="drone-title">Drone</div>
-                <div class="inflect-toggle">
-                    <input type="checkbox" id="inflectToggle">
-                    <label for="inflectToggle">Inflect</label>
+                <div class="inflect-toggles">
+                    <div class="inflect-toggle">
+                        <input type="checkbox" id="inflectToggle">
+                        <label for="inflectToggle">Inflect</label>
+                    </div>
+                    <div class="inflect-toggle">
+                        <input type="checkbox" id="latchToggle" disabled>
+                        <label for="latchToggle" class="disabled">Latch</label>
+                    </div>
                 </div>
             </div>
             <div class="drone-rows">
@@ -491,613 +115,115 @@
                         <button class="drone-btn" data-note="C5">C5</button>
                     </div>
                 </div>
+                <div class="drone-row chord-row">
+                    <div class="drone-label">Chord</div>
+                    <div class="drone-buttons chord-buttons">
+                        <button class="chord-btn active" data-chord="I">I</button>
+                        <button class="chord-btn" data-chord="IV">IV</button>
+                        <button class="chord-btn" data-chord="V">V</button>
+                    </div>
+                </div>
             </div>
+        </div>
+        </div>
+        <!-- end top-row -->
+
+        <div class="history">
+            <h3>History</h3>
+            <div class="history-notes" id="history"></div>
+        </div>
+
+        <div class="description-wrapper">
+            <p class="description">
+                Randomly walk through Jeff Todd Titon's pitch network from
+                <em>Early Downhome Blues</em> (Fig. 64). Click notes or use the button to explore the mode.
+            </p>
         </div>
     </div>
 
     <!-- MIDI Footer -->
     <div class="midi-footer">
-        <div class="midi-select">
-            <label>MIDI Output</label>
-            <select id="midiPort">
-                <option value="">None</option>
-            </select>
+        <button class="midi-toggle" id="midiToggle" title="Toggle MIDI panel">
+            <span class="midi-toggle-label">MIDI</span>
+            <span class="midi-toggle-arrow">&#9660;</span>
+        </button>
+        <div class="midi-section">
+            <div class="midi-outputs" id="midiOutputs">
+                <div class="midi-row" data-row-id="0">
+                    <div class="midi-select">
+                        <label>Type</label>
+                        <select class="midi-type">
+                            <option value="melody" selected>Melody</option>
+                            <option value="root">Drone Root</option>
+                            <option value="third">Drone 3rd</option>
+                            <option value="fifth">Drone 5th</option>
+                            <option value="seventh">Drone 7th</option>
+                        </select>
+                    </div>
+                    <div class="midi-select">
+                        <label>Port</label>
+                        <select class="midi-port">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div class="midi-select">
+                        <label>Ch</label>
+                        <select class="midi-channel">
+                            <option value="0">1</option>
+                            <option value="1">2</option>
+                            <option value="2">3</option>
+                            <option value="3">4</option>
+                            <option value="4">5</option>
+                            <option value="5">6</option>
+                            <option value="6">7</option>
+                            <option value="7">8</option>
+                            <option value="8">9</option>
+                            <option value="9">10</option>
+                            <option value="10">11</option>
+                            <option value="11">12</option>
+                            <option value="12">13</option>
+                            <option value="13">14</option>
+                            <option value="14">15</option>
+                            <option value="15">16</option>
+                        </select>
+                    </div>
+                    <button class="midi-remove-btn hidden" title="Remove">&times;</button>
+                </div>
+            </div>
+            <button class="midi-add-btn" id="addMidiOutput">+ Add Output</button>
         </div>
-        <div class="midi-select">
-            <label>Channel</label>
-            <select id="midiChannel">
-                <option value="0">1</option>
-                <option value="1">2</option>
-                <option value="2">3</option>
-                <option value="3">4</option>
-                <option value="4">5</option>
-                <option value="5">6</option>
-                <option value="6">7</option>
-                <option value="7">8</option>
-                <option value="8">9</option>
-                <option value="9">10</option>
-                <option value="10">11</option>
-                <option value="11">12</option>
-                <option value="12">13</option>
-                <option value="13">14</option>
-                <option value="14">15</option>
-                <option value="15">16</option>
-            </select>
-        </div>
-        <span class="midi-hint">*Set pitch bend range to ±2 semitones for quarter-tones</span>
+        <span class="midi-hint">*Pitch bend ±2 semitones for quarter-tones</span>
     </div>
 
-    <script>
-        const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = Vex.Flow;
+    <!-- Info Modal -->
+    <div id="info-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Close">&times;</button>
+            <h2>About This App</h2>
+            <p>This interactive tool lets you explore the <strong>pitch transition network</strong> from Jeff Todd Titon's influential book <em>Early Downhome Blues: A Musical and Cultural Analysis</em> (Figure 64).</p>
 
-        // Network edges from Titon's Figure 64
-        const edges = [
-            // Staff 1
-            { from: "ees'", to: "c'" },
-            { from: "ees'", to: "eeh'" },
-            { from: "eeh'", to: "e'" },
-            { from: "ees'", to: "e'" },
-            { from: "e'", to: "f'" },
-            { from: "f'", to: "e'" },
-            { from: "e'", to: "c'" },
-            { from: "f'", to: "g'" },
-            { from: "g'", to: "f'" },
-            { from: "g'", to: "ges'" },
-            { from: "ges'", to: "g'" },
-            { from: "e'", to: "g'" },
-            { from: "g'", to: "e'" },
-            { from: "g'", to: "ees'" },
-            // Staff 2
-            { from: "g'", to: "a'" },
-            { from: "g'", to: "bes'" },
-            { from: "bes'", to: "b'" },
-            { from: "a'", to: "c''" },
-            { from: "a'", to: "g'" },
-            { from: "bes'", to: "g'" },
-            { from: "b'", to: "bes'" },
-            { from: "c''", to: "bes'" },
-            { from: "b'", to: "g'" },
-            { from: "a'", to: "b'" },
-            { from: "c''", to: "g'" },
-            // Staff 3
-            { from: "c''", to: "eeh''" },
-            { from: "eeh''", to: "e''" },
-            { from: "e''", to: "eeh''" },
-            { from: "eeh''", to: "ees''" },
-            { from: "ees''", to: "eeh''" },
-            { from: "eeh''", to: "c''" },
-            { from: "d''", to: "c''" },
-            { from: "ees''", to: "d''" },
-            { from: "d''", to: "ees''" },
-            { from: "c''", to: "ees''" },
-            { from: "ees''", to: "c''" }
-        ];
+            <h3>The Network</h3>
+            <p>Titon analyzed early blues recordings and mapped how melodies move between notes. This network captures those patterns, including:</p>
+            <ul>
+                <li><strong>Quarter-tones</strong> &mdash; The "blue third" (E quarter-flat) sits between E&#9837; and E</li>
+                <li><strong>Sink notes</strong> &mdash; C is a resolution point with no outgoing paths</li>
+                <li><strong>Hub notes</strong> &mdash; G connects to the most destinations</li>
+            </ul>
 
-        // Build adjacency list
-        const adjacency = {};
-        edges.forEach(({ from, to }) => {
-            if (!adjacency[from]) adjacency[from] = [];
-            if (!adjacency[from].includes(to)) adjacency[from].push(to);
-        });
+            <h3>How to Use</h3>
+            <ul>
+                <li><strong>Click notes</strong> on the staff or in the Paths box to navigate</li>
+                <li><strong>Random</strong> picks a random valid next note</li>
+                <li><strong>Drone</strong> toggles sustained notes; check "Inflect" to bend them with the melody</li>
+                <li><strong>MIDI Output</strong> sends notes to external instruments (set pitch bend to &plusmn;2 semitones)</li>
+            </ul>
 
-        // Frequencies for each note (A4 = 440 Hz)
-        const frequencies = {
-            "c'": 261.63, "d'": 293.66, "ees'": 311.13, "eeh'": 320.24,
-            "e'": 329.63, "f'": 349.23, "ges'": 369.99, "g'": 392.00,
-            "a'": 440.00, "bes'": 466.16, "b'": 493.88, "c''": 523.25,
-            "d''": 587.33, "ees''": 622.25, "eeh''": 640.49, "e''": 659.26
-        };
+            <h3>Reference</h3>
+            <p>Titon, Jeff Todd. <em>Early Downhome Blues: A Musical and Cultural Analysis</em>. 2nd ed., University of North Carolina Press, 1994.</p>
+        </div>
+    </div>
 
-        // Display names
-        const FLAT = '♭';
-        const QUARTER_FLAT = '<span class="quarter-flat">♭</span>';
-        const displayNames = {
-            "c'": "c", "d'": "d", "ees'": `e${FLAT}`, "eeh'": `e${QUARTER_FLAT}`,
-            "e'": "e", "f'": "f", "ges'": `g${FLAT}`, "g'": "g",
-            "a'": "a", "bes'": `b${FLAT}`, "b'": "b", "c''": "c'",
-            "d''": "d'", "ees''": `e${FLAT}'`, "eeh''": `e${QUARTER_FLAT}'`, "e''": "e'"
-        };
-
-        // VexFlow note definitions
-        const staff1Notes = [
-            { lily: "c'", vex: "c/4", acc: null },
-            { lily: "ees'", vex: "e/4", acc: "b" },
-            { lily: "eeh'", vex: "e/4", acc: "d" },
-            { lily: "e'", vex: "e/4", acc: null },
-            { lily: "f'", vex: "f/4", acc: null },
-            { lily: "ges'", vex: "g/4", acc: "b" },
-            { lily: "g'", vex: "g/4", acc: null }
-        ];
-        const staff2Notes = [
-            { lily: "g'", vex: "g/4", acc: null },
-            { lily: "a'", vex: "a/4", acc: null },
-            { lily: "bes'", vex: "b/4", acc: "b" },
-            { lily: "b'", vex: "b/4", acc: null },
-            { lily: "c''", vex: "c/5", acc: null }
-        ];
-        const staff3Notes = [
-            { lily: "c''", vex: "c/5", acc: null },
-            { lily: "d''", vex: "d/5", acc: null },
-            { lily: "ees''", vex: "e/5", acc: "b" },
-            { lily: "eeh''", vex: "e/5", acc: "d" },
-            { lily: "e''", vex: "e/5", acc: null }
-        ];
-
-        // Edge definitions with above/below
-        const staff1Edges = [
-            { from: "ees'", to: "c'", below: false }, { from: "ees'", to: "eeh'", below: false },
-            { from: "eeh'", to: "e'", below: false }, { from: "ees'", to: "e'", below: false },
-            { from: "e'", to: "f'", below: false }, { from: "f'", to: "e'", below: true },
-            { from: "e'", to: "c'", below: true }, { from: "f'", to: "g'", below: false },
-            { from: "g'", to: "f'", below: true }, { from: "g'", to: "ges'", below: true },
-            { from: "ges'", to: "g'", below: false }, { from: "e'", to: "g'", below: false },
-            { from: "g'", to: "e'", below: true }, { from: "g'", to: "ees'", below: true }
-        ];
-        const staff2Edges = [
-            { from: "g'", to: "a'", below: false }, { from: "g'", to: "bes'", below: false },
-            { from: "bes'", to: "b'", below: false }, { from: "a'", to: "c''", below: false },
-            { from: "a'", to: "g'", below: true }, { from: "bes'", to: "g'", below: true },
-            { from: "b'", to: "bes'", below: true }, { from: "c''", to: "bes'", below: true },
-            { from: "b'", to: "g'", below: true }, { from: "a'", to: "b'", below: false },
-            { from: "c''", to: "g'", below: true }
-        ];
-        const staff3Edges = [
-            { from: "c''", to: "eeh''", below: false }, { from: "eeh''", to: "e''", below: false },
-            { from: "e''", to: "eeh''", below: true }, { from: "eeh''", to: "ees''", below: true },
-            { from: "ees''", to: "eeh''", below: false }, { from: "eeh''", to: "c''", below: true },
-            { from: "d''", to: "c''", below: true }, { from: "ees''", to: "d''", below: true },
-            { from: "d''", to: "ees''", below: false }, { from: "c''", to: "ees''", below: false },
-            { from: "ees''", to: "c''", below: true }
-        ];
-
-        // MIDI
-        const midiNotes = {
-            "c'": { note: 60, bend: 0 }, "d'": { note: 62, bend: 0 },
-            "ees'": { note: 63, bend: 0 }, "eeh'": { note: 63, bend: 1024 },
-            "e'": { note: 64, bend: 0 }, "f'": { note: 65, bend: 0 },
-            "ges'": { note: 66, bend: 0 }, "g'": { note: 67, bend: 0 },
-            "a'": { note: 69, bend: 0 }, "bes'": { note: 70, bend: 0 },
-            "b'": { note: 71, bend: 0 }, "c''": { note: 72, bend: 0 },
-            "d''": { note: 74, bend: 0 }, "ees''": { note: 75, bend: 0 },
-            "eeh''": { note: 75, bend: 1024 }, "e''": { note: 76, bend: 0 }
-        };
-
-        let midiAccess = null, midiOutputs = [], selectedMidiOutput = null, lastMidiNote = null;
-
-        async function initMidi() {
-            if (!navigator.requestMIDIAccess) return;
-            try {
-                midiAccess = await navigator.requestMIDIAccess();
-                updateMidiPorts();
-                midiAccess.onstatechange = updateMidiPorts;
-            } catch (err) { console.log('[MIDI] Access denied:', err); }
-        }
-
-        function updateMidiPorts() {
-            const portSelect = document.getElementById('midiPort');
-            const currentValue = portSelect.value;
-            portSelect.innerHTML = '<option value="">None</option>';
-            midiOutputs = [];
-            if (midiAccess) {
-                for (const output of midiAccess.outputs.values()) {
-                    midiOutputs.push(output);
-                    const option = document.createElement('option');
-                    option.value = output.id;
-                    option.textContent = output.name;
-                    portSelect.appendChild(option);
-                }
-            }
-            if (currentValue && [...portSelect.options].some(o => o.value === currentValue)) {
-                portSelect.value = currentValue;
-            }
-            selectedMidiOutput = midiOutputs.find(o => o.id === portSelect.value) || null;
-        }
-
-        document.getElementById('midiPort').addEventListener('change', (e) => {
-            selectedMidiOutput = midiOutputs.find(o => o.id === e.target.value) || null;
-        });
-
-        function sendMidiNote(lilyNote, duration = 0.5) {
-            if (!selectedMidiOutput) return;
-            const midiInfo = midiNotes[lilyNote];
-            if (!midiInfo) return;
-            const channel = parseInt(document.getElementById('midiChannel').value);
-            const noteNum = midiInfo.note;
-            const bendValue = 8192 + midiInfo.bend;
-            if (lastMidiNote !== null) selectedMidiOutput.send([0x80 | channel, lastMidiNote, 0]);
-            selectedMidiOutput.send([0xE0 | channel, bendValue & 0x7F, (bendValue >> 7) & 0x7F]);
-            selectedMidiOutput.send([0x90 | channel, noteNum, 100]);
-            lastMidiNote = noteNum;
-            setTimeout(() => {
-                if (lastMidiNote === noteNum) {
-                    selectedMidiOutput.send([0x80 | channel, noteNum, 0]);
-                    lastMidiNote = null;
-                }
-            }, duration * 1000);
-        }
-
-        initMidi();
-
-        // Audio - Pluck Synth (guitar-like Karplus-Strong synthesis)
-        let isAudioInitialized = false, pluckSynth = null, reverb = null;
-
-        // Map LilyPond notes to standard note names and cents offset for quarter-tones
-        const lilyToNote = {
-            "c'": { note: "C4", detune: 0 },
-            "d'": { note: "D4", detune: 0 },
-            "ees'": { note: "Eb4", detune: 0 },
-            "eeh'": { note: "Eb4", detune: 50 },
-            "e'": { note: "E4", detune: 0 },
-            "f'": { note: "F4", detune: 0 },
-            "ges'": { note: "Gb4", detune: 0 },
-            "g'": { note: "G4", detune: 0 },
-            "a'": { note: "A4", detune: 0 },
-            "bes'": { note: "Bb4", detune: 0 },
-            "b'": { note: "B4", detune: 0 },
-            "c''": { note: "C5", detune: 0 },
-            "d''": { note: "D5", detune: 0 },
-            "ees''": { note: "Eb5", detune: 0 },
-            "eeh''": { note: "Eb5", detune: 50 },
-            "e''": { note: "E5", detune: 0 }
-        };
-
-        async function initAudio() {
-            if (isAudioInitialized) return;
-            await Tone.start();
-            const ctx = Tone.getContext();
-            if (ctx && ctx.state !== 'running') await ctx.resume();
-
-            reverb = new Tone.Reverb({ decay: 2, wet: 0.25 }).toDestination();
-            await reverb.generate();
-
-            pluckSynth = new Tone.PluckSynth({
-                attackNoise: 1.5,
-                dampening: 3000,
-                resonance: 0.98,
-                release: 1.5
-            }).connect(reverb);
-
-            isAudioInitialized = true;
-            document.getElementById('audio-toggle').classList.remove('is-off');
-            document.getElementById('audio-toggle').classList.add('is-on');
-            console.log('[Audio] Pluck synth ready');
-        }
-
-        function playNote(lilyNote, duration = 1.2) {
-            if (!isAudioInitialized || !pluckSynth) return;
-            const noteInfo = lilyToNote[lilyNote];
-            if (!noteInfo) return;
-            pluckSynth.set({ detune: noteInfo.detune });
-            pluckSynth.triggerAttack(noteInfo.note);
-        }
-
-        document.getElementById('audio-toggle').addEventListener('click', async () => {
-            if (!isAudioInitialized) {
-                await initAudio();
-            }
-        });
-
-        // Drone
-        const droneBaseFreqs = {
-            2: { C: 65.41, Eb: 77.78, Eqf: 80.06, E: 82.41, F: 87.31, Gb: 92.50, G: 98.00, Bb: 116.54, B: 123.47 },
-            3: { C: 130.81, Eb: 155.56, Eqf: 160.12, E: 164.81, F: 174.61, Gb: 185.00, G: 196.00, Bb: 233.08, B: 246.94 },
-            4: { C: 261.63, Eb: 311.13, Eqf: 320.24, E: 329.63, F: 349.23, Gb: 369.99, G: 392.00, Bb: 466.16, B: 493.88 },
-            5: { C: 523.25 }
-        };
-        const droneDegrees = {
-            'C2': { degree: 'root', octave: 2 }, 'C3': { degree: 'root', octave: 3 }, 'C4': { degree: 'root', octave: 4 }, 'C5': { degree: 'root', octave: 5 },
-            'Eb2': { degree: 'third', octave: 2 }, 'Eb3': { degree: 'third', octave: 3 }, 'Eb4': { degree: 'third', octave: 4 },
-            'G2': { degree: 'fifth', octave: 2 }, 'G3': { degree: 'fifth', octave: 3 }, 'G4': { degree: 'fifth', octave: 4 },
-            'Bb2': { degree: 'seventh', octave: 2 }, 'Bb3': { degree: 'seventh', octave: 3 }, 'Bb4': { degree: 'seventh', octave: 4 }
-        };
-        let currentInflection = { third: 'Eb', fifth: 'G', seventh: 'Bb' };
-        const droneVoices = {};
-        let droneGain = null;
-
-        const pitchDisplayNames = {
-            'C': 'C', 'Eb': 'E♭', 'Eqf': 'E<span class="quarter-flat">♭</span>', 'E': 'E', 'F': 'F',
-            'Gb': 'G♭', 'G': 'G', 'Bb': 'B♭', 'B': 'B'
-        };
-
-        function updateDroneLabels() {
-            document.querySelectorAll('.drone-btn').forEach(btn => {
-                const note = btn.dataset.note;
-                const info = droneDegrees[note];
-                if (!info) return;
-                let pitchClass;
-                if (info.degree === 'root') pitchClass = 'C';
-                else pitchClass = currentInflection[info.degree];
-                btn.innerHTML = pitchDisplayNames[pitchClass] + info.octave;
-            });
-        }
-
-        function initDrone() {
-            if (droneGain) return;
-            droneGain = new Tone.Gain(0.15).toDestination();
-        }
-
-        function getDroneFreq(note) {
-            const info = droneDegrees[note];
-            if (!info) return 261.63;
-            if (info.degree === 'root') return droneBaseFreqs[info.octave].C;
-            const pitchClass = currentInflection[info.degree];
-            return droneBaseFreqs[info.octave][pitchClass];
-        }
-
-        function toggleDroneNote(note) {
-            initDrone();
-            if (droneVoices[note]) {
-                droneVoices[note].osc.stop();
-                droneVoices[note].osc.dispose();
-                droneVoices[note].env.dispose();
-                delete droneVoices[note];
-            } else {
-                const env = new Tone.Gain(0).connect(droneGain);
-                const osc = new Tone.Oscillator(getDroneFreq(note), 'sine').connect(env);
-                osc.start();
-                env.gain.rampTo(0.5, 0.5);
-                droneVoices[note] = { osc, env, degree: droneDegrees[note].degree, octave: droneDegrees[note].octave };
-            }
-        }
-
-        function inflectDrones(melodyNote) {
-            if (!document.getElementById('inflectToggle').checked) return;
-            let newThird = null, newFifth = null, newSeventh = null;
-
-            if (melodyNote.includes('ees')) newThird = 'Eb';
-            else if (melodyNote.includes('eeh')) newThird = 'Eqf';
-            else if (melodyNote.startsWith('e') && !melodyNote.includes('es') && !melodyNote.includes('eh')) newThird = 'E';
-            else if (melodyNote.startsWith('f')) newThird = 'F';
-
-            if (melodyNote.startsWith('g') && melodyNote.includes('es')) newFifth = 'Gb';
-            else if (melodyNote.startsWith('g')) newFifth = 'G';
-
-            if (melodyNote.startsWith('b') && melodyNote.includes('es')) newSeventh = 'Bb';
-            else if (melodyNote.startsWith('b') && !melodyNote.includes('es')) newSeventh = 'B';
-
-            let changed = false;
-            if (newThird && newThird !== currentInflection.third) {
-                currentInflection.third = newThird;
-                changed = true;
-                Object.keys(droneVoices).forEach(key => {
-                    if (droneVoices[key].degree === 'third') {
-                        const newFreq = droneBaseFreqs[droneVoices[key].octave][newThird];
-                        droneVoices[key].osc.frequency.rampTo(newFreq, 0.05);
-                    }
-                });
-            }
-            if (newFifth && newFifth !== currentInflection.fifth) {
-                currentInflection.fifth = newFifth;
-                changed = true;
-                Object.keys(droneVoices).forEach(key => {
-                    if (droneVoices[key].degree === 'fifth') {
-                        const newFreq = droneBaseFreqs[droneVoices[key].octave][newFifth];
-                        droneVoices[key].osc.frequency.rampTo(newFreq, 0.05);
-                    }
-                });
-            }
-            if (newSeventh && newSeventh !== currentInflection.seventh) {
-                currentInflection.seventh = newSeventh;
-                changed = true;
-                Object.keys(droneVoices).forEach(key => {
-                    if (droneVoices[key].degree === 'seventh') {
-                        const newFreq = droneBaseFreqs[droneVoices[key].octave][newSeventh];
-                        droneVoices[key].osc.frequency.rampTo(newFreq, 0.05);
-                    }
-                });
-            }
-            if (changed) updateDroneLabels();
-        }
-
-        document.getElementById('inflectToggle').addEventListener('change', (e) => {
-            if (!e.target.checked) {
-                currentInflection = { third: 'Eb', fifth: 'G', seventh: 'Bb' };
-                Object.keys(droneVoices).forEach(key => {
-                    const voice = droneVoices[key];
-                    if (voice.degree !== 'root') {
-                        const newFreq = droneBaseFreqs[voice.octave][currentInflection[voice.degree]];
-                        voice.osc.frequency.rampTo(newFreq, 0.1);
-                    }
-                });
-                updateDroneLabels();
-            }
-        });
-
-        document.querySelectorAll('.drone-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (!isAudioInitialized) await initAudio();
-                const note = btn.dataset.note;
-                toggleDroneNote(note);
-                btn.classList.toggle('active');
-            });
-        });
-
-        // State
-        let currentNote = "g'";
-        let history = ["g'"];
-
-        async function handleNoteClick(lily) {
-            if (!isAudioInitialized) await initAudio();
-            currentNote = lily;
-            history.push(currentNote);
-            if (history.length > 15) history = history.slice(-15);
-            playNote(currentNote);
-            sendMidiNote(currentNote);
-            inflectDrones(currentNote);
-            updateDisplay();
-        }
-
-        function updateDisplay() {
-            document.getElementById('currentNote').innerHTML = displayNames[currentNote];
-            document.getElementById('noteInfo').textContent = `${frequencies[currentNote].toFixed(2)} Hz`;
-            document.getElementById('history').innerHTML = history
-                .map((n, i) => `<span class="history-note${i === history.length - 1 ? ' current' : ''}">${displayNames[n]}</span>`)
-                .join(' → ');
-
-            const pathsContainer = document.getElementById('pathsNotes');
-            const nextBtn = document.getElementById('nextBtn');
-            const possible = adjacency[currentNote] || [];
-
-            if (possible.length === 0) {
-                pathsContainer.innerHTML = '<span class="sink-message">End of phrase</span>';
-                nextBtn.textContent = 'New Phrase';
-            } else {
-                pathsContainer.innerHTML = possible.map(note =>
-                    `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
-                ).join('');
-                nextBtn.textContent = 'Random';
-
-                pathsContainer.querySelectorAll('.path-note').forEach(el => {
-                    el.addEventListener('click', async () => {
-                        const note = el.dataset.note;
-                        if (!isAudioInitialized) await initAudio();
-                        currentNote = note;
-                        history.push(currentNote);
-                        if (history.length > 15) history = history.slice(-15);
-                        playNote(currentNote);
-                        sendMidiNote(currentNote);
-                        inflectDrones(currentNote);
-                        updateDisplay();
-                    });
-                });
-            }
-
-            renderNotation(currentNote);
-        }
-
-        async function nextNote() {
-            if (!isAudioInitialized) await initAudio();
-            const possible = adjacency[currentNote] || [];
-            if (possible.length === 0) {
-                currentNote = "g'";
-                history.push("g'");
-            } else {
-                currentNote = possible[Math.floor(Math.random() * possible.length)];
-                history.push(currentNote);
-                if (history.length > 15) history = history.slice(-15);
-            }
-            playNote(currentNote);
-            sendMidiNote(currentNote);
-            inflectDrones(currentNote);
-            updateDisplay();
-        }
-
-        // Render notation
-        function renderNotation(highlightNote = null) {
-            const container = document.getElementById('notation');
-            container.innerHTML = '';
-            const width = container.clientWidth || 560;
-            const renderer = new Renderer(container, Renderer.Backends.SVG);
-            renderer.resize(width, 460);
-            const context = renderer.getContext();
-            const staveWidth = width - 20;
-            const staveX = 10;
-            const staveSpacing = 145;
-
-            const stave1 = new Stave(staveX, 15, staveWidth);
-            stave1.addClef('treble').setContext(context).draw();
-            const stave2 = new Stave(staveX, 15 + staveSpacing, staveWidth);
-            stave2.addClef('treble').setContext(context).draw();
-            const stave3 = new Stave(staveX, 15 + staveSpacing * 2, staveWidth);
-            stave3.addClef('treble').setContext(context).draw();
-
-            function createStaveNotes(noteDefs) {
-                return noteDefs.map(n => {
-                    const note = new StaveNote({ keys: [n.vex], duration: 'w' });
-                    if (n.acc) note.addModifier(new Accidental(n.acc));
-                    if (n.lily === highlightNote) note.setStyle({ fillStyle: 'rgb(145, 56, 47)', strokeStyle: 'rgb(145, 56, 47)' });
-                    return { note, lily: n.lily };
-                });
-            }
-
-            function drawNotes(stave, noteObjs) {
-                const notes = noteObjs.map(n => n.note);
-                const voice = new Voice({ num_beats: notes.length * 4, beat_value: 4 }).addTickables(notes);
-                new Formatter().joinVoices([voice]).format([voice], stave.getWidth() - 20);
-                voice.draw(context, stave);
-                return noteObjs.map((n, i) => {
-                    const box = notes[i].getBoundingBox();
-                    const svg = container.querySelector('svg');
-                    const clickArea = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                    clickArea.setAttribute('x', box.x);
-                    clickArea.setAttribute('y', box.y);
-                    clickArea.setAttribute('width', box.w);
-                    clickArea.setAttribute('height', box.h);
-                    clickArea.setAttribute('fill', 'transparent');
-                    clickArea.setAttribute('stroke', 'none');
-                    clickArea.setAttribute('cursor', 'pointer');
-                    clickArea.addEventListener('click', () => handleNoteClick(n.lily));
-                    svg.appendChild(clickArea);
-                    return { lily: n.lily, x: box.x + box.w / 2, y: box.y + box.h / 2 };
-                });
-            }
-
-            const pos1 = drawNotes(stave1, createStaveNotes(staff1Notes));
-            const pos2 = drawNotes(stave2, createStaveNotes(staff2Notes));
-            const pos3 = drawNotes(stave3, createStaveNotes(staff3Notes));
-
-            function drawArrows(positions, edgeList, currentNote) {
-                const svg = container.querySelector('svg');
-                const originCounts = {}, destCounts = {}, originIndex = {}, destIndex = {};
-                edgeList.forEach(edge => {
-                    const key = edge.from + (edge.below ? '_below' : '_above');
-                    originCounts[key] = (originCounts[key] || 0) + 1;
-                    const destKey = edge.to + (edge.below ? '_below' : '_above');
-                    destCounts[destKey] = (destCounts[destKey] || 0) + 1;
-                });
-                edgeList.forEach(edge => {
-                    const fromPos = positions.find(p => p.lily === edge.from);
-                    const toPos = positions.find(p => p.lily === edge.to);
-                    if (fromPos && toPos) {
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        const originKey = edge.from + (edge.below ? '_below' : '_above');
-                        const destKey = edge.to + (edge.below ? '_below' : '_above');
-                        originIndex[originKey] = (originIndex[originKey] || 0) + 1;
-                        destIndex[destKey] = (destIndex[destKey] || 0) + 1;
-                        const originOff = (originIndex[originKey] - (originCounts[originKey] + 1) / 2) * 6;
-                        const destOff = (destIndex[destKey] - (destCounts[destKey] + 1) / 2) * 6;
-                        const startX = fromPos.x + originOff;
-                        const endX = toPos.x + destOff;
-                        const midX = (startX + endX) / 2;
-                        const curveHeight = Math.max(14, Math.abs(endX - startX) * 0.15);
-                        const below = edge.below || false;
-                        const yOffset = below ? 20 : -20;
-                        const curveDir = below ? 1 : -1;
-                        const startY = fromPos.y + yOffset;
-                        const endY = toPos.y + yOffset;
-                        const curveY = (startY + endY) / 2 + (curveHeight * curveDir);
-                        path.setAttribute('d', `M ${startX} ${startY} Q ${midX} ${curveY} ${endX} ${endY}`);
-                        path.setAttribute('fill', 'none');
-                        const isFromCurrent = edge.from === currentNote;
-                        path.setAttribute('stroke', isFromCurrent ? 'rgb(145, 56, 47)' : '#333');
-                        path.setAttribute('stroke-width', isFromCurrent ? '2' : '1.5');
-                        path.setAttribute('marker-end', isFromCurrent ? 'url(#arrowhead-red)' : 'url(#arrowhead)');
-                        svg.appendChild(path);
-                    }
-                });
-            }
-
-            const svg = container.querySelector('svg');
-            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-            defs.innerHTML = `
-                <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                    <polygon points="0 0, 6 3, 0 6" fill="#333"/>
-                </marker>
-                <marker id="arrowhead-red" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                    <polygon points="0 0, 6 3, 0 6" fill="rgb(145, 56, 47)"/>
-                </marker>
-            `;
-            svg.insertBefore(defs, svg.firstChild);
-
-            drawArrows(pos1, staff1Edges, highlightNote);
-            drawArrows(pos2, staff2Edges, highlightNote);
-            drawArrows(pos3, staff3Edges, highlightNote);
-        }
-
-        document.getElementById('nextBtn').addEventListener('click', nextNote);
-        updateDisplay();
-        window.addEventListener('load', () => renderNotation(currentNote));
-        window.addEventListener('resize', () => renderNotation(currentNote));
-    </script>
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>

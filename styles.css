@@ -1,0 +1,885 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+html, body {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: rgb(247, 239, 215);
+    color: #222;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.header {
+    width: 100%;
+    padding: 20px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.header-icon {
+    height: 14vw;
+    width: 14vw;
+    max-height: 80px;
+    max-width: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+.header-text {
+    flex: 1;
+}
+h1 {
+    font-family: "willow-std", serif;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 12vw;
+    line-height: 0.85;
+    white-space: nowrap;
+}
+.title-early-downhome {
+    color: rgb(145, 56, 47);
+}
+.title-blues {
+    color: rgb(34, 31, 32);
+}
+.subtitle {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 400;
+    color: rgb(34, 31, 32);
+    font-size: 2.5vw;
+}
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 10px 20px;
+    gap: 10px;
+    padding-bottom: 0;
+}
+.notation-container {
+    flex-shrink: 0;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+}
+#notation {
+    width: 100%;
+}
+#notation svg rect {
+    stroke: none !important;
+    stroke-width: 0 !important;
+    outline: none !important;
+}
+.controls {
+    flex-shrink: 0;
+    display: flex;
+    gap: 15px;
+    align-items: stretch;
+    justify-content: center;
+}
+.note-box {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.5);
+    padding: 10px 15px;
+    position: relative;
+}
+.note-box.current {
+    width: 120px;
+}
+.note-box.paths {
+    width: 420px;
+}
+.note-box-label {
+    position: absolute;
+    top: -8px;
+    left: 10px;
+    background: rgb(247, 239, 215);
+    padding: 0 6px;
+    font-size: 0.65em;
+    color: #888;
+    text-transform: uppercase;
+}
+.note-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    height: 100%;
+}
+.note-box.current {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.current-note {
+    font-size: 2em;
+    font-family: 'Times New Roman', serif;
+    color: rgb(145, 56, 47);
+}
+.quarter-flat {
+    display: inline-block;
+    transform: scaleX(-1);
+}
+.note-info {
+    color: #888;
+    font-size: 0.75em;
+}
+.paths-box {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    justify-content: space-between;
+}
+.paths-notes {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    min-height: 32px;
+    align-content: flex-start;
+}
+.sink-message {
+    color: #888;
+    font-size: 0.85em;
+    font-style: italic;
+}
+.path-note {
+    font-family: 'Times New Roman', serif;
+    font-size: 1.2em;
+    padding: 4px 10px;
+    background: rgba(145, 56, 47, 0.1);
+    border: 1px solid rgba(145, 56, 47, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    line-height: 1;
+}
+.path-note:hover {
+    background: rgba(145, 56, 47, 0.2);
+    border-color: rgb(145, 56, 47);
+}
+button {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    background: rgb(145, 56, 47);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+button:hover {
+    background: rgb(165, 76, 67);
+}
+button:active {
+    background: rgb(125, 46, 37);
+}
+.history {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 6px;
+}
+.history h3 {
+    font-size: 0.7em;
+    color: #888;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+.history-notes {
+    font-family: 'Times New Roman', serif;
+    font-size: 0.9em;
+    line-height: 1.4;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 15%, black 35%);
+    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 15%, black 35%);
+}
+.history-note {
+    display: inline-block;
+    padding: 1px 4px;
+    margin: 1px;
+    background: rgba(145, 56, 47, 0.1);
+    border-radius: 3px;
+}
+.history-note.current {
+    background: rgb(145, 56, 47);
+    color: white;
+}
+.description-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.description {
+    color: #666;
+    font-size: 0.85em;
+    line-height: 1.4;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 6px;
+    text-align: center;
+    max-width: 500px;
+}
+
+/* Drone section */
+.drone-section {
+    flex-shrink: 0;
+    padding: 10px 20px 70px 20px;
+    background: rgb(54, 51, 50);
+    margin-top: auto;
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-bottom: 0;
+}
+.drone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.drone-title {
+    font-size: 0.7em;
+    color: #888;
+    text-transform: uppercase;
+}
+.inflect-toggles {
+    display: flex;
+    gap: 12px;
+}
+.inflect-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.65em;
+    color: #888;
+}
+.inflect-toggle input {
+    cursor: pointer;
+    accent-color: rgb(67, 116, 96);
+}
+.inflect-toggle input:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.inflect-toggle label {
+    cursor: pointer;
+}
+.inflect-toggle label.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.drone-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.drone-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+.drone-label {
+    width: 30px;
+    font-size: 0.65em;
+    color: #888;
+    text-align: right;
+    padding-right: 4px;
+}
+.drone-buttons {
+    display: flex;
+    gap: 3px;
+    flex: 1;
+}
+.drone-btn {
+    flex: 1;
+    padding: 6px 4px;
+    font-size: 0.7em;
+    background: rgba(255,255,255,0.1);
+    color: #aaa;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.drone-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: #ccc;
+}
+.drone-btn.active {
+    background: rgb(67, 116, 96);
+    color: white;
+    border-color: rgb(87, 140, 118);
+}
+.chord-buttons {
+    justify-content: center;
+    gap: 8px;
+}
+.chord-btn {
+    flex: 0 0 auto;
+    padding: 8px 20px;
+    font-size: 0.85em;
+    font-weight: bold;
+    background: rgba(255,255,255,0.1);
+    color: #aaa;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.chord-btn:hover {
+    background: rgba(255,255,255,0.15);
+    color: #ccc;
+}
+.chord-btn.active {
+    background: rgb(67, 116, 96);
+    color: white;
+    border-color: rgb(87, 140, 118);
+}
+
+/* MIDI Footer */
+.midi-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgb(54, 51, 50);
+    padding: 8px 20px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 100;
+}
+.midi-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+.midi-outputs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.midi-row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+.midi-footer .midi-select {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.midi-footer .midi-select label {
+    font-size: 0.65em;
+    color: #888;
+    text-transform: uppercase;
+}
+.midi-footer .midi-select select {
+    background: rgba(255,255,255,0.1);
+    color: #ddd;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+.midi-footer .midi-select select.midi-type {
+    min-width: 100px;
+}
+.midi-footer .midi-select select.midi-port {
+    min-width: 140px;
+}
+.midi-footer .midi-select select.midi-channel {
+    min-width: 50px;
+}
+.midi-footer .midi-select select:focus {
+    outline: none;
+    border-color: rgb(145, 56, 47);
+}
+.midi-add-btn {
+    background: rgba(255,255,255,0.05);
+    color: #888;
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 4px 16px;
+    font-size: 0.75em;
+    cursor: pointer;
+    width: 100%;
+}
+.midi-add-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #ddd;
+}
+.midi-remove-btn {
+    background: none;
+    color: #888;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+.midi-remove-btn:hover {
+    color: rgb(234, 51, 35);
+}
+.midi-remove-btn.hidden {
+    display: none;
+}
+.midi-hint {
+    font-size: 0.55em;
+    color: #666;
+    align-self: flex-end;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+.midi-toggle {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgb(54, 51, 50);
+    color: #888;
+    border: none;
+    border-radius: 6px 6px 0 0;
+    padding: 4px 12px;
+    font-size: 0.65em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 101;
+}
+.midi-toggle:hover {
+    color: #ccc;
+    background: rgb(64, 61, 60);
+}
+.midi-toggle-arrow {
+    transition: transform 0.2s;
+}
+.midi-footer.minimized .midi-toggle-arrow {
+    transform: rotate(180deg);
+}
+.midi-footer.minimized .midi-section,
+.midi-footer.minimized .midi-hint {
+    display: none;
+}
+.midi-footer.minimized {
+    padding: 0;
+    height: 0;
+}
+.midi-footer.minimized .midi-toggle {
+    top: -24px;
+}
+
+/* Audio Toggle Button */
+.audio-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgb(145, 56, 47);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.audio-toggle:hover {
+    opacity: 1;
+    background: none;
+}
+.audio-toggle.is-on {
+    opacity: 1;
+}
+.audio-icon {
+    width: auto;
+    height: 10vw;
+    max-height: 70px;
+    display: block;
+}
+.audio-toggle.is-on .audio-slash {
+    display: none;
+}
+
+/* Info Button */
+.info-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgb(145, 56, 47);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    width: 32px;
+    height: 32px;
+}
+.info-btn:hover {
+    opacity: 1;
+}
+.info-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.modal.hidden {
+    display: none;
+}
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+.modal-content {
+    position: relative;
+    background: rgb(247, 239, 215);
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    margin: 20px;
+}
+.modal-content h2 {
+    font-family: "willow-std", serif;
+    font-size: 2em;
+    color: rgb(145, 56, 47);
+    margin-bottom: 15px;
+}
+.modal-content h3 {
+    font-size: 1em;
+    color: rgb(54, 51, 50);
+    margin-top: 20px;
+    margin-bottom: 8px;
+}
+.modal-content p {
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: #444;
+    margin-bottom: 10px;
+}
+.modal-content ul {
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: #444;
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+.modal-content li {
+    margin-bottom: 6px;
+}
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.8em;
+    color: #888;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.modal-close:hover {
+    color: rgb(145, 56, 47);
+}
+
+/* Top row and left panel - default (mobile/tablet uses display:contents) */
+.top-row {
+    display: contents;
+}
+.left-panel {
+    display: contents;
+}
+/* On mobile/tablet, use order to arrange: notation, controls, history, description, drone */
+.notation-container {
+    order: 1;
+}
+.controls {
+    order: 2;
+}
+.history {
+    order: 3;
+}
+.description-wrapper {
+    order: 4;
+}
+.drone-section {
+    order: 5;
+}
+
+/* Tablet - center history and fix overflow */
+@media (min-width: 601px) and (max-width: 1024px) {
+    html, body {
+        overflow: auto;
+        position: static;
+    }
+    body {
+        min-height: 100vh;
+        height: auto;
+    }
+    .main-content {
+        overflow: visible;
+        flex: none;
+        padding-bottom: 80px;
+    }
+    .drone-section {
+        padding-bottom: 90px;
+    }
+    body.midi-minimized .drone-section {
+        padding-bottom: 40px;
+    }
+    .history {
+        text-align: center;
+    }
+    .history h3 {
+        text-align: center;
+    }
+}
+
+/* Desktop ONLY - side by side layout */
+@media (min-width: 1025px) {
+    .main-content {
+        flex-direction: column;
+        padding: 10px 20px;
+        gap: 15px;
+    }
+    .top-row {
+        display: flex;
+        flex-direction: row;
+        gap: 20px;
+        align-items: stretch;
+        justify-content: center;
+    }
+    .left-panel {
+        flex: 0 0 auto;
+        width: 500px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .notation-container {
+        width: 100%;
+    }
+    .controls {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .drone-section {
+        flex: 0 0 auto;
+        width: 400px;
+        margin: 0;
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+    .drone-header {
+        flex-shrink: 0;
+    }
+    .drone-rows {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .drone-row {
+        flex: 1;
+        gap: 8px;
+    }
+    .drone-btn {
+        padding: 25px 10px;
+        font-size: 1.1em;
+        height: 100%;
+        min-height: 70px;
+    }
+    .header {
+        padding: 15px 20px;
+    }
+    h1 {
+        font-size: 4em;
+    }
+    .subtitle {
+        font-size: 1.2em;
+    }
+    .header-icon {
+        height: 60px;
+        width: 60px;
+    }
+    .audio-icon {
+        height: 50px;
+    }
+    .info-btn {
+        width: 40px;
+        height: 40px;
+    }
+    .history {
+        width: 920px;
+        max-width: 100%;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .history h3 {
+        text-align: left;
+    }
+    .description-wrapper {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .description {
+        padding: 8px 12px;
+        font-size: 0.8em;
+    }
+    /* Reset order on desktop */
+    .notation-container,
+    .controls,
+    .history,
+    .description-wrapper,
+    .drone-section {
+        order: unset;
+    }
+}
+
+/* Mobile responsive styles */
+@media (max-width: 600px) {
+    html, body {
+        overflow: auto;
+        position: static;
+    }
+    body {
+        min-height: 100vh;
+        height: auto;
+    }
+    .main-content {
+        overflow: visible;
+        flex: none;
+    }
+    .header {
+        padding: 12px 15px;
+        gap: 10px;
+    }
+    .header-icon {
+        height: 50px;
+        width: 50px;
+    }
+    h1 {
+        font-size: 9vw;
+    }
+    .subtitle {
+        font-size: 3vw;
+    }
+    .audio-icon {
+        height: 40px;
+    }
+    .info-btn {
+        width: 28px;
+        height: 28px;
+    }
+    .main-content {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    .notation-container {
+        transform-origin: top left;
+        transform: scale(0.78);
+        width: 128%;
+        margin-bottom: -84px;
+    }
+    .controls {
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .note-box.current {
+        width: 100px;
+    }
+    .note-box.paths {
+        flex: 1;
+        width: auto;
+        min-width: 200px;
+    }
+    .note-box {
+        padding: 8px 10px;
+    }
+    .path-note {
+        padding: 8px 14px;
+        min-height: 40px;
+        font-size: 1.3em;
+    }
+    .paths-notes {
+        min-height: 96px; /* Fixed height for 2 rows of buttons */
+    }
+    button {
+        padding: 12px 20px;
+        font-size: 1em;
+    }
+    .history {
+        padding: 6px 10px;
+    }
+    .history-notes {
+        white-space: nowrap;
+        overflow: hidden;
+        direction: rtl;
+    }
+    .history-notes > * {
+        direction: ltr;
+    }
+    .description-wrapper {
+        display: flex;
+    }
+    .description {
+        font-size: 0.75em;
+        padding: 8px 10px;
+    }
+    .drone-section {
+        padding: 10px 15px 30px 15px;
+        margin-left: -12px;
+        margin-right: -12px;
+    }
+    .drone-btn {
+        padding: 10px 6px;
+        font-size: 0.8em;
+    }
+    .chord-btn {
+        padding: 10px 16px;
+    }
+    /* Hide MIDI footer on mobile */
+    .midi-footer {
+        display: none;
+    }
+    .midi-toggle {
+        display: none;
+    }
+}
