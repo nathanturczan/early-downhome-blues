@@ -231,36 +231,63 @@ export function getEffectiveOctave(degree, octave) {
     return octave;
 }
 
-// Find the best octave for inflection - pick whichever gives the smallest interval
-// A 2nd is always smaller than a 7th, so we want the closest pitch
-function findClosestOctaveFreq(currentFreq, pitchClass, baseOctave) {
-    const candidates = [];
+// Pitch class to semitone offset from C
+const pitchClassSemitones = {
+    'C': 0, 'D': 2, 'Eb': 3, 'Eqf': 3.5, 'E': 4, 'F': 5, 'Gb': 6,
+    'G': 7, 'A': 9, 'Bb': 10, 'B': 11
+};
 
-    // Search ALL available octaves to ensure we find the absolute closest
-    for (let oct = 1; oct <= 6; oct++) {
-        const freq = droneBaseFreqs[oct]?.[pitchClass];
-        if (freq) {
-            candidates.push({ octave: oct, freq });
+// Get pitch class from frequency (approximate)
+function freqToPitchClass(freq) {
+    // A4 = 440Hz, A is 9 semitones above C
+    const semitonesFromA4 = 12 * Math.log2(freq / 440);
+    const semitoneInOctave = ((semitonesFromA4 % 12) + 12 + 3) % 12; // +3 because A=9, so C=0
+
+    // Find closest pitch class
+    let closest = 'C';
+    let minDiff = 12;
+    for (const [pc, semi] of Object.entries(pitchClassSemitones)) {
+        const diff = Math.abs(semi - semitoneInOctave);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = pc;
         }
     }
+    return closest;
+}
 
-    if (candidates.length === 0) return null;
+// Find the closest frequency for a pitch class change - pick the shorter interval
+function findClosestOctaveFreq(currentFreq, targetPitchClass, baseOctave) {
+    const currentPC = freqToPitchClass(currentFreq);
+    const currentSemi = pitchClassSemitones[currentPC];
+    const targetSemi = pitchClassSemitones[targetPitchClass];
 
-    // Find the candidate with smallest interval (in semitones)
-    // 12 * |log2(ratio)| gives semitones
-    let closest = candidates[0];
-    let smallestInterval = Math.abs(12 * Math.log2(currentFreq / closest.freq));
-
-    for (let i = 1; i < candidates.length; i++) {
-        const interval = Math.abs(12 * Math.log2(currentFreq / candidates[i].freq));
-        if (interval < smallestInterval) {
-            smallestInterval = interval;
-            closest = candidates[i];
-        }
+    if (currentSemi === undefined || targetSemi === undefined) {
+        return droneBaseFreqs[baseOctave]?.[targetPitchClass] || null;
     }
 
-    console.log(`[Inflect] From ${currentFreq.toFixed(1)}Hz to ${pitchClass}: chose ${closest.freq.toFixed(1)}Hz (oct ${closest.octave}, ${smallestInterval.toFixed(1)} semitones)`);
-    return closest.freq;
+    // Calculate interval going up vs down (within octave, 0-12 semitones)
+    let intervalUp = (targetSemi - currentSemi + 12) % 12;
+    let intervalDown = (currentSemi - targetSemi + 12) % 12;
+
+    // Handle quarter-tones
+    if (targetPitchClass === 'Eqf') {
+        intervalUp = (3.5 - currentSemi + 12) % 12;
+        intervalDown = (currentSemi - 3.5 + 12) % 12;
+    }
+
+    // Pick shorter interval, apply to current frequency
+    let semitoneChange;
+    if (intervalUp <= intervalDown) {
+        semitoneChange = intervalUp;
+    } else {
+        semitoneChange = -intervalDown;
+    }
+
+    // Calculate new frequency: freq * 2^(semitones/12)
+    const newFreq = currentFreq * Math.pow(2, semitoneChange / 12);
+
+    return newFreq;
 }
 
 function getDroneFreq(note) {
