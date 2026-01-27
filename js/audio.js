@@ -122,13 +122,13 @@ const inflectionRules = {
         'ges': { seventh: 'Gb' }
     },
     'bVII': {
+        'bes': { root: 'Bb', seventh: 'Bb' },
+        'b': { root: 'B' },
         'd': { third: 'D' },
         'ees': { third: 'Eb' },
         'eeh': { third: 'Eqf' },
         'f': { third: 'F' },
-        'a': { seventh: 'A' },
-        'bes': { seventh: 'Bb' },
-        'b': { seventh: 'B' }
+        'a': { seventh: 'A' }
     }
 };
 
