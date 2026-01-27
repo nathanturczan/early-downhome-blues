@@ -828,56 +828,56 @@ button:active {
     }
     .notation-container {
         transform-origin: top left;
-        transform: scale(0.72);
-        width: 139%;
-        margin-bottom: -100px;
+        transform: scale(0.75);
+        width: 133%;
+        margin-bottom: -92px;
     }
     .controls {
-        gap: 6px;
+        gap: 7px;
         flex-wrap: wrap;
     }
     .note-box.current {
-        width: 90px;
-        padding: 6px 8px;
+        width: 95px;
+        padding: 7px 9px;
     }
     .note-box.paths {
         flex: 1;
         width: auto;
-        min-width: 190px;
+        min-width: 195px;
     }
     .note-box {
-        padding: 6px 8px;
+        padding: 7px 9px;
     }
     .current-note {
-        font-size: 1.7em;
+        font-size: 1.85em;
     }
     .note-info {
-        font-size: 0.7em;
+        font-size: 0.72em;
     }
     .path-note {
-        padding: 6px 12px;
-        min-height: 36px;
-        font-size: 1.2em;
+        padding: 7px 13px;
+        min-height: 38px;
+        font-size: 1.25em;
     }
     .paths-notes {
-        min-height: 84px;
+        min-height: 90px;
     }
     button {
-        padding: 10px 16px;
-        font-size: 0.9em;
+        padding: 11px 18px;
+        font-size: 0.95em;
     }
     .history {
-        padding: 5px 8px;
+        padding: 5px 9px;
     }
     .history h3 {
-        font-size: 0.65em;
+        font-size: 0.68em;
         margin-bottom: 3px;
     }
     .history-notes {
         white-space: nowrap;
         overflow: hidden;
         direction: rtl;
-        font-size: 0.85em;
+        font-size: 0.87em;
     }
     .history-notes > * {
         direction: ltr;
@@ -886,10 +886,13 @@ button:active {
         display: none;
     }
     .drone-section {
-        padding: 8px 12px 25px 12px !important;
-        margin-left: -10px;
-        margin-right: -10px;
-        margin-bottom: 0 !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 8px 12px 20px 12px !important;
+        margin: 0 !important;
+        z-index: 50;
     }
     .drone-header {
         margin-bottom: 4px;
@@ -898,12 +901,15 @@ button:active {
         gap: 3px;
     }
     .drone-btn {
-        padding: 9px 5px;
+        padding: 8px 5px;
         font-size: 0.78em;
     }
     .chord-btn {
-        padding: 8px 12px;
-        font-size: 0.8em;
+        padding: 7px 11px;
+        font-size: 0.78em;
+    }
+    .main-content {
+        padding-bottom: 220px !important;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {
