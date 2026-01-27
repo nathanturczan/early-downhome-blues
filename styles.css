@@ -661,12 +661,33 @@ button:active {
         width: 118%;
         margin-bottom: -60px;
     }
+    .note-box {
+        padding: 12px 15px;
+    }
+    .note-box.current {
+        width: 130px;
+    }
+    .current-note {
+        font-size: 2.2em;
+    }
+    .path-note {
+        padding: 10px 16px;
+        font-size: 1.3em;
+    }
     .description-wrapper {
         display: none;
     }
     .drone-section {
-        padding-bottom: 80px !important;
+        padding: 12px 20px 80px 20px !important;
         margin-bottom: 0 !important;
+    }
+    .drone-btn {
+        padding: 14px 8px;
+        font-size: 0.9em;
+    }
+    .chord-btn {
+        padding: 10px 16px;
+        font-size: 0.9em;
     }
     body.midi-minimized .drone-section {
         padding-bottom: 40px !important;
@@ -890,26 +911,26 @@ button:active {
         bottom: 0;
         left: 0;
         right: 0;
-        padding: 8px 12px 20px 12px !important;
+        padding: 10px 15px 25px 15px !important;
         margin: 0 !important;
         z-index: 50;
     }
     .drone-header {
-        margin-bottom: 4px;
+        margin-bottom: 6px;
     }
     .drone-rows {
-        gap: 3px;
+        gap: 5px;
     }
     .drone-btn {
-        padding: 8px 5px;
-        font-size: 0.78em;
+        padding: 12px 6px;
+        font-size: 0.85em;
     }
     .chord-btn {
-        padding: 7px 11px;
-        font-size: 0.78em;
+        padding: 10px 14px;
+        font-size: 0.85em;
     }
     .main-content {
-        padding-bottom: 220px !important;
+        padding-bottom: 260px !important;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {
