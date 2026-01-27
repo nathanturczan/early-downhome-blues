@@ -911,26 +911,36 @@ button:active {
         bottom: 0;
         left: 0;
         right: 0;
-        padding: 10px 15px 25px 15px !important;
+        padding: 6px 12px 18px 12px !important;
         margin: 0 !important;
         z-index: 50;
     }
     .drone-header {
-        margin-bottom: 6px;
+        margin-bottom: 3px;
+    }
+    .drone-title {
+        font-size: 0.6em;
+    }
+    .inflect-toggle {
+        font-size: 0.55em;
     }
     .drone-rows {
-        gap: 5px;
+        gap: 2px;
+    }
+    .drone-label {
+        font-size: 0.55em;
+        width: 26px;
     }
     .drone-btn {
-        padding: 12px 6px;
-        font-size: 0.85em;
+        padding: 8px 4px;
+        font-size: 0.75em;
     }
     .chord-btn {
-        padding: 10px 14px;
-        font-size: 0.85em;
+        padding: 7px 10px;
+        font-size: 0.75em;
     }
     .main-content {
-        padding-bottom: 260px !important;
+        padding-bottom: 200px !important;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {
