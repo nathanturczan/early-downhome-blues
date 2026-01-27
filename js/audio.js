@@ -97,6 +97,9 @@ const inflectionRules = {
         'b': { seventh: 'B' }
     },
     'bIII': {
+        'ees': { root: 'Eb' },
+        'eeh': { root: 'Eqf' },
+        'e': { root: 'E' },
         'g': { third: 'G' },
         'ges': { third: 'Gb' },
         'bes': { fifth: 'Bb' },
@@ -124,7 +127,8 @@ const inflectionRules = {
         'eeh': { third: 'Eqf' },
         'f': { third: 'F' },
         'a': { seventh: 'A' },
-        'bes': { seventh: 'Bb' }
+        'bes': { seventh: 'Bb' },
+        'b': { seventh: 'B' }
     }
 };
 
@@ -151,7 +155,7 @@ export const droneDegrees = {
 };
 
 // Current inflection (can be modified by melody)
-let currentInflection = { third: 'E', fifth: 'G', seventh: 'Bb' };
+let currentInflection = { root: 'C', third: 'E', fifth: 'G', seventh: 'Bb' };
 const droneVoices = {};
 let droneGain = null;
 
@@ -179,6 +183,7 @@ export function setChord(chord, currentMelodyNote = null, shouldInflect = false,
 
     // Reset inflection to chord defaults
     currentInflection = {
+        root: chordDef.root,
         third: chordDef.third,
         fifth: chordDef.fifth,
         seventh: chordDef.seventh
@@ -200,12 +205,7 @@ export function setChord(chord, currentMelodyNote = null, shouldInflect = false,
     // Use closest octave to minimize pitch jumps
     Object.keys(droneVoices).forEach(key => {
         const voice = droneVoices[key];
-        let pitchClass;
-        if (voice.degree === 'root') {
-            pitchClass = chordDef.root;
-        } else {
-            pitchClass = currentInflection[voice.degree];
-        }
+        const pitchClass = currentInflection[voice.degree];
         const currentFreq = voice.osc.frequency.value;
         const effectiveOctave = getEffectiveOctave(voice.degree, voice.octave);
         const newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
@@ -218,18 +218,18 @@ export function setChord(chord, currentMelodyNote = null, shouldInflect = false,
 export function resetInflection() {
     const chordDef = chordDefinitions[currentChord];
     currentInflection = {
+        root: chordDef.root,
+        root: chordDef.root,
         third: chordDef.third,
         fifth: chordDef.fifth,
         seventh: chordDef.seventh
     };
     Object.keys(droneVoices).forEach(key => {
         const voice = droneVoices[key];
-        if (voice.degree !== 'root') {
-            const currentFreq = voice.osc.frequency.value;
-            const effectiveOctave = getEffectiveOctave(voice.degree, voice.octave);
-            const newFreq = findClosestOctaveFreq(currentFreq, currentInflection[voice.degree], effectiveOctave);
-            if (newFreq) voice.osc.frequency.rampTo(newFreq, 0.1);
-        }
+        const currentFreq = voice.osc.frequency.value;
+        const effectiveOctave = getEffectiveOctave(voice.degree, voice.octave);
+        const newFreq = findClosestOctaveFreq(currentFreq, currentInflection[voice.degree], effectiveOctave);
+        if (newFreq) voice.osc.frequency.rampTo(newFreq, 0.1);
     });
 }
 
@@ -309,11 +309,7 @@ function findClosestOctaveFreq(currentFreq, targetPitchClass, baseOctave) {
 function getDroneFreq(note) {
     const info = droneDegrees[note];
     if (!info) return 261.63;
-    const chordDef = chordDefinitions[currentChord];
     const effectiveOctave = getEffectiveOctave(info.degree, info.octave);
-    if (info.degree === 'root') {
-        return droneBaseFreqs[effectiveOctave][chordDef.root];
-    }
     const pitchClass = currentInflection[info.degree];
     return droneBaseFreqs[effectiveOctave][pitchClass];
 }
@@ -378,12 +374,13 @@ export function inflectDrones(melodyNote, shouldInflect, isLatch = true) {
         // Momentary mode: reset any degrees NOT being inflected by current note
         const chordDef = chordDefinitions[currentChord];
         const defaultInflection = {
+            root: chordDef.root,
             third: chordDef.third,
             fifth: chordDef.fifth,
             seventh: chordDef.seventh
         };
 
-        ['third', 'fifth', 'seventh'].forEach(degree => {
+        ['root', 'third', 'fifth', 'seventh'].forEach(degree => {
             // Only reset if this degree is NOT being inflected by current note
             if (!changes[degree] && currentInflection[degree] !== defaultInflection[degree]) {
                 currentInflection[degree] = defaultInflection[degree];

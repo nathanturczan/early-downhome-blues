@@ -28,19 +28,12 @@ const notationContainer = document.getElementById('notation');
 // Update drone button labels based on current chord and inflection
 function updateDroneLabels() {
     const inflection = getCurrentInflection();
-    const chordNotes = getChordNotes();
     document.querySelectorAll('.drone-btn').forEach(btn => {
         const note = btn.dataset.note;
         const info = droneDegrees[note];
         if (!info) return;
 
-        let pitchClass;
-        if (info.degree === 'root') {
-            pitchClass = chordNotes.root;
-        } else {
-            pitchClass = inflection[info.degree];
-        }
-
+        const pitchClass = inflection[info.degree];
         const displayOctave = getEffectiveOctave(info.degree, info.octave);
         btn.innerHTML = pitchDisplayNames[pitchClass] + displayOctave;
     });
@@ -49,19 +42,12 @@ function updateDroneLabels() {
 // Update MIDI for all active drones (when chord or inflection changes)
 function updateAllDroneMidi() {
     const inflection = getCurrentInflection();
-    const chordNotes = getChordNotes();
     document.querySelectorAll('.drone-btn.active').forEach(btn => {
         const note = btn.dataset.note;
         const info = droneDegrees[note];
         if (!info) return;
 
-        let pitchClass;
-        if (info.degree === 'root') {
-            pitchClass = chordNotes.root;
-        } else {
-            pitchClass = inflection[info.degree];
-        }
-
+        const pitchClass = inflection[info.degree];
         const effectiveOctave = getEffectiveOctave(info.degree, info.octave);
         updateDroneMidi(info.degree, pitchClass, effectiveOctave);
     });
@@ -233,14 +219,8 @@ function init() {
             // Send MIDI for drone
             const info = droneDegrees[note];
             if (info) {
-                const chordNotes = getChordNotes();
                 const inflection = getCurrentInflection();
-                let pitchClass;
-                if (info.degree === 'root') {
-                    pitchClass = chordNotes.root;
-                } else {
-                    pitchClass = inflection[info.degree];
-                }
+                const pitchClass = inflection[info.degree];
                 const effectiveOctave = getEffectiveOctave(info.degree, info.octave);
                 sendDroneMidi(info.degree, pitchClass, effectiveOctave, isNowOn);
             }
