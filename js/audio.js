@@ -238,12 +238,15 @@ function initDrone() {
     droneGain = new Tone.Gain(0.15).toDestination();
 }
 
-// For IV and V chords, fifth and seventh need to be an octave higher
+// Octave adjustments per chord to keep voicings in reasonable range
 export function getEffectiveOctave(degree, octave) {
     if (currentChord === 'IV' || currentChord === 'V') {
         if (degree === 'fifth' || degree === 'seventh') {
             return octave + 1;
         }
+    }
+    if (currentChord === 'bIII' || currentChord === 'bVII') {
+        return octave + 1;
     }
     return octave;
 }
