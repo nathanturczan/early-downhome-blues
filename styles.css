@@ -657,9 +657,9 @@ button:active {
     }
     .notation-container {
         transform-origin: top left;
-        transform: scale(0.75);
-        width: 133%;
-        margin-bottom: -100px;
+        transform: scale(0.85);
+        width: 118%;
+        margin-bottom: -60px;
     }
     .description-wrapper {
         display: none;
@@ -673,7 +673,7 @@ button:active {
     }
     .history {
         text-align: center;
-        padding: 5px 10px;
+        padding: 6px 10px;
     }
     .history h3 {
         text-align: center;
@@ -828,56 +828,56 @@ button:active {
     }
     .notation-container {
         transform-origin: top left;
-        transform: scale(0.65);
-        width: 154%;
-        margin-bottom: -120px;
+        transform: scale(0.72);
+        width: 139%;
+        margin-bottom: -100px;
     }
     .controls {
-        gap: 5px;
+        gap: 6px;
         flex-wrap: wrap;
     }
     .note-box.current {
-        width: 80px;
-        padding: 5px 8px;
+        width: 90px;
+        padding: 6px 8px;
     }
     .note-box.paths {
         flex: 1;
         width: auto;
-        min-width: 180px;
+        min-width: 190px;
     }
     .note-box {
-        padding: 5px 8px;
+        padding: 6px 8px;
     }
     .current-note {
-        font-size: 1.5em;
+        font-size: 1.7em;
     }
     .note-info {
-        font-size: 0.65em;
+        font-size: 0.7em;
     }
     .path-note {
-        padding: 5px 10px;
-        min-height: 32px;
-        font-size: 1.1em;
+        padding: 6px 12px;
+        min-height: 36px;
+        font-size: 1.2em;
     }
     .paths-notes {
-        min-height: 72px;
+        min-height: 84px;
     }
     button {
-        padding: 8px 14px;
-        font-size: 0.85em;
+        padding: 10px 16px;
+        font-size: 0.9em;
     }
     .history {
-        padding: 4px 8px;
+        padding: 5px 8px;
     }
     .history h3 {
-        font-size: 0.6em;
-        margin-bottom: 2px;
+        font-size: 0.65em;
+        margin-bottom: 3px;
     }
     .history-notes {
         white-space: nowrap;
         overflow: hidden;
         direction: rtl;
-        font-size: 0.8em;
+        font-size: 0.85em;
     }
     .history-notes > * {
         direction: ltr;
@@ -898,12 +898,12 @@ button:active {
         gap: 3px;
     }
     .drone-btn {
-        padding: 8px 4px;
-        font-size: 0.75em;
+        padding: 9px 5px;
+        font-size: 0.78em;
     }
     .chord-btn {
-        padding: 6px 10px;
-        font-size: 0.75em;
+        padding: 8px 12px;
+        font-size: 0.8em;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {
