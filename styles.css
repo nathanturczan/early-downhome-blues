@@ -648,21 +648,32 @@ button:active {
     body {
         min-height: 100vh;
         height: auto;
-        padding-bottom: 80px;
     }
     .main-content {
         overflow: visible;
         flex: none;
+        padding: 8px 15px;
+        gap: 8px;
+    }
+    .notation-container {
+        transform-origin: top left;
+        transform: scale(0.75);
+        width: 133%;
+        margin-bottom: -100px;
+    }
+    .description-wrapper {
+        display: none;
     }
     .drone-section {
-        padding-bottom: 30px !important;
-        margin-bottom: 100px !important;
+        padding-bottom: 80px !important;
+        margin-bottom: 0 !important;
     }
     body.midi-minimized .drone-section {
-        margin-bottom: 50px !important;
+        padding-bottom: 40px !important;
     }
     .history {
         text-align: center;
+        padding: 5px 10px;
     }
     .history h3 {
         text-align: center;
@@ -787,10 +798,12 @@ button:active {
     .main-content {
         overflow: visible;
         flex: none;
+        padding: 5px 10px;
+        gap: 5px;
     }
     .header {
-        padding: 12px 15px;
-        gap: 10px;
+        padding: 8px 12px;
+        gap: 8px;
     }
     .header-icon {
         height: 50px;
@@ -815,67 +828,82 @@ button:active {
     }
     .notation-container {
         transform-origin: top left;
-        transform: scale(0.78);
-        width: 128%;
-        margin-bottom: -84px;
+        transform: scale(0.65);
+        width: 154%;
+        margin-bottom: -120px;
     }
     .controls {
-        gap: 8px;
+        gap: 5px;
         flex-wrap: wrap;
     }
     .note-box.current {
-        width: 100px;
+        width: 80px;
+        padding: 5px 8px;
     }
     .note-box.paths {
         flex: 1;
         width: auto;
-        min-width: 200px;
+        min-width: 180px;
     }
     .note-box {
-        padding: 8px 10px;
+        padding: 5px 8px;
+    }
+    .current-note {
+        font-size: 1.5em;
+    }
+    .note-info {
+        font-size: 0.65em;
     }
     .path-note {
-        padding: 8px 14px;
-        min-height: 40px;
-        font-size: 1.3em;
+        padding: 5px 10px;
+        min-height: 32px;
+        font-size: 1.1em;
     }
     .paths-notes {
-        min-height: 96px; /* Fixed height for 2 rows of buttons */
+        min-height: 72px;
     }
     button {
-        padding: 12px 20px;
-        font-size: 1em;
+        padding: 8px 14px;
+        font-size: 0.85em;
     }
     .history {
-        padding: 6px 10px;
+        padding: 4px 8px;
+    }
+    .history h3 {
+        font-size: 0.6em;
+        margin-bottom: 2px;
     }
     .history-notes {
         white-space: nowrap;
         overflow: hidden;
         direction: rtl;
+        font-size: 0.8em;
     }
     .history-notes > * {
         direction: ltr;
     }
     .description-wrapper {
-        display: flex;
-    }
-    .description {
-        font-size: 0.75em;
-        padding: 8px 10px;
+        display: none;
     }
     .drone-section {
-        padding: 10px 15px 30px 15px !important;
-        margin-left: -12px;
-        margin-right: -12px;
-        margin-bottom: 40px !important;
+        padding: 8px 12px 25px 12px !important;
+        margin-left: -10px;
+        margin-right: -10px;
+        margin-bottom: 0 !important;
+    }
+    .drone-header {
+        margin-bottom: 4px;
+    }
+    .drone-rows {
+        gap: 3px;
     }
     .drone-btn {
-        padding: 10px 6px;
-        font-size: 0.8em;
+        padding: 8px 4px;
+        font-size: 0.75em;
     }
     .chord-btn {
-        padding: 10px 16px;
+        padding: 6px 10px;
+        font-size: 0.75em;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {
