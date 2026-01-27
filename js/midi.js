@@ -15,13 +15,13 @@ export const midiNotes = {
 // Pitch class to MIDI note number (octave 0)
 const pitchClassToMidi = {
     'C': 0, 'D': 2, 'Eb': 3, 'Eqf': 3, 'E': 4, 'F': 5, 'Gb': 6,
-    'G': 7, 'A': 9, 'Bb': 10, 'B': 11
+    'G': 7, 'Ab': 8, 'A': 9, 'Bb': 10, 'B': 11
 };
 
 // Pitch bend for quarter-tones
 const pitchClassBend = {
     'C': 0, 'D': 0, 'Eb': 0, 'Eqf': 1024, 'E': 0, 'F': 0, 'Gb': 0,
-    'G': 0, 'A': 0, 'Bb': 0, 'B': 0
+    'G': 0, 'Ab': 0, 'A': 0, 'Bb': 0, 'B': 0
 };
 
 let midiAccess = null;

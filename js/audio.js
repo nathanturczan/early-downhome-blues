@@ -72,16 +72,26 @@ export function playNote(lilyNote, duration = 1.2) {
 
 // ============ DRONE ============
 
-// All frequencies by pitch class and octave
-// Eqf = E quarter-flat (halfway between Eb and E)
-const droneBaseFreqs = {
-    1: { C: 32.70, D: 36.71, Eb: 38.89, Eqf: 40.03, E: 41.20, F: 43.65, Gb: 46.25, G: 49.00, A: 55.00, Bb: 58.27, B: 61.74 },
-    2: { C: 65.41, D: 73.42, Eb: 77.78, Eqf: 80.06, E: 82.41, F: 87.31, Gb: 92.50, G: 98.00, A: 110.00, Bb: 116.54, B: 123.47 },
-    3: { C: 130.81, D: 146.83, Eb: 155.56, Eqf: 160.12, E: 164.81, F: 174.61, Gb: 185.00, G: 196.00, A: 220.00, Bb: 233.08, B: 246.94 },
-    4: { C: 261.63, D: 293.66, Eb: 311.13, Eqf: 320.24, E: 329.63, F: 349.23, Gb: 369.99, G: 392.00, A: 440.00, Bb: 466.16, B: 493.88 },
-    5: { C: 523.25, D: 587.33, Eb: 622.25, Eqf: 640.49, E: 659.26, F: 698.46, Gb: 739.99, G: 783.99, A: 880.00, Bb: 932.33, B: 987.77 },
-    6: { C: 1046.50, D: 1174.66, Eb: 1244.51, Eqf: 1280.97, E: 1318.51, F: 1396.91, Gb: 1479.98, G: 1567.98, A: 1760.00, Bb: 1864.66, B: 1975.53 }
+// Standard MIDI-to-frequency conversion
+// midiNote 69 = A4 = 440Hz
+function mtof(midiNote) {
+    return 440 * Math.pow(2, (midiNote - 69) / 12);
+}
+
+// Pitch class to semitone offset from C (used for frequency calculation)
+const pitchClassToSemitone = {
+    'C': 0, 'D': 2, 'Eb': 3, 'Eqf': 3.5, 'E': 4, 'F': 5, 'Gb': 6,
+    'G': 7, 'Ab': 8, 'A': 9, 'Bb': 10, 'B': 11
 };
+
+// Get frequency for a pitch class at a given octave
+function getFreq(pitchClass, octave) {
+    const semitone = pitchClassToSemitone[pitchClass];
+    if (semitone === undefined) return 261.63; // fallback to C4
+    // MIDI note = (octave + 1) * 12 + semitone
+    const midiNote = (octave + 1) * 12 + semitone;
+    return mtof(midiNote);
+}
 
 // Chord-aware inflection rules
 // Maps melody note patterns to drone degree changes for each chord
@@ -129,15 +139,54 @@ const inflectionRules = {
         'eeh': { third: 'Eqf' },
         'f': { third: 'F' },
         'a': { seventh: 'A' }
+    },
+    'ii': {
+        'f': { third: 'F' },
+        'ges': { third: 'Gb' },
+        'a': { fifth: 'A' },
+        'bes': { fifth: 'Bb' },
+        'c': { seventh: 'C' },
+        'b': { seventh: 'B' }
+    },
+    'iii': {
+        'e': { root: 'E' },
+        'ees': { root: 'Eb' },
+        'eeh': { root: 'Eqf' },
+        'g': { third: 'G' },
+        'ges': { third: 'Gb' },
+        'b': { fifth: 'B' },
+        'bes': { fifth: 'Bb' }
+    },
+    'vi': {
+        'c': { third: 'C' },
+        'b': { third: 'B' },
+        'e': { fifth: 'E' },
+        'ees': { fifth: 'Eb' },
+        'eeh': { fifth: 'Eqf' },
+        'g': { seventh: 'G' },
+        'ges': { seventh: 'Gb' }
+    },
+    'bVI': {
+        'c': { third: 'C' },
+        'b': { third: 'B' },
+        'e': { fifth: 'E' },
+        'ees': { fifth: 'Eb' },
+        'eeh': { fifth: 'Eqf' },
+        'g': { seventh: 'G' },
+        'ges': { seventh: 'Gb' }
     }
 };
 
 // Chord definitions: root, 3rd, 5th, 7th
 const chordDefinitions = {
     'I':    { root: 'C', third: 'E', fifth: 'G', seventh: 'Bb' },
+    'ii':   { root: 'D', third: 'F', fifth: 'A', seventh: 'C' },
+    'iii':  { root: 'E', third: 'G', fifth: 'B', seventh: 'D' },
     'IV':   { root: 'F', third: 'A', fifth: 'C', seventh: 'Eb' },
     'V':    { root: 'G', third: 'B', fifth: 'D', seventh: 'F' },
+    'vi':   { root: 'A', third: 'C', fifth: 'E', seventh: 'G' },
     'bIII': { root: 'Eb', third: 'G', fifth: 'Bb', seventh: 'D' },
+    'bVI':  { root: 'Ab', third: 'C', fifth: 'Eb', seventh: 'Gb' },
     'bVII': { root: 'Bb', third: 'D', fifth: 'F', seventh: 'A' }
 };
 
@@ -161,7 +210,7 @@ let droneGain = null;
 
 export const pitchDisplayNames = {
     'C': 'C', 'D': 'D', 'Eb': 'E\u266D', 'Eqf': 'E<span class="quarter-flat">\u266D</span>', 'E': 'E', 'F': 'F', 'Gb': 'G\u266D',
-    'G': 'G', 'A': 'A', 'Bb': 'B\u266D', 'B': 'B'
+    'G': 'G', 'Ab': 'A\u266D', 'A': 'A', 'Bb': 'B\u266D', 'B': 'B'
 };
 
 export function getCurrentInflection() {
@@ -214,7 +263,7 @@ export function setChord(chord, currentMelodyNote = null, shouldInflect = false,
         // Uncomment below to reset to base octave on I chord (prevents cumulative drift)
         // let newFreq;
         // if (chord === 'I') {
-        //     newFreq = droneBaseFreqs[effectiveOctave]?.[pitchClass];
+        //     newFreq = getFreq(pitchClass, effectiveOctave);
         // } else {
         //     newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
         // }
@@ -264,12 +313,6 @@ export function getEffectiveOctave(degree, octave) {
     return octave;
 }
 
-// Pitch class to semitone offset from C
-const pitchClassSemitones = {
-    'C': 0, 'D': 2, 'Eb': 3, 'Eqf': 3.5, 'E': 4, 'F': 5, 'Gb': 6,
-    'G': 7, 'A': 9, 'Bb': 10, 'B': 11
-};
-
 // Get pitch class from frequency (approximate)
 function freqToPitchClass(freq) {
     // A4 = 440Hz, A is semitone 9 (where C=0)
@@ -280,7 +323,7 @@ function freqToPitchClass(freq) {
     // Find closest pitch class
     let closest = 'C';
     let minDiff = 12;
-    for (const [pc, semi] of Object.entries(pitchClassSemitones)) {
+    for (const [pc, semi] of Object.entries(pitchClassToSemitone)) {
         const diff = Math.abs(semi - semitoneInOctave);
         if (diff < minDiff) {
             minDiff = diff;
@@ -293,11 +336,11 @@ function freqToPitchClass(freq) {
 // Find the closest frequency for a pitch class change - pick the shorter interval
 function findClosestOctaveFreq(currentFreq, targetPitchClass, baseOctave) {
     const currentPC = freqToPitchClass(currentFreq);
-    const currentSemi = pitchClassSemitones[currentPC];
-    const targetSemi = pitchClassSemitones[targetPitchClass];
+    const currentSemi = pitchClassToSemitone[currentPC];
+    const targetSemi = pitchClassToSemitone[targetPitchClass];
 
     if (currentSemi === undefined || targetSemi === undefined) {
-        return droneBaseFreqs[baseOctave]?.[targetPitchClass] || null;
+        return getFreq(targetPitchClass, baseOctave);
     }
 
     // Calculate interval going up vs down (within octave, 0-12 semitones)
@@ -329,7 +372,7 @@ function getDroneFreq(note) {
     if (!info) return 261.63;
     const effectiveOctave = getEffectiveOctave(info.degree, info.octave);
     const pitchClass = currentInflection[info.degree];
-    return droneBaseFreqs[effectiveOctave][pitchClass];
+    return getFreq(pitchClass, effectiveOctave);
 }
 
 export function toggleDroneNote(note) {

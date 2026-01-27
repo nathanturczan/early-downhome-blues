@@ -328,12 +328,13 @@ button:active {
 }
 .chord-buttons {
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
+    flex-wrap: wrap;
 }
 .chord-btn {
     flex: 0 0 auto;
-    padding: 8px 12px;
-    font-size: 0.85em;
+    padding: 6px 8px;
+    font-size: 0.75em;
     font-weight: bold;
     background: rgba(255,255,255,0.1);
     color: #aaa;
@@ -686,8 +687,8 @@ button:active {
         font-size: 0.9em;
     }
     .chord-btn {
-        padding: 10px 16px;
-        font-size: 0.9em;
+        padding: 8px 10px;
+        font-size: 0.8em;
     }
     body.midi-minimized .drone-section {
         padding-bottom: 40px !important;
@@ -936,8 +937,8 @@ button:active {
         font-size: 0.75em;
     }
     .chord-btn {
-        padding: 7px 10px;
-        font-size: 0.75em;
+        padding: 5px 6px;
+        font-size: 0.65em;
     }
     .main-content {
         padding-bottom: 200px !important;
