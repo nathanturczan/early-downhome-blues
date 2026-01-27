@@ -96,6 +96,12 @@ const inflectionRules = {
         'bes': { seventh: 'Bb' },
         'b': { seventh: 'B' }
     },
+    'bIII': {
+        'g': { third: 'G' },
+        'ges': { third: 'Gb' },
+        'bes': { fifth: 'Bb' },
+        'b': { fifth: 'B' }
+    },
     'IV': {
         'a': { third: 'A' },
         'bes': { third: 'Bb' },
@@ -111,14 +117,24 @@ const inflectionRules = {
         'c': { third: 'C' },
         'f': { seventh: 'F' },
         'ges': { seventh: 'Gb' }
+    },
+    'bVII': {
+        'd': { third: 'D' },
+        'ees': { third: 'Eb' },
+        'eeh': { third: 'Eqf' },
+        'f': { third: 'F' },
+        'a': { seventh: 'A' },
+        'bes': { seventh: 'Bb' }
     }
 };
 
-// Chord definitions: root, 3rd (major), 5th, 7th (dominant)
+// Chord definitions: root, 3rd, 5th, 7th
 const chordDefinitions = {
-    'I':  { root: 'C', third: 'E', fifth: 'G', seventh: 'Bb' },
-    'IV': { root: 'F', third: 'A', fifth: 'C', seventh: 'Eb' },
-    'V':  { root: 'G', third: 'B', fifth: 'D', seventh: 'F' }
+    'I':    { root: 'C', third: 'E', fifth: 'G', seventh: 'Bb' },
+    'IV':   { root: 'F', third: 'A', fifth: 'C', seventh: 'Eb' },
+    'V':    { root: 'G', third: 'B', fifth: 'D', seventh: 'F' },
+    'bIII': { root: 'Eb', third: 'G', fifth: 'Bb', seventh: 'D' },
+    'bVII': { root: 'Bb', third: 'Eb', fifth: 'F', seventh: 'A' }
 };
 
 let currentChord = 'I';
