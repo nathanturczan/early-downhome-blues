@@ -988,11 +988,11 @@
             container.innerHTML = '';
             const width = container.clientWidth || 560;
             const renderer = new Renderer(container, Renderer.Backends.SVG);
-            renderer.resize(width, 380);
+            renderer.resize(width, 460);
             const context = renderer.getContext();
             const staveWidth = width - 20;
             const staveX = 10;
-            const staveSpacing = 115;
+            const staveSpacing = 145;
 
             const stave1 = new Stave(staveX, 15, staveWidth);
             stave1.addClef('treble').setContext(context).draw();
