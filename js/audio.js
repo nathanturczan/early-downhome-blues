@@ -138,7 +138,7 @@ const chordDefinitions = {
     'IV':   { root: 'F', third: 'A', fifth: 'C', seventh: 'Eb' },
     'V':    { root: 'G', third: 'B', fifth: 'D', seventh: 'F' },
     'bIII': { root: 'Eb', third: 'G', fifth: 'Bb', seventh: 'D' },
-    'bVII': { root: 'Bb', third: 'Eb', fifth: 'F', seventh: 'A' }
+    'bVII': { root: 'Bb', third: 'D', fifth: 'F', seventh: 'A' }
 };
 
 let currentChord = 'I';
