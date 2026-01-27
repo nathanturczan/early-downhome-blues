@@ -238,14 +238,17 @@ function initDrone() {
     droneGain = new Tone.Gain(0.15).toDestination();
 }
 
-// Octave adjustments per chord to keep voicings in reasonable range
+// Octave adjustments per chord to maintain voice leading continuity
 export function getEffectiveOctave(degree, octave) {
     if (currentChord === 'IV' || currentChord === 'V') {
         if (degree === 'fifth' || degree === 'seventh') {
             return octave + 1;
         }
     }
-    if (currentChord === 'bIII' || currentChord === 'bVII') {
+    if (currentChord === 'bIII' && degree === 'fifth') {
+        return octave + 1;
+    }
+    if (currentChord === 'bVII' && degree === 'third') {
         return octave + 1;
     }
     return octave;
