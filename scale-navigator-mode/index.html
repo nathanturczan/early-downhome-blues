@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scale Navigator Mode - Early Downhome Blues</title>
+    <link rel="icon" type="image/png" href="../icon.png">
+    <link rel="apple-touch-icon" href="../icon.png">
+    <link rel="stylesheet" href="https://use.typekit.net/zex5snw.css">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .mode-selector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            gap: 30px;
+            padding: 20px;
+        }
+        .mode-title {
+            font-family: "willow-std", serif;
+            font-size: 2.5em;
+            color: rgb(145, 56, 47);
+            text-align: center;
+        }
+        .mode-subtitle {
+            color: #666;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.5;
+        }
+        .mode-buttons {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .mode-btn {
+            padding: 20px 40px;
+            font-size: 1.2em;
+            background: rgb(67, 116, 96);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 150px;
+        }
+        .mode-btn:hover {
+            background: rgb(87, 140, 118);
+            transform: translateY(-2px);
+        }
+        .mode-btn:disabled {
+            background: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .mode-btn-secondary {
+            background: rgba(145, 56, 47, 0.8);
+        }
+        .mode-btn-secondary:hover {
+            background: rgb(145, 56, 47);
+        }
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgb(145, 56, 47);
+            text-decoration: none;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #888;
+            font-size: 0.85em;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #888;
+        }
+        .status-dot.connected {
+            background: rgb(67, 116, 96);
+        }
+        .room-input {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .room-input.visible {
+            display: flex;
+        }
+        .room-input input {
+            padding: 12px 20px;
+            font-size: 1em;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            width: 250px;
+            text-align: center;
+        }
+        .room-input input:focus {
+            outline: none;
+            border-color: rgb(67, 116, 96);
+        }
+    </style>
+</head>
+<body>
+    <a href="../" class="back-link">&larr; Back to Blues Generator</a>
+
+    <div class="mode-selector">
+        <h1 class="mode-title">Scale Navigator Mode</h1>
+        <p class="mode-subtitle">
+            Connect with the Scale Navigator Dashboard to play in ensemble mode.
+            Host a room to send harmonic data, or join as a member to receive scale transpositions.
+        </p>
+
+        <div class="status-indicator">
+            <span class="status-dot" id="statusDot"></span>
+            <span id="statusText">Not connected</span>
+        </div>
+
+        <div class="mode-buttons">
+            <button class="mode-btn" id="hostBtn">Host Room</button>
+            <button class="mode-btn mode-btn-secondary" id="joinBtn">Join Room</button>
+        </div>
+
+        <div class="room-input" id="roomInput">
+            <input type="text" id="roomCode" placeholder="Enter room code" maxlength="6">
+            <button class="mode-btn" id="connectBtn">Connect</button>
+        </div>
+
+        <p class="mode-subtitle" style="font-size: 0.8em; color: #999; margin-top: 30px;">
+            Coming soon: Firebase integration for real-time ensemble play
+        </p>
+    </div>
+
+    <script>
+        // Placeholder for Scale Navigator mode functionality
+        const hostBtn = document.getElementById('hostBtn');
+        const joinBtn = document.getElementById('joinBtn');
+        const roomInput = document.getElementById('roomInput');
+        const roomCode = document.getElementById('roomCode');
+        const connectBtn = document.getElementById('connectBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        hostBtn.addEventListener('click', () => {
+            // TODO: Implement host mode with Firebase
+            alert('Host mode coming soon! This will create a room and send pitch data to noteschordsscales.');
+        });
+
+        joinBtn.addEventListener('click', () => {
+            roomInput.classList.toggle('visible');
+            roomCode.focus();
+        });
+
+        connectBtn.addEventListener('click', () => {
+            const code = roomCode.value.trim().toUpperCase();
+            if (code.length < 4) {
+                alert('Please enter a valid room code');
+                return;
+            }
+            // TODO: Implement join mode with Firebase
+            alert(`Join mode coming soon! Will connect to room: ${code}`);
+        });
+
+        roomCode.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                connectBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>
