@@ -202,13 +202,21 @@ export function setChord(chord, currentMelodyNote = null, shouldInflect = false,
     }
 
     // Update all active drone voices to new chord frequencies
-    // Use closest octave to minimize pitch jumps
     Object.keys(droneVoices).forEach(key => {
         const voice = droneVoices[key];
         const pitchClass = currentInflection[voice.degree];
         const currentFreq = voice.osc.frequency.value;
         const effectiveOctave = getEffectiveOctave(voice.degree, voice.octave);
-        const newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
+
+        let newFreq;
+        if (chord === 'I') {
+            // Reset to base octave when returning to I chord (prevents cumulative drift)
+            newFreq = droneBaseFreqs[effectiveOctave]?.[pitchClass];
+        } else {
+            // Use closest octave to minimize pitch jumps for other chords
+            newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
+        }
+
         if (newFreq) {
             voice.osc.frequency.rampTo(newFreq, 0.1);
         }
