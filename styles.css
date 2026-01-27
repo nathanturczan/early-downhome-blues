@@ -648,19 +648,18 @@ button:active {
     body {
         min-height: 100vh;
         height: auto;
+        padding-bottom: 80px;
     }
     .main-content {
         overflow: visible;
         flex: none;
-        padding-bottom: 20px;
     }
     .drone-section {
-        padding-bottom: 120px;
-        margin-bottom: 60px;
+        padding-bottom: 30px !important;
+        margin-bottom: 100px !important;
     }
     body.midi-minimized .drone-section {
-        padding-bottom: 50px;
-        margin-bottom: 30px;
+        margin-bottom: 50px !important;
     }
     .history {
         text-align: center;
@@ -866,10 +865,10 @@ button:active {
         padding: 8px 10px;
     }
     .drone-section {
-        padding: 10px 15px 40px 15px;
+        padding: 10px 15px 30px 15px !important;
         margin-left: -12px;
         margin-right: -12px;
-        margin-bottom: 20px;
+        margin-bottom: 40px !important;
     }
     .drone-btn {
         padding: 10px 6px;
