@@ -208,14 +208,16 @@ export function setChord(chord, currentMelodyNote = null, shouldInflect = false,
         const currentFreq = voice.osc.frequency.value;
         const effectiveOctave = getEffectiveOctave(voice.degree, voice.octave);
 
-        let newFreq;
-        if (chord === 'I') {
-            // Reset to base octave when returning to I chord (prevents cumulative drift)
-            newFreq = droneBaseFreqs[effectiveOctave]?.[pitchClass];
-        } else {
-            // Use closest octave to minimize pitch jumps for other chords
-            newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
-        }
+        // Use closest octave to minimize pitch jumps (allows cumulative drift)
+        const newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
+
+        // Uncomment below to reset to base octave on I chord (prevents cumulative drift)
+        // let newFreq;
+        // if (chord === 'I') {
+        //     newFreq = droneBaseFreqs[effectiveOctave]?.[pitchClass];
+        // } else {
+        //     newFreq = findClosestOctaveFreq(currentFreq, pitchClass, effectiveOctave);
+        // }
 
         if (newFreq) {
             voice.osc.frequency.rampTo(newFreq, 0.1);
