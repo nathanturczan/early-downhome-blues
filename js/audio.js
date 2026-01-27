@@ -256,9 +256,10 @@ const pitchClassSemitones = {
 
 // Get pitch class from frequency (approximate)
 function freqToPitchClass(freq) {
-    // A4 = 440Hz, A is 9 semitones above C
+    // A4 = 440Hz, A is semitone 9 (where C=0)
     const semitonesFromA4 = 12 * Math.log2(freq / 440);
-    const semitoneInOctave = ((semitonesFromA4 % 12) + 12 + 3) % 12; // +3 because A=9, so C=0
+    // Add 9 (A's position) to get semitone relative to C, handle negative modulo
+    const semitoneInOctave = ((Math.round(semitonesFromA4) + 9) % 12 + 12) % 12;
 
     // Find closest pitch class
     let closest = 'C';
