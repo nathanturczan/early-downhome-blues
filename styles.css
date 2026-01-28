@@ -1233,3 +1233,18 @@ button:active {
         display: none;
     }
 }
+
+/* Transposition indicator */
+.transposition-indicator {
+    background: rgb(145, 56, 47);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+    margin-left: auto;
+    margin-right: 8px;
+}
+.transposition-indicator.hidden {
+    display: none;
+}

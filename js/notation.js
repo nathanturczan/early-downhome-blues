@@ -1,7 +1,71 @@
 // Notation rendering using VexFlow
 import { staff1Notes, staff2Notes, staff3Notes, staff1Edges, staff2Edges, staff3Edges } from './network.js';
+import { getAudioTransposition } from './audio.js';
 
 const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = Vex.Flow;
+
+// VexFlow note to semitone (within octave)
+const vexNoteToSemi = {
+    'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11
+};
+
+// Semitone to VexFlow note (prefer flats for blues)
+const semiToVexNote = {
+    0: { note: 'c', acc: null },
+    1: { note: 'd', acc: 'b' },  // Db
+    2: { note: 'd', acc: null },
+    3: { note: 'e', acc: 'b' },  // Eb
+    4: { note: 'e', acc: null },
+    5: { note: 'f', acc: null },
+    6: { note: 'g', acc: 'b' },  // Gb
+    7: { note: 'g', acc: null },
+    8: { note: 'a', acc: 'b' },  // Ab
+    9: { note: 'a', acc: null },
+    10: { note: 'b', acc: 'b' }, // Bb
+    11: { note: 'b', acc: null }
+};
+
+// Transpose a VexFlow note definition
+function transposeVexNote(noteDef, semitones) {
+    if (semitones === 0) return noteDef;
+
+    // Parse vex note: "c/4", "e/5", etc.
+    const [noteName, octaveStr] = noteDef.vex.split('/');
+    let octave = parseInt(octaveStr);
+
+    // Get base semitone
+    let semi = vexNoteToSemi[noteName.toLowerCase()];
+
+    // Apply original accidental
+    if (noteDef.acc === 'b') semi -= 1;
+    else if (noteDef.acc === '#') semi += 1;
+    else if (noteDef.acc === 'd') semi -= 0.5; // quarter-flat
+
+    // Transpose
+    semi += semitones;
+
+    // Handle octave wrapping
+    while (semi >= 12) { semi -= 12; octave++; }
+    while (semi < 0) { semi += 12; octave--; }
+
+    // Handle quarter-tones (only Eqf in our scale)
+    const isQuarterFlat = semi % 1 === 0.5;
+    const baseSemi = Math.floor(semi);
+
+    const result = semiToVexNote[baseSemi];
+    let newAcc = result.acc;
+
+    // Quarter-flat handling
+    if (isQuarterFlat) {
+        newAcc = 'd'; // VexFlow quarter-flat
+    }
+
+    return {
+        lily: noteDef.lily,
+        vex: `${result.note}/${octave}`,
+        acc: newAcc
+    };
+}
 
 export function renderNotation(container, highlightNote, onNoteClick) {
     container.innerHTML = '';
@@ -39,11 +103,14 @@ export function renderNotation(container, highlightNote, onNoteClick) {
     stave3.addClef('treble').setContext(context).draw();
 
     function createStaveNotes(noteDefs) {
+        const transposition = getAudioTransposition();
+
         return noteDefs.map(n => {
+            const transposed = transposeVexNote(n, transposition);
             const isHighlighted = n.lily === highlightNote;
-            const note = new StaveNote({ keys: [n.vex], duration: 'w' });
-            if (n.acc) {
-                const accidental = new Accidental(n.acc);
+            const note = new StaveNote({ keys: [transposed.vex], duration: 'w' });
+            if (transposed.acc) {
+                const accidental = new Accidental(transposed.acc);
                 note.addModifier(accidental);
             }
             if (isHighlighted) {

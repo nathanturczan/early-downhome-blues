@@ -1,5 +1,7 @@
 // MIDI module - Multiple outputs for melody and drone voices
 
+import { getAudioTransposition } from './audio.js';
+
 // MIDI note mappings with pitch bend for quarter-tones
 export const midiNotes = {
     "c'": { note: 60, bend: 0 }, "d'": { note: 62, bend: 0 },
@@ -217,6 +219,9 @@ export function sendMidiNote(lilyNote, duration = 0.5) {
     const midiInfo = midiNotes[lilyNote];
     if (!midiInfo) return;
 
+    // Apply transposition
+    const transposition = getAudioTransposition();
+
     // Send to all melody outputs
     midiRows.forEach((row, index) => {
         if (row.type !== 'melody') return;
@@ -225,7 +230,7 @@ export function sendMidiNote(lilyNote, duration = 0.5) {
         if (!output) return;
 
         const channel = row.channel;
-        const noteNum = midiInfo.note;
+        const noteNum = midiInfo.note + transposition;
         const bendValue = 8192 + midiInfo.bend;
 
         // Note off for previous note

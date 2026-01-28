@@ -1,24 +1,46 @@
 // Audio module - Pluck synth and Drone using Tone.js
 
-// Map LilyPond notes to standard note names and cents offset for quarter-tones
-export const lilyToNote = {
-    "c'": { note: "C4", detune: 0 },
-    "d'": { note: "D4", detune: 0 },
-    "ees'": { note: "Eb4", detune: 0 },
-    "eeh'": { note: "Eb4", detune: 50 },
-    "e'": { note: "E4", detune: 0 },
-    "f'": { note: "F4", detune: 0 },
-    "ges'": { note: "Gb4", detune: 0 },
-    "g'": { note: "G4", detune: 0 },
-    "a'": { note: "A4", detune: 0 },
-    "bes'": { note: "Bb4", detune: 0 },
-    "b'": { note: "B4", detune: 0 },
-    "c''": { note: "C5", detune: 0 },
-    "d''": { note: "D5", detune: 0 },
-    "ees''": { note: "Eb5", detune: 0 },
-    "eeh''": { note: "Eb5", detune: 50 },
-    "e''": { note: "E5", detune: 0 }
+// Map LilyPond notes to MIDI note number and cents offset for quarter-tones
+// Using MIDI numbers allows easy transposition
+export const lilyToMidi = {
+    "c'": { midi: 60, detune: 0 },
+    "d'": { midi: 62, detune: 0 },
+    "ees'": { midi: 63, detune: 0 },
+    "eeh'": { midi: 63, detune: 50 },
+    "e'": { midi: 64, detune: 0 },
+    "f'": { midi: 65, detune: 0 },
+    "ges'": { midi: 66, detune: 0 },
+    "g'": { midi: 67, detune: 0 },
+    "a'": { midi: 69, detune: 0 },
+    "bes'": { midi: 70, detune: 0 },
+    "b'": { midi: 71, detune: 0 },
+    "c''": { midi: 72, detune: 0 },
+    "d''": { midi: 74, detune: 0 },
+    "ees''": { midi: 75, detune: 0 },
+    "eeh''": { midi: 75, detune: 50 },
+    "e''": { midi: 76, detune: 0 }
 };
+
+// For backwards compatibility
+export const lilyToNote = Object.fromEntries(
+    Object.entries(lilyToMidi).map(([lily, { midi, detune }]) => {
+        const noteNames = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+        const octave = Math.floor(midi / 12) - 1;
+        const noteName = noteNames[midi % 12] + octave;
+        return [lily, { note: noteName, detune }];
+    })
+);
+
+// Transposition offset (set by transpose.js)
+let audioTransposition = 0;
+
+export function setAudioTransposition(semitones) {
+    audioTransposition = semitones;
+}
+
+export function getAudioTransposition() {
+    return audioTransposition;
+}
 
 // State
 let isAudioInitialized = false;
@@ -63,11 +85,19 @@ export function toggleMute() {
 export function playNote(lilyNote, duration = 1.2) {
     if (!isAudioInitialized || !pluckSynth) return;
 
-    const noteInfo = lilyToNote[lilyNote];
+    const noteInfo = lilyToMidi[lilyNote];
     if (!noteInfo) return;
 
+    // Apply transposition
+    const transposedMidi = noteInfo.midi + audioTransposition;
+
+    // Convert MIDI to note name for Tone.js
+    const noteNames = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const octave = Math.floor(transposedMidi / 12) - 1;
+    const noteName = noteNames[transposedMidi % 12] + octave;
+
     pluckSynth.set({ detune: noteInfo.detune });
-    pluckSynth.triggerAttack(noteInfo.note);
+    pluckSynth.triggerAttack(noteName);
 }
 
 // ============ DRONE ============

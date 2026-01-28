@@ -219,6 +219,8 @@ async function handleJoinRoom() {
 async function joinRoom(roomId, asHost) {
     const { doc, getDoc, onSnapshot } = window.firebaseFunctions;
 
+    console.log('[Ensemble] Attempting to join room:', roomId, 'asHost:', asHost);
+
     // Leave current room if any
     if (roomUnsubscribe) {
         roomUnsubscribe();
@@ -228,12 +230,15 @@ async function joinRoom(roomId, asHost) {
     try {
         // Verify room exists
         const roomRef = doc(window.firebaseDb, 'rooms', roomId);
+        console.log('[Ensemble] Fetching room document...');
         const roomSnap = await getDoc(roomRef);
 
         if (!roomSnap.exists()) {
+            console.error('[Ensemble] Room not found:', roomId);
             alert('Room not found');
             return;
         }
+        console.log('[Ensemble] Room found:', roomSnap.data());
 
         const roomData = roomSnap.data();
         activeRoom = { id: roomId, ...roomData };
@@ -259,13 +264,13 @@ async function joinRoom(roomId, asHost) {
             }
         });
 
-        // Clear join input
-        joinRoomId.value = '';
+        // Clear join select
+        joinRoomSelect.value = '';
 
         console.log(`[Ensemble] Joined room ${roomId} as ${isHost ? 'host' : 'member'}`);
     } catch (err) {
-        console.error('Error joining room:', err);
-        alert('Failed to join room. Please check the room ID.');
+        console.error('[Ensemble] Error joining room:', err.message, err);
+        alert(`Failed to join room: ${err.message}`);
     }
 }
 
