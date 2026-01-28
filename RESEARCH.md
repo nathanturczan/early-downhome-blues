@@ -3,13 +3,23 @@
 This document organizes research from Jeff Todd Titon's "Early Downhome Blues" and related ideas for extending the pitch network model.
 
 ## Table of Contents
-1. [Titon's Melodic Contour Classification](#titons-melodic-contour-classification)
+
+### Titon's Analysis
+1. [Melodic Contour Classification](#titons-melodic-contour-classification)
 2. [Phrase Structure](#phrase-structure)
 3. [Contour Frequency by Phrase](#contour-frequency-by-phrase)
 4. [Blues Families](#blues-families)
 5. [Pitch Complexes](#pitch-complexes)
-6. [Future Research Directions](#future-research-directions)
-7. [References](#references)
+
+### Contour Theory (Nathan Ho)
+6. [Hidden Markov Models](#hidden-markov-models-hmm)
+7. [Contour Comparison Matrix](#contour-comparison-matrix)
+8. [Eigenvalues of Transition Matrix](#eigenvalues-of-transition-matrix)
+9. [Papers to Read](#papers-to-read)
+
+### Project
+10. [References](#references)
+11. [Implementation Ideas](#implementation-ideas)
 
 ---
 
@@ -147,16 +157,17 @@ Titon organizes pitches into "complexes" based on their functional relationships
 
 ---
 
-## Future Research Directions
+## Contour Theory (Nathan Ho)
+
+Research directions suggested by Nathan Ho for extending the melodic analysis.
 
 ### Hidden Markov Models (HMM)
-*Suggested by Nathan Ho*
 
 Use contour as a **hidden state** with pitches as observations:
-- Hidden states: {Falling, Rising, Level} or the 15 specific contour cases
-- Observations: Individual pitches from the network
-- Transitions: Contour-to-contour probabilities (could be phrase-aware)
-- Emissions: Pitch probabilities given current contour
+- **Hidden states**: {Falling, Rising, Level} or the 15 specific contour cases (Ia, Ib, IIa, etc.)
+- **Observations**: Individual pitches from the network
+- **Transitions**: Contour-to-contour probabilities (could be phrase-aware using Figure 69 data)
+- **Emissions**: Pitch probabilities given current contour
 
 This would allow:
 - Generation that respects melodic shape at a higher level
@@ -164,7 +175,6 @@ This would allow:
 - Learning contour patterns from transcriptions
 
 ### Contour Comparison Matrix
-*Suggested by Nathan Ho*
 
 For any 5-note sequence, create a 5×5 matrix comparing all pairs of notes:
 
@@ -183,16 +193,17 @@ Where each cell contains:
 - `=` if same pitch
 
 This matrix captures:
-- Local contour (adjacent comparisons)
-- Global contour (distant comparisons)
-- Melodic intervals abstractly
+- **Local contour**: Adjacent comparisons (the diagonal next to main diagonal)
+- **Global contour**: Distant comparisons (corners of matrix)
+- **Abstract intervals**: Pitch relationships without specific frequencies
 
 ### Eigenvalues of Transition Matrix
 
 Analyze the eigenvalues of the current pitch transition matrix:
-- Largest eigenvalue indicates convergence rate
-- Eigenvectors reveal stable pitch distributions
-- Could identify "attractor" notes in the network
+- **Largest eigenvalue (=1)**: Confirms valid stochastic matrix
+- **Second largest eigenvalue**: Indicates convergence rate to stationary distribution
+- **Stationary distribution**: Eigenvector for eigenvalue 1 shows long-run pitch frequencies
+- **Other eigenvectors**: May reveal "attractor" notes or melodic clusters
 
 ### Papers to Read
 
