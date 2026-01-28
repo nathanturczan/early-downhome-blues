@@ -8,6 +8,7 @@ import {
     setChord, getChordNotes, getCurrentChord, getEffectiveOctave
 } from './audio.js';
 import { renderNotation } from './notation.js';
+import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
 
 // State
 let currentNote = "g'";
@@ -118,6 +119,39 @@ function updateDisplay() {
     renderNotation(notationContainer, currentNote, handleNoteClick);
 }
 
+// Handle ensemble room updates (for member mode)
+function handleEnsembleRoomUpdate(room, isHost) {
+    if (!room) {
+        // Left room - could reset state here if needed
+        console.log('[App] Left ensemble room');
+        return;
+    }
+
+    console.log('[App] Room update:', room, 'isHost:', isHost);
+
+    // If member (not host), react to room state changes
+    if (!isHost && room.scaleData) {
+        // TODO: Transpose blues scale based on room.scaleData
+        console.log('[App] Member received scale data:', room.scaleData);
+    }
+
+    if (!isHost && room.chordData) {
+        // TODO: React to chord changes from host
+        console.log('[App] Member received chord data:', room.chordData);
+    }
+}
+
+// Send pitch classes to ensemble room when note is played (host mode)
+async function sendPitchToEnsemble(pitchClasses) {
+    const { room, isHost } = getEnsembleState();
+    if (!room || !isHost) return;
+
+    await updateRoomState({
+        pitchClasses: pitchClasses,
+        lastPitchUpdate: Date.now()
+    });
+}
+
 // Random next note
 async function nextNote() {
     const { isInitialized } = getAudioState();
@@ -170,6 +204,9 @@ function init() {
 
     // MIDI
     initMidi();
+
+    // Ensemble
+    initEnsemble(handleEnsembleRoomUpdate);
 
     // Audio toggle
     audioToggleBtn.addEventListener('click', async () => {
