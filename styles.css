@@ -215,10 +215,41 @@ button:active {
     margin: 1px;
     background: rgba(145, 56, 47, 0.1);
     border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+}
+.history-note:hover:not(.current) {
+    background: rgba(145, 56, 47, 0.25);
 }
 .history-note.current {
     background: rgb(145, 56, 47);
     color: white;
+}
+.history-arrow {
+    flex-shrink: 0;
+    color: #999;
+    margin: 0 2px;
+}
+.history-back-btn {
+    background: none;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.8em;
+    cursor: pointer;
+    margin-left: 8px;
+    color: #666;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.history-back-btn:hover {
+    border-color: rgb(145, 56, 47);
+    color: rgb(145, 56, 47);
+}
+.history-back-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 .description-wrapper {
     flex: 1;
@@ -510,12 +541,97 @@ button:active {
 }
 .audio-icon {
     width: auto;
-    height: 10vw;
-    max-height: 70px;
+    height: 36px;
     display: block;
 }
 .audio-toggle.is-on .audio-slash {
     display: none;
+}
+
+/* Network Button */
+.network-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgb(145, 56, 47);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    width: auto;
+    height: 36px;
+}
+.network-btn:hover {
+    opacity: 1;
+}
+.network-btn svg {
+    height: 100%;
+    width: auto;
+}
+
+/* Network Modal */
+.network-modal-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+}
+.network-subtitle {
+    color: #888;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+}
+#network-graph {
+    width: 100%;
+    height: 500px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+}
+#network-graph svg {
+    width: 100%;
+    height: 100%;
+}
+.node-circle {
+    fill: rgb(247, 239, 215);
+    stroke: rgb(145, 56, 47);
+    stroke-width: 2;
+    cursor: pointer;
+    transition: fill 0.2s;
+}
+.node-circle:hover {
+    fill: rgba(145, 56, 47, 0.1);
+}
+.node-circle.current {
+    fill: rgb(145, 56, 47);
+}
+.node-label {
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    fill: rgb(54, 51, 50);
+}
+.node-label.current {
+    fill: white;
+}
+.node-staff {
+    stroke: #ccc;
+    stroke-width: 0.5;
+}
+.edge-line {
+    fill: none;
+    stroke: rgb(145, 56, 47);
+    stroke-width: 1.5;
+    stroke-opacity: 0.4;
+}
+.edge-line:hover {
+    stroke-opacity: 0.8;
+    stroke-width: 2;
+}
+.edge-arrow {
+    fill: rgb(145, 56, 47);
+    fill-opacity: 0.4;
 }
 
 /* Ensemble Button */
@@ -524,22 +640,21 @@ button:active {
     border: none;
     padding: 0;
     cursor: pointer;
-    color: rgb(67, 116, 96);
+    color: rgb(145, 56, 47);
     opacity: 0.6;
     transition: opacity 0.2s;
-    width: 32px;
-    height: 32px;
+    width: auto;
+    height: 36px;
 }
 .ensemble-btn:hover {
     opacity: 1;
 }
 .ensemble-btn.active {
     opacity: 1;
-    color: rgb(47, 96, 76);
 }
 .ensemble-btn svg {
-    width: 100%;
     height: 100%;
+    width: auto;
 }
 
 /* Info Button */
@@ -551,15 +666,15 @@ button:active {
     color: rgb(145, 56, 47);
     opacity: 0.6;
     transition: opacity 0.2s;
-    width: 32px;
-    height: 32px;
+    width: auto;
+    height: 36px;
 }
 .info-btn:hover {
     opacity: 1;
 }
 .info-btn svg {
-    width: 100%;
     height: 100%;
+    width: auto;
 }
 
 /* Modal */
@@ -931,10 +1046,12 @@ button:active {
         width: 60px;
     }
     .audio-icon {
-        height: 50px;
+        height: 40px;
     }
     .info-btn {
-        width: 40px;
+        height: 40px;
+    }
+    .network-btn, .ensemble-btn {
         height: 40px;
     }
     .history {
@@ -997,10 +1114,12 @@ button:active {
         font-size: 3vw;
     }
     .audio-icon {
-        height: 40px;
+        height: 28px;
     }
     .info-btn {
-        width: 28px;
+        height: 28px;
+    }
+    .network-btn, .ensemble-btn {
         height: 28px;
     }
     .main-content {
@@ -1055,13 +1174,17 @@ button:active {
         margin-bottom: 3px;
     }
     .history-notes {
-        white-space: nowrap;
-        overflow: hidden;
-        direction: rtl;
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
         font-size: 0.87em;
+        justify-content: flex-start;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 2px;
     }
-    .history-notes > * {
-        direction: ltr;
+    .history-notes::-webkit-scrollbar {
+        display: none;
     }
     .description-wrapper {
         display: none;

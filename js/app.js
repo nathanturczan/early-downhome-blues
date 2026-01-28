@@ -9,6 +9,8 @@ import {
 } from './audio.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
+import { initNetworkGraph, highlightNote } from './network-graph.js';
+import { analyzeNetwork } from './analysis.js';
 
 // State
 let currentNote = "g'";
@@ -80,6 +82,7 @@ async function handleNoteClick(lily) {
 
     playNote(currentNote);
     sendMidiNote(currentNote);
+    highlightNote(currentNote);
 
     const changed = inflectDrones(currentNote, inflectToggle.checked, latchToggle.checked);
     if (changed) {
@@ -97,8 +100,47 @@ function updateDisplay() {
     noteInfoEl.textContent = `${frequencies[currentNote].toFixed(2)} Hz`;
 
     historyEl.innerHTML = history
-        .map((n, i) => `<span class="history-note${i === history.length - 1 ? ' current' : ''}">${displayNames[n]}</span>`)
-        .join(' \u2192 ');
+        .map((n, i) => `<span class="history-note${i === history.length - 1 ? ' current' : ''}" data-index="${i}" data-note="${n}">${displayNames[n]}</span>`)
+        .join('<span class="history-arrow">\u2192</span>') +
+        `<button class="history-back-btn" ${history.length <= 1 ? 'disabled' : ''}>Back</button>`;
+
+    // Add click handlers to history notes
+    historyEl.querySelectorAll('.history-note').forEach(el => {
+        el.addEventListener('click', () => {
+            const note = el.dataset.note;
+            const index = parseInt(el.dataset.index);
+            // Truncate history to this point and go to this note
+            history = history.slice(0, index + 1);
+            currentNote = note;
+            playNote(currentNote);
+            sendMidiNote(currentNote);
+            highlightNote(currentNote);
+            updateDisplay();
+        });
+    });
+
+    // Back button handler
+    const backBtn = historyEl.querySelector('.history-back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            if (history.length > 1) {
+                history.pop();
+                currentNote = history[history.length - 1];
+                playNote(currentNote);
+                sendMidiNote(currentNote);
+                highlightNote(currentNote);
+                updateDisplay();
+            }
+        });
+    }
+
+    // Auto-scroll to show current note on mobile
+    setTimeout(() => {
+        const currentEl = historyEl.querySelector('.history-note.current');
+        if (currentEl) {
+            currentEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }, 0);
 
     const possible = adjacency[currentNote] || [];
 
@@ -173,6 +215,7 @@ async function nextNote() {
 
     playNote(currentNote);
     sendMidiNote(currentNote);
+    highlightNote(currentNote);
 
     const changed = inflectDrones(currentNote, inflectToggle.checked, latchToggle.checked);
     if (changed) {
@@ -207,6 +250,9 @@ function init() {
 
     // Ensemble
     initEnsemble(handleEnsembleRoomUpdate);
+
+    // Network Graph
+    initNetworkGraph(handleNoteClick);
 
     // Audio toggle
     audioToggleBtn.addEventListener('click', async () => {
@@ -295,6 +341,9 @@ function init() {
     // Initial render
     updateDroneLabels();
     updateDisplay();
+
+    // Run network analysis (logs to console)
+    analyzeNetwork();
 }
 
 // Start when DOM is ready

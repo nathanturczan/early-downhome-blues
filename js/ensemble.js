@@ -8,7 +8,7 @@ let roomUnsubscribe = null;
 // DOM elements (initialized in initEnsemble)
 let ensembleBtn, ensembleModal, modalClose, modalBackdrop;
 let signedOutSection, signedInSection, googleSignInBtn, signOutBtn, userDisplayName;
-let ensembleSelect, newEnsembleName, createEnsembleBtn, joinRoomId, joinEnsembleBtn;
+let ensembleSelect, newEnsembleName, createEnsembleBtn, joinRoomSelect;
 let activeEnsembleSection, activeEnsembleName, activeEnsembleRole, leaveEnsembleBtn;
 
 // Wait for Firebase to be ready
@@ -42,8 +42,7 @@ export async function initEnsemble(onRoomUpdate) {
     ensembleSelect = document.getElementById('ensemble-select');
     newEnsembleName = document.getElementById('new-ensemble-name');
     createEnsembleBtn = document.getElementById('create-ensemble-btn');
-    joinRoomId = document.getElementById('join-room-id');
-    joinEnsembleBtn = document.getElementById('join-ensemble-btn');
+    joinRoomSelect = document.getElementById('join-room-select');
 
     activeEnsembleSection = document.getElementById('active-ensemble');
     activeEnsembleName = document.getElementById('active-ensemble-name');
@@ -85,7 +84,7 @@ export async function initEnsemble(onRoomUpdate) {
     // Ensemble controls
     ensembleSelect.addEventListener('change', handleSelectRoom);
     createEnsembleBtn.addEventListener('click', handleCreateRoom);
-    joinEnsembleBtn.addEventListener('click', handleJoinRoom);
+    joinRoomSelect.addEventListener('change', handleJoinRoom);
     leaveEnsembleBtn.addEventListener('click', handleLeaveRoom);
 
     // Store callback for room updates
@@ -134,19 +133,35 @@ async function loadUserRooms() {
     const { collection, query, where, getDocs } = window.firebaseFunctions;
 
     try {
-        const q = query(
+        // Load user's hosted rooms
+        const hostedQuery = query(
             collection(window.firebaseDb, 'rooms'),
             where('hostId', '==', currentUser.uid)
         );
-        const snapshot = await getDocs(q);
+        const hostedSnapshot = await getDocs(hostedQuery);
 
         ensembleSelect.innerHTML = '<option value="">Select existing ensemble</option>';
-        snapshot.docs.forEach((docSnap) => {
+        hostedSnapshot.docs.forEach((docSnap) => {
             const data = docSnap.data();
             const option = document.createElement('option');
             option.value = docSnap.id;
             option.textContent = data.roomName;
             ensembleSelect.appendChild(option);
+        });
+
+        // Load all rooms for joining (excluding user's own)
+        const allRoomsSnapshot = await getDocs(collection(window.firebaseDb, 'rooms'));
+
+        joinRoomSelect.innerHTML = '<option value="">Select ensemble to join</option>';
+        allRoomsSnapshot.docs.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Exclude user's own rooms from join list
+            if (data.hostId !== currentUser.uid) {
+                const option = document.createElement('option');
+                option.value = docSnap.id;
+                option.textContent = `${data.roomName} (by ${data.hostName})`;
+                joinRoomSelect.appendChild(option);
+            }
         });
     } catch (err) {
         console.error('Error loading rooms:', err);
@@ -195,11 +210,8 @@ async function handleCreateRoom() {
 }
 
 async function handleJoinRoom() {
-    const roomId = joinRoomId.value.trim();
-    if (!roomId) {
-        alert('Please enter a room ID');
-        return;
-    }
+    const roomId = joinRoomSelect.value;
+    if (!roomId) return;
 
     await joinRoom(roomId, false);
 }
