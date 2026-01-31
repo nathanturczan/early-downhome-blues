@@ -66,8 +66,12 @@ export function playNote(lilyNote, duration = 1.2) {
     const noteInfo = lilyToNote[lilyNote];
     if (!noteInfo) return;
 
-    pluckSynth.set({ detune: noteInfo.detune });
-    pluckSynth.triggerAttack(noteInfo.note);
+    // PluckSynth doesn't support detune parameter, so calculate actual frequency
+    // Convert note name to frequency, then apply detune offset (cents)
+    const baseFreq = Tone.Frequency(noteInfo.note).toFrequency();
+    const frequency = baseFreq * Math.pow(2, noteInfo.detune / 1200);
+
+    pluckSynth.triggerAttack(frequency);
 }
 
 // ============ DRONE ============
