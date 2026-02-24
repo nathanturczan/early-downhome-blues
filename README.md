@@ -11,8 +11,8 @@ An interactive web app for exploring the pitch network from Jeff Todd Titon's *E
 This tool lets you walk through Titon's pitch transition network, which maps how melodies move between notes in early downhome blues. The network includes:
 
 - **Quarter-tones**: The "blue third" (E quarter-flat) between E♭ and E
-- **Sink notes**: C serves as a resolution point with no outgoing paths
-- **Hub notes**: G connects to the most destinations
+- **Sink note**: C4 is the only resolution point with no outgoing paths
+- **Hub note**: G4 connects to the most destinations (6 notes)
 
 ## Features
 

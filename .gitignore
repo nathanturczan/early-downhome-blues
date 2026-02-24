@@ -1,0 +1,8 @@
+# Local notes and logs
+notes/
+
+# OS files
+.DS_Store
+
+# Photos (temporary)
+PXL_*.jpg

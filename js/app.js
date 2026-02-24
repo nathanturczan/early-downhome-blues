@@ -97,7 +97,11 @@ function updateDisplay() {
     noteInfoEl.textContent = `${frequencies[currentNote].toFixed(2)} Hz`;
 
     historyEl.innerHTML = history
-        .map((n, i) => `<span class="history-note${i === history.length - 1 ? ' current' : ''}">${displayNames[n]}</span>`)
+        .map((n, i) => {
+            const opacity = 0.3 + 0.7 * (i / (history.length - 1 || 1));
+            const isCurrent = i === history.length - 1;
+            return `<span class="history-note${isCurrent ? ' current' : ''}" style="opacity: ${opacity}">${displayNames[n]}</span>`;
+        })
         .join(' \u2192 ');
 
     const possible = adjacency[currentNote] || [];
