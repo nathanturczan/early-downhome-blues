@@ -98,7 +98,7 @@ function updateDisplay() {
 
     historyEl.innerHTML = history
         .map((n, i) => {
-            const opacity = 0.3 + 0.7 * (i / (history.length - 1 || 1));
+            const opacity = i === 0 ? 0.1 : i === 1 ? 0.5 : i === 2 ? 0.7 : 1;
             const isCurrent = i === history.length - 1;
             return `<span class="history-note${isCurrent ? ' current' : ''}" style="opacity: ${opacity}">${displayNames[n]}</span>`;
         })
