@@ -206,6 +206,10 @@ button:active {
     font-family: 'Times New Roman', serif;
     font-size: 0.9em;
     line-height: 1.4;
+    display: flex;
+    justify-content: flex-end;
+    overflow: hidden;
+    white-space: nowrap;
 }
 .history-note {
     display: inline-block;
@@ -1053,13 +1057,7 @@ button:active {
         margin-bottom: 3px;
     }
     .history-notes {
-        white-space: nowrap;
-        overflow: hidden;
-        direction: rtl;
         font-size: 0.87em;
-    }
-    .history-notes > * {
-        direction: ltr;
     }
     .description-wrapper {
         display: none;
