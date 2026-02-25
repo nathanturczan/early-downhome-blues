@@ -206,8 +206,6 @@ button:active {
     font-family: 'Times New Roman', serif;
     font-size: 0.9em;
     line-height: 1.4;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 15%, black 35%);
-    mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 15%, black 35%);
 }
 .history-note {
     display: inline-block;
