@@ -206,10 +206,14 @@ button:active {
     font-family: 'Times New Roman', serif;
     font-size: 0.9em;
     line-height: 1.4;
-    display: flex;
-    justify-content: flex-end;
     overflow: hidden;
     white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+}
+.history-inner {
+    direction: ltr;
+    display: inline-block;
 }
 .history-note {
     display: inline-block;
