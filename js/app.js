@@ -13,6 +13,7 @@ import { selectWeightedNote, getRestartNote, recordNote, freezePhrase, setPhrasi
 import { evaluateClosure, buildClosureContext } from './rules/closure.js';
 import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits, setPosition } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
+import { initScoreHistory } from './scoreHistory/index.js';
 import './browserTest.js'; // Load browser test harness
 
 // Phase 2 feature flag - set to true to enable stanza tracking
@@ -21,8 +22,13 @@ const PHASE_2_ENABLED = true;
 // State
 let currentNote = "g'";
 // History now stores objects with note and position for rewinding
-let history = [{ note: "g'", position: null }];
+// Initial note is seeded but hidden from UI (maintains selection parity with test runner)
+let history = [{ note: "g'", position: null, hidden: true }];
+// Complete session history for score rendering (never truncated)
+let fullHistory = [];
 let stepsInPhrase = 0; // Phase 1.5: Track steps in current phrase (fallback when Phase 2 disabled)
+// Track position of last played note (for stanza indicator sync)
+let lastPlayedPosition = null;
 
 // DOM elements
 const currentNoteEl = document.getElementById('currentNote');
@@ -64,7 +70,9 @@ function updateAutoHarmony() {
 function updateStanzaIndicator() {
     if (!PHASE_2_ENABLED || !stanzaIndicator) return;
 
-    const position = getPosition();
+    // Use lastPlayedPosition if available (syncs indicator with last played note)
+    // Fall back to getPosition() for initial state
+    const position = lastPlayedPosition || getPosition();
 
     // Update stanza number
     const stanzaNum = document.getElementById('stanzaNumber');
@@ -143,10 +151,14 @@ async function handleNoteClick(lily) {
         const position = getPosition();
         // Store note with position snapshot for history rewind
         history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
+        // Also store in full history for score rendering
+        fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza });
+        lastPlayedPosition = { ...position }; // Sync stanza indicator with this note
         recordNote(position.phrase, currentNote);
         advanceStep();
     } else {
         history.push({ note: currentNote, position: null });
+        fullHistory.push({ note: currentNote, position: null, stanza: null });
         stepsInPhrase++;
     }
 
@@ -211,29 +223,34 @@ function updateDisplay() {
     const phrasingEnabled = phrasingToggle && phrasingToggle.checked;
     const phraseOrder = ['a', 'b', 'c', 'd', 'e', 'f'];
 
+    // Filter out hidden entries for display (but keep original indices for click handling)
+    const visibleHistory = history
+        .map((entry, i) => ({ entry, originalIndex: i }))
+        .filter(({ entry }) => !entry.hidden);
+
     // Check if we should show phrase groups (phrasing enabled and have position data)
-    const hasPositionData = history.some(e => e.position && typeof e.position.phraseIndex === 'number');
+    const hasPositionData = visibleHistory.some(({ entry }) => entry.position && typeof entry.position.phraseIndex === 'number');
 
     if (phrasingEnabled && hasPositionData) {
         // Group notes by phrase
         const groups = [];
         let currentGroup = null;
 
-        history.forEach((entry, i) => {
+        visibleHistory.forEach(({ entry, originalIndex }) => {
             const phraseIndex = entry.position?.phraseIndex ?? null;
 
             if (phraseIndex !== null && (currentGroup === null || currentGroup.phraseIndex !== phraseIndex)) {
                 // Start a new group
                 if (currentGroup) groups.push(currentGroup);
-                currentGroup = { phraseIndex, entries: [{ entry, index: i }] };
+                currentGroup = { phraseIndex, entries: [{ entry, index: originalIndex }] };
             } else if (currentGroup) {
-                currentGroup.entries.push({ entry, index: i });
+                currentGroup.entries.push({ entry, index: originalIndex });
             } else {
                 // No position data yet, create ungrouped
                 if (!groups.length || groups[groups.length - 1].phraseIndex !== null) {
-                    groups.push({ phraseIndex: null, entries: [{ entry, index: i }] });
+                    groups.push({ phraseIndex: null, entries: [{ entry, index: originalIndex }] });
                 } else {
-                    groups[groups.length - 1].entries.push({ entry, index: i });
+                    groups[groups.length - 1].entries.push({ entry, index: originalIndex });
                 }
             }
         });
@@ -244,9 +261,11 @@ function updateDisplay() {
             const notesHtml = group.entries.map(({ entry, index }, ni) => {
                 const note = entry.note;
                 let opacity = 1;
-                if (history.length === 10 && index === 0) opacity = 0.1;
-                else if (history.length >= 9 && index === history.length - 9) opacity = 0.5;
-                else if (history.length >= 8 && index === history.length - 8) opacity = 0.7;
+                const visibleLen = visibleHistory.length;
+                const visibleIdx = visibleHistory.findIndex(v => v.originalIndex === index);
+                if (visibleLen === 10 && visibleIdx === 0) opacity = 0.1;
+                else if (visibleLen >= 9 && visibleIdx === visibleLen - 9) opacity = 0.5;
+                else if (visibleLen >= 8 && visibleIdx === visibleLen - 8) opacity = 0.7;
                 const isCurrent = index === history.length - 1;
                 const arrow = ni < group.entries.length - 1 ? '<span class="phrase-arrow">→</span>' : '';
                 return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${index}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>${arrow}`;
@@ -264,15 +283,16 @@ function updateDisplay() {
         historyEl.innerHTML = `<span class="history-inner with-phrases">${groupsHtml}</span>`;
     } else {
         // Simple display without phrase grouping
-        const historyContent = history
-            .map((entry, i) => {
+        const historyContent = visibleHistory
+            .map(({ entry, originalIndex }, i) => {
                 const note = entry.note;
                 let opacity = 1;
-                if (history.length === 10 && i === 0) opacity = 0.1;
-                else if (history.length >= 9 && i === history.length - 9) opacity = 0.5;
-                else if (history.length >= 8 && i === history.length - 8) opacity = 0.7;
-                const isCurrent = i === history.length - 1;
-                return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${i}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>`;
+                const visibleLen = visibleHistory.length;
+                if (visibleLen === 10 && i === 0) opacity = 0.1;
+                else if (visibleLen >= 9 && i === visibleLen - 9) opacity = 0.5;
+                else if (visibleLen >= 8 && i === visibleLen - 8) opacity = 0.7;
+                const isCurrent = originalIndex === history.length - 1;
+                return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${originalIndex}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>`;
             })
             .join(' \u2192 ');
         historyEl.innerHTML = `<span class="history-inner">${historyContent}</span>`;
@@ -363,6 +383,9 @@ async function nextNote() {
             currentNote = getRestartNote(newPosition);
             // Store with new position for history rewind
             history.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase } });
+            // Also store in full history for score rendering
+            fullHistory.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase }, stanza: newPosition.stanza });
+            lastPlayedPosition = { ...newPosition }; // Sync stanza indicator
             recordNote(newPosition.phrase, currentNote);
             console.log(`📍 Phrase ${position.phrase} ended (sink) → starting phrase ${newPosition.phrase}`);
 
@@ -378,6 +401,9 @@ async function nextNote() {
             currentNote = result.note;
             // Store with position for history rewind
             history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
+            // Also store in full history for score rendering
+            fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza });
+            lastPlayedPosition = { ...position }; // Sync stanza indicator with this note
             recordNote(position.phrase, currentNote);
 
             // Evaluate closure probability for phrase ending
@@ -417,6 +443,7 @@ async function nextNote() {
         if (possible.length === 0) {
             currentNote = getRestartNote();
             history.push({ note: currentNote, position: null });
+            fullHistory.push({ note: currentNote, position: null, stanza: null });
             stepsInPhrase = 0;
             console.log('📍 New phrase started (sink reached)');
         } else {
@@ -424,6 +451,7 @@ async function nextNote() {
             const result = selectWeightedNote(currentNote, historyNotes, possible, stepsInPhrase);
             currentNote = result.note;
             history.push({ note: currentNote, position: null });
+            fullHistory.push({ note: currentNote, position: null, stanza: null });
             stepsInPhrase++;
 
             if (result.shouldRestart) {
@@ -466,6 +494,26 @@ function init() {
     });
     modalBackdrop.addEventListener('click', () => {
         infoModal.classList.add('hidden');
+    });
+
+    // Score modal
+    const scoreBtn = document.getElementById('score-btn');
+    const scoreModal = document.getElementById('score-modal');
+    const scoreModalClose = scoreModal.querySelector('.modal-close');
+    const scoreModalBackdrop = scoreModal.querySelector('.modal-backdrop');
+    const scoreHistory = initScoreHistory(scoreModal);
+
+    scoreBtn.addEventListener('click', () => {
+        // Filter out hidden entries and render
+        const visibleHistory = fullHistory.filter(h => !h.hidden);
+        scoreHistory.render(visibleHistory);
+        scoreModal.classList.remove('hidden');
+    });
+    scoreModalClose.addEventListener('click', () => {
+        scoreModal.classList.add('hidden');
+    });
+    scoreModalBackdrop.addEventListener('click', () => {
+        scoreModal.classList.add('hidden');
     });
 
     // MIDI

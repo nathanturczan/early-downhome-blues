@@ -24,25 +24,30 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    overflow: hidden;  /* Prevent header from overflowing viewport */
 }
 .header-icon {
-    height: 14vw;
-    width: 14vw;
-    max-height: 80px;
-    max-width: 80px;
+    height: clamp(50px, 14vw, 80px);
+    width: clamp(50px, 14vw, 80px);
     border-radius: 8px;
     object-fit: cover;
+    flex-shrink: 0;
 }
 .header-text {
-    flex: 1;
+    flex: 1 1 0;  /* grow, shrink, basis=0 */
+    min-width: 0;
+    max-width: calc(100% - 220px);  /* Leave room for icon + buttons */
+    overflow: hidden;
 }
 h1 {
     font-family: "willow-std", serif;
     font-weight: 400;
     font-style: normal;
-    font-size: 12vw;
+    font-size: clamp(2em, 8vw, 4em);  /* Responsive with min/max bounds */
     line-height: 0.85;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .title-early-downhome {
     color: rgb(145, 56, 47);
@@ -54,7 +59,7 @@ h1 {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-weight: 400;
     color: rgb(34, 31, 32);
-    font-size: 2.5vw;
+    font-size: clamp(0.9em, 2.5vw, 1.2em);
 }
 .main-content {
     flex: 1;
@@ -648,6 +653,7 @@ button:active {
     color: rgb(145, 56, 47);
     opacity: 0.6;
     transition: opacity 0.2s;
+    flex-shrink: 0;
 }
 .audio-toggle:hover {
     opacity: 1;
@@ -677,6 +683,7 @@ button:active {
     transition: opacity 0.2s;
     width: 32px;
     height: 32px;
+    flex-shrink: 0;
 }
 .ensemble-btn:hover {
     opacity: 1;
@@ -686,6 +693,27 @@ button:active {
     color: rgb(47, 96, 76);
 }
 .ensemble-btn svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Score Button */
+.score-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: rgb(145, 56, 47);
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+.score-btn:hover {
+    opacity: 1;
+}
+.score-btn svg {
     width: 100%;
     height: 100%;
 }
@@ -701,6 +729,7 @@ button:active {
     transition: opacity 0.2s;
     width: 32px;
     height: 32px;
+    flex-shrink: 0;
 }
 .info-btn:hover {
     opacity: 1;
@@ -786,6 +815,51 @@ button:active {
 }
 .modal-close:hover {
     color: rgb(145, 56, 47);
+}
+
+/* Score Modal */
+.score-modal-content {
+    max-width: 90vw;
+    width: 900px;
+    max-height: 85vh;
+}
+.score-container {
+    background: white;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 60vh;
+    border: 1px solid #ddd;
+}
+#score-canvas {
+    min-height: 200px;
+}
+.score-empty {
+    color: #888;
+    font-style: italic;
+    text-align: center;
+    padding: 40px;
+}
+.export-panel {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.export-btn {
+    padding: 10px 20px;
+    font-size: 0.9em;
+    background: rgb(54, 51, 50);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.export-btn:hover {
+    background: rgb(74, 71, 70);
 }
 
 /* Ensemble Modal Styles */
@@ -1059,21 +1133,23 @@ button:active {
         padding: 15px 20px;
     }
     h1 {
-        font-size: 4em;
+        font-size: 2.5em;  /* Smaller on desktop to fit buttons */
     }
     .subtitle {
-        font-size: 1.2em;
+        font-size: 1em;
     }
     .header-icon {
         height: 60px;
         width: 60px;
     }
     .audio-icon {
-        height: 50px;
-    }
-    .info-btn {
-        width: 40px;
         height: 40px;
+    }
+    .ensemble-btn,
+    .score-btn,
+    .info-btn {
+        width: 36px;
+        height: 36px;
     }
     .history {
         width: 920px;
@@ -1137,7 +1213,8 @@ button:active {
     .audio-icon {
         height: 40px;
     }
-    .info-btn {
+    .info-btn,
+    .score-btn {
         width: 28px;
         height: 28px;
     }
@@ -1233,5 +1310,20 @@ button:active {
     }
     .midi-toggle {
         display: none;
+    }
+    /* Score modal mobile adjustments */
+    .score-modal-content {
+        width: 95vw;
+        max-height: 90vh;
+        padding: 20px;
+    }
+    .score-container {
+        max-height: 50vh;
+    }
+    .export-panel {
+        flex-direction: column;
+    }
+    .export-btn {
+        width: 100%;
     }
 }

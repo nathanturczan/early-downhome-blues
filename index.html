@@ -58,6 +58,17 @@
                 <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" stroke-width="1.5"/>
             </svg>
         </button>
+        <button id="score-btn" class="score-btn" type="button" aria-label="View Score">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" stroke-width="1"/>
+                <line x1="4" y1="10" x2="20" y2="10" stroke="currentColor" stroke-width="1"/>
+                <line x1="4" y1="13" x2="20" y2="13" stroke="currentColor" stroke-width="1"/>
+                <line x1="4" y1="16" x2="20" y2="16" stroke="currentColor" stroke-width="1"/>
+                <line x1="4" y1="19" x2="20" y2="19" stroke="currentColor" stroke-width="1"/>
+                <ellipse cx="8" cy="8.5" rx="2.5" ry="2" fill="currentColor"/>
+                <ellipse cx="14" cy="14.5" rx="2.5" ry="2" fill="currentColor"/>
+            </svg>
+        </button>
         <button id="info-btn" class="info-btn" type="button" aria-label="Information">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                 <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -334,6 +345,23 @@
 
             <h3>Reference</h3>
             <p>Titon, Jeff Todd. <em>Early Downhome Blues: A Musical and Cultural Analysis</em>. 2nd ed., University of North Carolina Press, 1994.</p>
+        </div>
+    </div>
+
+    <!-- Score History Modal -->
+    <div id="score-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content score-modal-content">
+            <button class="modal-close" aria-label="Close">&times;</button>
+            <h2>Score</h2>
+            <div class="score-container">
+                <div id="score-canvas"></div>
+            </div>
+            <div class="export-panel">
+                <button class="export-btn" data-format="lilypond">Export LilyPond</button>
+                <button class="export-btn" data-format="musicxml">Export MusicXML</button>
+                <button class="export-btn" data-format="pdf">Export PDF</button>
+            </div>
         </div>
     </div>
 
