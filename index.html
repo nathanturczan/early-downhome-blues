@@ -103,10 +103,10 @@
                 </div>
             </div>
 
-            <!-- Drone Section -->
+            <!-- Harmony Section -->
             <div class="drone-section">
             <div class="drone-header">
-                <div class="drone-title">Drone</div>
+                <div class="drone-title">Harmony</div>
                 <div class="inflect-toggles">
                     <div class="inflect-toggle">
                         <input type="checkbox" id="inflectToggle">
@@ -118,48 +118,10 @@
                     </div>
                 </div>
             </div>
-            <div class="drone-rows">
-                <div class="drone-row">
-                    <div class="drone-label">7th</div>
-                    <div class="drone-buttons">
-                        <button class="drone-btn" data-note="Bb2">B♭2</button>
-                        <button class="drone-btn" data-note="Bb3">B♭3</button>
-                        <button class="drone-btn" data-note="Bb4">B♭4</button>
-                    </div>
-                </div>
-                <div class="drone-row">
-                    <div class="drone-label">5th</div>
-                    <div class="drone-buttons">
-                        <button class="drone-btn" data-note="G2">G2</button>
-                        <button class="drone-btn" data-note="G3">G3</button>
-                        <button class="drone-btn" data-note="G4">G4</button>
-                    </div>
-                </div>
-                <div class="drone-row">
-                    <div class="drone-label">3rd</div>
-                    <div class="drone-buttons">
-                        <button class="drone-btn" data-note="Eb2">E♭2</button>
-                        <button class="drone-btn" data-note="Eb3">E♭3</button>
-                        <button class="drone-btn" data-note="Eb4">E♭4</button>
-                    </div>
-                </div>
-                <div class="drone-row">
-                    <div class="drone-label">Root</div>
-                    <div class="drone-buttons">
-                        <button class="drone-btn" data-note="C2">C2</button>
-                        <button class="drone-btn" data-note="C3">C3</button>
-                        <button class="drone-btn" data-note="C4">C4</button>
-                        <button class="drone-btn" data-note="C5">C5</button>
-                    </div>
-                </div>
-                <div class="drone-row chord-row">
-                    <div class="drone-label">Chord</div>
-                    <div class="drone-buttons chord-buttons">
-                        <button class="chord-btn active" data-chord="I">I</button>
-                        <button class="chord-btn" data-chord="IV">IV</button>
-                        <button class="chord-btn" data-chord="V">V</button>
-                    </div>
-                </div>
+            <div class="harmony-buttons">
+                <button class="chord-btn" data-chord="I">I</button>
+                <button class="chord-btn" data-chord="IV">IV</button>
+                <button class="chord-btn" data-chord="V">V</button>
             </div>
         </div>
         </div>
@@ -191,10 +153,7 @@
                         <label>Type</label>
                         <select class="midi-type">
                             <option value="melody" selected>Melody</option>
-                            <option value="root">Drone Root</option>
-                            <option value="third">Drone 3rd</option>
-                            <option value="fifth">Drone 5th</option>
-                            <option value="seventh">Drone 7th</option>
+                            <option value="drone">Drone</option>
                         </select>
                     </div>
                     <div class="midi-select">
@@ -321,7 +280,7 @@
             <ul>
                 <li><strong>Click notes</strong> on the staff or in the Paths box to navigate</li>
                 <li><strong>Random</strong> picks a random valid next note</li>
-                <li><strong>Drone</strong> toggles sustained notes; check "Inflect" to bend them with the melody</li>
+                <li><strong>I / IV / V</strong> play chord drones; click again to stop. Check "Inflect" to bend pitches with the melody</li>
                 <li><strong>MIDI Output</strong> sends notes to external instruments (set pitch bend to &plusmn;2 semitones)</li>
             </ul>
 

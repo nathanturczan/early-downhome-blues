@@ -1,4 +1,5 @@
-// MIDI module - Multiple outputs for melody and drone voices
+// MIDI module - Melody and Harmony outputs
+// Simplified from per-degree drone to single chord output
 
 // MIDI note mappings with pitch bend for quarter-tones
 export const midiNotes = {
@@ -12,25 +13,35 @@ export const midiNotes = {
     "eeh''": { note: 75, bend: 1024 }, "e''": { note: 76, bend: 0 }
 };
 
-// Pitch class to MIDI note number (octave 0)
-const pitchClassToMidi = {
-    'C': 0, 'D': 2, 'Eb': 3, 'Eqf': 3, 'E': 4, 'F': 5, 'Gb': 6,
-    'G': 7, 'Ab': 8, 'A': 9, 'Bb': 10, 'B': 11
-};
+// Note name to MIDI conversion
+const noteRegex = /^([A-G])([b#qf]*)(\d)$/;
 
-// Pitch bend for quarter-tones
-const pitchClassBend = {
-    'C': 0, 'D': 0, 'Eb': 0, 'Eqf': 1024, 'E': 0, 'F': 0, 'Gb': 0,
-    'G': 0, 'Ab': 0, 'A': 0, 'Bb': 0, 'B': 0
-};
+function noteStringToMidiNumber(noteStr) {
+    const match = noteStr.match(noteRegex);
+    if (!match) return 60; // fallback C4
+
+    const [, letter, accidental, octaveStr] = match;
+    const octave = parseInt(octaveStr);
+
+    const letterSemitones = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    let semitone = letterSemitones[letter];
+
+    // Apply accidentals (quarter-tones handled via pitch bend separately)
+    if (accidental === 'b') semitone -= 1;
+    else if (accidental === '#') semitone += 1;
+    // qf not adjusted here - needs pitch bend
+
+    return (octave + 1) * 12 + semitone;
+}
+
+function hasQuarterTone(noteStr) {
+    return noteStr.includes('qf');
+}
 
 let midiAccess = null;
 let midiOutputDevices = [];
-let midiRows = []; // Array of { type, portId, channel, lastNote }
+let midiRows = []; // Array of { type, portId, channel, lastNote/lastNotes }
 let rowIdCounter = 1;
-
-// Auto-select types for new rows
-const droneTypeOrder = ['root', 'third', 'fifth', 'seventh'];
 
 export async function initMidi() {
     if (!navigator.requestMIDIAccess) return;
@@ -57,7 +68,8 @@ export async function initMidi() {
                 type: 'melody',
                 portId: '',
                 channel: 0,
-                lastNote: null
+                lastNote: null,
+                lastNotes: null // For drone chords
             });
             setupRowListeners(firstRow, 0);
         }
@@ -112,15 +124,9 @@ function addMidiRow() {
     const container = document.getElementById('midiOutputs');
     const lastRow = midiRows[midiRows.length - 1];
 
-    // Determine next type
-    let nextType = 'root';
-    const usedDroneTypes = midiRows.filter(r => r.type !== 'melody').map(r => r.type);
-    for (const t of droneTypeOrder) {
-        if (!usedDroneTypes.includes(t)) {
-            nextType = t;
-            break;
-        }
-    }
+    // Determine next type - alternate between melody and drone
+    let nextType = 'drone';
+    if (lastRow?.type === 'drone') nextType = 'melody';
 
     // Determine next channel (increment from last)
     const nextChannel = Math.min((lastRow?.channel ?? -1) + 1, 15);
@@ -136,11 +142,8 @@ function addMidiRow() {
         <div class="midi-select">
             <label>Type</label>
             <select class="midi-type">
-                <option value="melody">Melody</option>
-                <option value="root"${nextType === 'root' ? ' selected' : ''}>Drone Root</option>
-                <option value="third"${nextType === 'third' ? ' selected' : ''}>Drone 3rd</option>
-                <option value="fifth"${nextType === 'fifth' ? ' selected' : ''}>Drone 5th</option>
-                <option value="seventh"${nextType === 'seventh' ? ' selected' : ''}>Drone 7th</option>
+                <option value="melody"${nextType === 'melody' ? ' selected' : ''}>Melody</option>
+                <option value="drone"${nextType === 'drone' ? ' selected' : ''}>Drone</option>
             </select>
         </div>
         <div class="midi-select">
@@ -180,7 +183,8 @@ function addMidiRow() {
         type: nextType,
         portId: lastRow?.portId || '',
         channel: nextChannel,
-        lastNote: null
+        lastNote: null,
+        lastNotes: null
     });
 
     setupRowListeners(rowEl, rowIndex);
@@ -248,87 +252,48 @@ export function sendMidiNote(lilyNote, duration = 0.5) {
     });
 }
 
-// Send drone note to appropriate MIDI outputs
-// degree: 'root', 'third', 'fifth', 'seventh'
-// pitchClass: 'C', 'E', 'Eb', 'Eqf', etc.
-// octave: 2, 3, 4, 5
-// isOn: true to start, false to stop
-export function sendDroneMidi(degree, pitchClass, octave, isOn) {
-    console.log(`[MIDI] sendDroneMidi: ${degree} ${pitchClass}${octave} isOn=${isOn}`);
+/**
+ * Send harmony MIDI - full chord to drone outputs
+ * @param {string[]} notes - Array of note strings like ['C2', 'G3', 'E4', 'Bb4']
+ * @param {boolean} isOn - true to start chord, false to stop
+ */
+export function sendHarmonyMidi(notes, isOn) {
+    console.log(`[MIDI] sendHarmonyMidi: ${notes.join(', ')} isOn=${isOn}`);
 
     midiRows.forEach((row, index) => {
-        if (row.type !== degree) return;
+        if (row.type !== 'drone') return;
 
         const output = getOutputDevice(row.portId);
         if (!output) {
-            console.log(`[MIDI] No output device for row ${index}`);
+            console.log(`[MIDI] No output device for drone row ${index}`);
             return;
         }
 
         const channel = row.channel;
-        const baseMidi = pitchClassToMidi[pitchClass];
-        if (baseMidi === undefined) {
-            console.log(`[MIDI] Unknown pitch class: ${pitchClass}`);
-            return;
+
+        // Turn off previous notes
+        if (row.lastNotes && row.lastNotes.length > 0) {
+            row.lastNotes.forEach(n => {
+                output.send([0x80 | channel, n, 0]);
+            });
         }
-
-        const noteNum = baseMidi + (octave + 1) * 12; // MIDI octave offset
-        const bend = pitchClassBend[pitchClass] || 0;
-        const bendValue = 8192 + bend;
-
-        console.log(`[MIDI] Sending to ch${channel + 1}: note ${noteNum}, bend ${bend}, isOn=${isOn}`);
 
         if (isOn) {
-            // Note off for previous note if any
-            if (row.lastNote !== null && row.lastNote !== noteNum) {
-                output.send([0x80 | channel, row.lastNote, 0]);
-            }
-            // Pitch bend then note on
-            output.send([0xE0 | channel, bendValue & 0x7F, (bendValue >> 7) & 0x7F]);
-            output.send([0x90 | channel, noteNum, 80]);
-            midiRows[index].lastNote = noteNum;
+            // Convert note strings to MIDI numbers
+            const midiNoteNumbers = notes.map(noteStr => noteStringToMidiNumber(noteStr));
+
+            // Reset pitch bend (no quarter-tones in chord voicings currently)
+            output.send([0xE0 | channel, 0x00, 0x40]); // Center pitch bend
+
+            // Send all notes
+            midiNoteNumbers.forEach(n => {
+                output.send([0x90 | channel, n, 80]);
+            });
+
+            midiRows[index].lastNotes = midiNoteNumbers;
+            console.log(`[MIDI] Sent chord: ${midiNoteNumbers.join(', ')} on ch${channel + 1}`);
         } else {
-            // Note off
-            if (row.lastNote !== null) {
-                output.send([0x80 | channel, row.lastNote, 0]);
-                midiRows[index].lastNote = null;
-            }
-        }
-    });
-}
-
-// Update drone MIDI when pitch changes (for inflection)
-// Always sends the note - use this when drone is known to be active
-export function updateDroneMidi(degree, pitchClass, octave) {
-    midiRows.forEach((row, index) => {
-        if (row.type !== degree) return;
-
-        const output = getOutputDevice(row.portId);
-        if (!output) return;
-
-        const channel = row.channel;
-        const baseMidi = pitchClassToMidi[pitchClass];
-        if (baseMidi === undefined) {
-            console.log(`[MIDI] Unknown pitch class: ${pitchClass}`);
-            return;
-        }
-
-        const newNoteNum = baseMidi + (octave + 1) * 12;
-        const bend = pitchClassBend[pitchClass] || 0;
-        const bendValue = 8192 + bend;
-
-        console.log(`[MIDI] updateDroneMidi: ${degree} -> ${pitchClass}${octave} (note ${newNoteNum}, bend ${bend})`);
-
-        // Note off old if playing
-        if (row.lastNote !== null && row.lastNote !== newNoteNum) {
-            output.send([0x80 | channel, row.lastNote, 0]);
-        }
-
-        // Only send note-on if pitch actually changed or wasn't playing
-        if (row.lastNote !== newNoteNum) {
-            output.send([0xE0 | channel, bendValue & 0x7F, (bendValue >> 7) & 0x7F]);
-            output.send([0x90 | channel, newNoteNum, 80]);
-            midiRows[index].lastNote = newNoteNum;
+            midiRows[index].lastNotes = null;
         }
     });
 }

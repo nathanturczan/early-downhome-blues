@@ -1,12 +1,11 @@
 // Main application logic
 import { adjacency, frequencies, displayNames } from './network.js';
-import { initMidi, sendMidiNote, sendDroneMidi, updateDroneMidi } from './midi.js';
+import { initMidi, sendMidiNote, sendHarmonyMidi } from './midi.js';
+import { initAudio, getAudioState, toggleMute, playNote } from './audio.js';
 import {
-    initAudio, getAudioState, toggleMute, playNote,
-    toggleDroneNote, inflectDrones, resetInflection,
-    getCurrentInflection, droneDegrees, pitchDisplayNames,
-    setChord, getChordNotes, getCurrentChord, getEffectiveOctave
-} from './audio.js';
+    initHarmony, setHarmonyChord, toggleHarmony, inflectHarmony,
+    resetInflection, setHarmonyChangeCallback, isHarmonyPlaying, getCurrentChord
+} from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
 
@@ -26,34 +25,6 @@ const latchToggle = document.getElementById('latchToggle');
 const latchLabel = document.querySelector('label[for="latchToggle"]');
 const notationContainer = document.getElementById('notation');
 
-// Update drone button labels based on current chord and inflection
-function updateDroneLabels() {
-    const inflection = getCurrentInflection();
-    document.querySelectorAll('.drone-btn').forEach(btn => {
-        const note = btn.dataset.note;
-        const info = droneDegrees[note];
-        if (!info) return;
-
-        const pitchClass = inflection[info.degree];
-        const displayOctave = getEffectiveOctave(info.degree, info.octave);
-        btn.innerHTML = pitchDisplayNames[pitchClass] + displayOctave;
-    });
-}
-
-// Update MIDI for all active drones (when chord or inflection changes)
-function updateAllDroneMidi() {
-    const inflection = getCurrentInflection();
-    document.querySelectorAll('.drone-btn.active').forEach(btn => {
-        const note = btn.dataset.note;
-        const info = droneDegrees[note];
-        if (!info) return;
-
-        const pitchClass = inflection[info.degree];
-        const effectiveOctave = getEffectiveOctave(info.degree, info.octave);
-        updateDroneMidi(info.degree, pitchClass, effectiveOctave);
-    });
-}
-
 // Update audio toggle button visual state
 function updateAudioToggleUI() {
     const { isInitialized, isMuted } = getAudioState();
@@ -64,6 +35,17 @@ function updateAudioToggleUI() {
         audioToggleBtn.classList.remove('is-on');
         audioToggleBtn.classList.add('is-off');
     }
+}
+
+// Update chord button active states
+function updateChordButtonUI() {
+    const currentChord = getCurrentChord();
+    const isPlaying = isHarmonyPlaying();
+
+    document.querySelectorAll('.chord-btn').forEach(btn => {
+        const isThisChord = btn.dataset.chord === currentChord;
+        btn.classList.toggle('active', isThisChord && isPlaying);
+    });
 }
 
 // Handle note selection
@@ -81,13 +63,12 @@ async function handleNoteClick(lily) {
     playNote(currentNote);
     sendMidiNote(currentNote);
 
-    const changed = inflectDrones(currentNote, inflectToggle.checked, latchToggle.checked);
-    if (changed) {
-        updateDroneLabels();
-        updateAllDroneMidi();
+    // Apply inflection if enabled and harmony is playing
+    if (isHarmonyPlaying()) {
+        inflectHarmony(currentNote, inflectToggle.checked, latchToggle.checked);
     }
 
-    updateAudioToggleUI(); // Always sync toggle state
+    updateAudioToggleUI();
     updateDisplay();
 }
 
@@ -130,21 +111,17 @@ function updateDisplay() {
 // Handle ensemble room updates (for member mode)
 function handleEnsembleRoomUpdate(room, isHost) {
     if (!room) {
-        // Left room - could reset state here if needed
         console.log('[App] Left ensemble room');
         return;
     }
 
     console.log('[App] Room update:', room, 'isHost:', isHost);
 
-    // If member (not host), react to room state changes
     if (!isHost && room.scaleData) {
-        // TODO: Transpose blues scale based on room.scaleData
         console.log('[App] Member received scale data:', room.scaleData);
     }
 
     if (!isHost && room.chordData) {
-        // TODO: React to chord changes from host
         console.log('[App] Member received chord data:', room.chordData);
     }
 }
@@ -182,13 +159,12 @@ async function nextNote() {
     playNote(currentNote);
     sendMidiNote(currentNote);
 
-    const changed = inflectDrones(currentNote, inflectToggle.checked, latchToggle.checked);
-    if (changed) {
-        updateDroneLabels();
-        updateAllDroneMidi();
+    // Apply inflection if enabled and harmony is playing
+    if (isHarmonyPlaying()) {
+        inflectHarmony(currentNote, inflectToggle.checked, latchToggle.checked);
     }
 
-    updateAudioToggleUI(); // Always sync toggle state
+    updateAudioToggleUI();
     updateDisplay();
 }
 
@@ -213,6 +189,11 @@ function init() {
     // MIDI
     initMidi();
 
+    // Set up harmony -> MIDI callback
+    setHarmonyChangeCallback((notes, isOn) => {
+        sendHarmonyMidi(notes, isOn);
+    });
+
     // Ensemble
     initEnsemble(handleEnsembleRoomUpdate);
 
@@ -234,22 +215,15 @@ function init() {
         latchToggle.disabled = !e.target.checked;
         latchLabel.classList.toggle('disabled', !e.target.checked);
 
-        if (e.target.checked) {
-            // Immediately apply inflection based on current note
-            const changed = inflectDrones(currentNote, true, latchToggle.checked);
-            if (changed) {
-                updateDroneLabels();
-                updateAllDroneMidi();
-            }
-        } else {
+        if (!e.target.checked && isHarmonyPlaying()) {
             resetInflection();
-            updateDroneLabels();
-            updateAllDroneMidi();
+        } else if (e.target.checked && isHarmonyPlaying()) {
+            inflectHarmony(currentNote, true, latchToggle.checked);
         }
     });
 
-    // Drone buttons
-    document.querySelectorAll('.drone-btn').forEach(btn => {
+    // Chord buttons - simplified: click = play that chord
+    document.querySelectorAll('.chord-btn').forEach(btn => {
         btn.addEventListener('click', async () => {
             const { isInitialized } = getAudioState();
             if (!isInitialized) {
@@ -257,30 +231,24 @@ function init() {
                 updateAudioToggleUI();
             }
 
-            const note = btn.dataset.note;
-            const isNowOn = toggleDroneNote(note);
-            btn.classList.toggle('active', isNowOn);
+            const chord = btn.dataset.chord;
+            const currentChord = getCurrentChord();
+            const isPlaying = isHarmonyPlaying();
 
-            // Send MIDI for drone
-            const info = droneDegrees[note];
-            if (info) {
-                const inflection = getCurrentInflection();
-                const pitchClass = inflection[info.degree];
-                const effectiveOctave = getEffectiveOctave(info.degree, info.octave);
-                sendDroneMidi(info.degree, pitchClass, effectiveOctave, isNowOn);
+            if (chord === currentChord && isPlaying) {
+                // Clicking active chord toggles it off
+                toggleHarmony();
+            } else {
+                // Set and play the new chord
+                setHarmonyChord(chord, true);
+
+                // Apply inflection if enabled
+                if (inflectToggle.checked) {
+                    inflectHarmony(currentNote, true, latchToggle.checked);
+                }
             }
-        });
-    });
 
-    // Chord buttons
-    document.querySelectorAll('.chord-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            // Pass current melody note and inflect settings so chord change respects melodic context
-            setChord(btn.dataset.chord, currentNote, inflectToggle.checked, latchToggle.checked);
-            updateDroneLabels();
-            updateAllDroneMidi();
+            updateChordButtonUI();
         });
     });
 
@@ -301,7 +269,6 @@ function init() {
     window.addEventListener('resize', () => renderNotation(notationContainer, currentNote, handleNoteClick));
 
     // Initial render
-    updateDroneLabels();
     updateDisplay();
 }
 
