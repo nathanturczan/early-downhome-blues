@@ -112,26 +112,30 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   // Use frozen copy (deep copied when source phrase ended)
   const sourceMelody = frozenPhrases[sourcePhrase];
 
-  if (!sourceMelody || stepInPhrase >= sourceMelody.length) {
-    console.log(`🔁 ${phrase}[${stepInPhrase}]: no source (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
+  // stepInPhrase is the current position, but we're ALREADY at that note (from restart).
+  // We need to look up the NEXT note in the source melody.
+  const lookupIndex = stepInPhrase + 1;
+
+  if (!sourceMelody || lookupIndex >= sourceMelody.length) {
+    console.log(`🔁 ${phrase}[${stepInPhrase}]: no source at index ${lookupIndex} (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
     return null;
   }
 
-  const targetNote = sourceMelody[stepInPhrase];
+  const targetNote = sourceMelody[lookupIndex];
 
   // Check if target note is reachable
   if (candidates.includes(targetNote)) {
     // Apply variation probability
     if (Math.random() < VARIATION_PROBABILITY) {
-      console.log(`🔁 ${phrase}[${stepInPhrase}]: variation skip, wanted ${targetNote}`);
+      console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: variation skip, wanted ${targetNote}`);
       return null; // Allow natural selection this time
     }
-    console.log(`🔁 ${phrase}[${stepInPhrase}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
+    console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
     return targetNote;
   }
 
   // Target not reachable - try to find closest match
-  console.log(`🔁 ${phrase}[${stepInPhrase}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
+  console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
   return null;
 }
 
