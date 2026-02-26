@@ -8,7 +8,7 @@ import {
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
-import { selectWeightedNote, getRestartNote, recordNote } from './rules/weightedSelection.js';
+import { selectWeightedNote, getRestartNote, recordNote, freezePhrase } from './rules/weightedSelection.js';
 import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
 
@@ -209,7 +209,11 @@ async function nextNote() {
         const position = getPosition();
 
         if (possible.length === 0) {
-            // Sink note (C) - advance to next phrase
+            // Sink note (C) - freeze phrase for repetition before advancing
+            if (position.phrase === 'a' || position.phrase === 'b') {
+                freezePhrase(position.phrase);
+            }
+            // Advance to next phrase
             const stanzaEnded = advancePhrase();
             const newPosition = getPosition();
             currentNote = getRestartNote(newPosition);
@@ -230,6 +234,10 @@ async function nextNote() {
 
             const phraseEnded = advanceStep();
             if (phraseEnded || result.shouldRestart) {
+                // Freeze phrase for repetition before advancing
+                if (position.phrase === 'a' || position.phrase === 'b') {
+                    freezePhrase(position.phrase);
+                }
                 const stanzaEnded = advancePhrase();
                 const newPosition = getPosition();
                 console.log(`📍 Phrase ${position.phrase} ended → starting phrase ${newPosition.phrase}`);

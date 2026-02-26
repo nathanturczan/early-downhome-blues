@@ -81,13 +81,20 @@ function resetStanza() {
   stepInPhrase = 0;
 }
 
-// === phraseMemory.js logic ===
+// === phraseMemory.js logic (with frozen phrases fix) ===
 const phraseNotes = { 'a': [], 'b': [], 'c': [], 'd': [], 'e': [], 'f': [] };
-const VARIATION_PROBABILITY = 0.2;
+let frozenPhrases = { 'a': null, 'b': null };
+const VARIATION_PROBABILITY = 0.1;
 
 function recordNote(phrase, note) {
   if (phraseNotes[phrase]) {
     phraseNotes[phrase].push(note);
+  }
+}
+
+function freezePhrase(phrase) {
+  if (phrase === 'a' || phrase === 'b') {
+    frozenPhrases[phrase] = [...phraseNotes[phrase]];
   }
 }
 
@@ -104,7 +111,7 @@ function getRepetitionNote(phrase, stepInPhrase, candidates) {
   const sourcePhrase = getSourcePhrase(phrase);
   if (!sourcePhrase) return null;
 
-  const sourceMelody = phraseNotes[sourcePhrase];
+  const sourceMelody = frozenPhrases[sourcePhrase];
   if (!sourceMelody || stepInPhrase >= sourceMelody.length) {
     return null;
   }
@@ -123,9 +130,10 @@ function clearPhrases() {
   for (const phrase of Object.keys(phraseNotes)) {
     phraseNotes[phrase] = [];
   }
+  frozenPhrases = { 'a': null, 'b': null };
 }
 
-// === Simple weighted selection (Phase 1 rules only for brevity) ===
+// === Weighted selection with updated constants ===
 function freqToMidi(freq) {
   return 69 + 12 * Math.log2(freq / 440);
 }
@@ -137,7 +145,7 @@ function isC(note) {
 function selectNote(currentNote, candidates, position) {
   if (candidates.length === 0) return null;
 
-  // Check repetition first
+  // Check repetition first (bypass generator for c/d/f)
   if (position && shouldRepeat(position.phrase)) {
     const repNote = getRepetitionNote(position.phrase, position.stepInPhrase, candidates);
     if (repNote) {
@@ -149,21 +157,48 @@ function selectNote(currentNote, candidates, position) {
     return { note: candidates[0], fromRepetition: false };
   }
 
-  // Simple weighted selection
   const fromMidi = freqToMidi(frequencies[currentNote] || 392);
+  const step = position?.stepInPhrase || 0;
+  const stepsRemaining = (position?.stepsPerPhrase || 8) - step;
+  const isPhraseEnd = position?.traits?.isPhraseEnd;
 
   const scored = candidates.map(note => {
     const toMidi = freqToMidi(frequencies[note] || 392);
     const interval = toMidi - fromMidi;
+    const direction = interval > 0.5 ? 1 : interval < -0.5 ? -1 : 0;
     let weight = 1.0;
 
-    // MM-GP-01: down bias
-    if (interval < -0.5) weight *= 1.4;
-    else if (interval > 0.5) weight *= 0.9;
+    // MM-GP-01: Reduced down bias (1.1/1.0)
+    if (direction < 0) weight *= 1.10;
+    // ascending is now neutral (1.0)
 
-    // MM-C-01: C bias at phrase end
-    if (position?.isNearPhraseEnd && isC(note)) {
-      weight *= 2.0;
+    // MM-GP-04: Position-aware leap allowance
+    if (Math.abs(interval) > 3) {
+      if (direction < 0) weight *= 0.4;
+      if (direction > 0) {
+        if (step <= 2) weight *= 1.35;  // Strong early
+        else weight *= 1.10;
+      }
+    }
+
+    // PHRASE-START-LIFT: Strong upward bias for first 2 notes
+    if (step <= 1 && direction > 0) {
+      if (step === 0) weight *= 1.80;
+      else weight *= 1.35;
+    }
+
+    // MM-C-01: Strong cadence bias (applied last)
+    if (isPhraseEnd) {
+      if (isC(note)) {
+        if (stepsRemaining <= 1) weight *= 20.0;  // Final note: even stronger
+        else if (stepsRemaining <= 2) weight *= 6.0;  // Penultimate
+        else if (stepsRemaining <= 3) weight *= 2.0;  // Antepenultimate
+      }
+      // Boost notes that can reach C (approach tones)
+      const canReachC = adjacency[note]?.some(n => isC(n));
+      if (canReachC && stepsRemaining <= 2) {
+        weight *= 2.0;
+      }
     }
 
     return { note, weight };
@@ -206,8 +241,11 @@ function runTest(numStanzas = 10) {
       const candidates = adjacency[currentNote] || [];
 
       if (candidates.length === 0) {
-        // Sink - advance phrase
+        // Sink - freeze phrase and advance
         const lastPhrase = position.phrase;
+        if (lastPhrase === 'a' || lastPhrase === 'b') {
+          freezePhrase(lastPhrase);
+        }
         results.phraseNoteCounts[lastPhrase].push(phraseNotes[lastPhrase].length);
 
         // Check cadence
@@ -237,6 +275,10 @@ function runTest(numStanzas = 10) {
         const phraseEnded = advanceStep();
         if (phraseEnded) {
           const lastPhrase = position.phrase;
+          // Freeze phrase for repetition
+          if (lastPhrase === 'a' || lastPhrase === 'b') {
+            freezePhrase(lastPhrase);
+          }
           results.phraseNoteCounts[lastPhrase].push(phraseNotes[lastPhrase].length);
 
           // Check cadence

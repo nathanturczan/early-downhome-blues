@@ -3,7 +3,7 @@
 // Phase 2: Position-aware melodic motion rules
 // These rules apply weights based on current position in the stanza
 
-import { frequencies } from '../network.js';
+import { frequencies, adjacency } from '../network.js';
 
 /**
  * Convert frequency to pitch class (0-11)
@@ -30,6 +30,14 @@ const PC_B = 11;
  */
 function isC(note) {
   return note === "c'" || note === "c''";
+}
+
+/**
+ * Check if a note can reach C in one step
+ */
+function canNoteReachC(note) {
+  const neighbors = adjacency[note] || [];
+  return neighbors.some(n => isC(n));
 }
 
 /**
@@ -68,17 +76,45 @@ function isEComplex(note) {
  */
 export const phase2Rules = {
   /**
+   * PHRASE-START-LIFT: Strong upward bias for first 2 notes of phrase
+   * Creates the "rise" in IB contour before falling to cadence
+   */
+  'PHRASE-START-LIFT': (edge, ctx, position) => {
+    const step = position.stepInPhrase;
+    if (step > 1) return 1.0;  // Only apply to first 2 notes
+
+    // Upward motion gets strong boost early in phrase
+    if (edge.direction > 0) {
+      if (step === 0) return 1.80;  // First note: very strong lift
+      if (step === 1) return 1.35;  // Second note: moderate lift
+    }
+    return 1.0;
+  },
+
+  /**
    * MM-C-01: C/C' are rest points at close of phrases b, d, f
+   * VERY strong bias - applied last, not undone by other rules
    */
   'MM-C-01': (edge, ctx, position) => {
     if (!position.traits?.isPhraseEnd) return 1.0;
-    if (!position.isNearPhraseEnd) return 1.0;
 
-    // At end of phrases b, d, f: boost C/C'
+    const stepsRemaining = position.stepsPerPhrase - position.stepInPhrase;
+    let weight = 1.0;
+
+    // Direct C/C' bias
     if (isC(edge.to)) {
-      return 2.0; // Strong bias toward C at phrase end
+      if (stepsRemaining <= 1) weight *= 20.0;       // Final note
+      else if (stepsRemaining <= 2) weight *= 6.0;   // Penultimate
+      else if (stepsRemaining <= 3) weight *= 2.0;   // Antepenultimate
     }
-    return 1.0;
+
+    // Boost notes that can reach C (approach tones)
+    if (stepsRemaining <= 2 && !isC(edge.to)) {
+      const canReachC = canNoteReachC(edge.to);
+      if (canReachC) weight *= 2.0;
+    }
+
+    return weight;
   },
 
   /**

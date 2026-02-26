@@ -65,13 +65,14 @@ function buildEdge(from, to) {
 /**
  * Build context for rule evaluation
  */
-function buildContext(currentNote, history) {
+function buildContext(currentNote, history, position = null) {
   const previousNote = history.length >= 2 ? history[history.length - 2] : null;
 
   return {
     currentNote,
     previousNote,
     recentNotes: history.slice(-5),
+    stepInPhrase: position?.stepInPhrase || 0,
   };
 }
 
@@ -81,10 +82,10 @@ function buildContext(currentNote, history) {
  */
 const phase1Rules = {
   // MM-GP-01: Downward motion more frequent/gradual
-  // Phase 1.5: Softened from (1.5, 0.85) to (1.4, 0.9) to prevent "stuck low"
+  // Further reduced to prevent "stuck low" - now 1.1/1.0
   'MM-GP-01': (edge, _ctx) => {
-    if (edge.direction < 0) return 1.4;   // descending (was 1.5)
-    if (edge.direction > 0) return 0.9;   // ascending (was 0.85)
+    if (edge.direction < 0) return 1.10;  // descending (was 1.4)
+    if (edge.direction > 0) return 1.00;  // ascending (was 0.9) - neutral now
     return 1.0;                            // same note
   },
 
@@ -110,14 +111,18 @@ const phase1Rules = {
     return weight;
   },
 
-  // MM-GP-04: Skip asymmetry
-  // if downward interval magnitude > 3 semitones *0.4
-  // Phase 1.5: Bumped upward from 1.1 to 1.2 to help escape low register
-  'MM-GP-04': (edge, _ctx) => {
+  // MM-GP-04: Skip asymmetry (position-aware via ctx.stepInPhrase)
+  // Stronger upward leap allowance early in phrase to create rise
+  'MM-GP-04': (edge, ctx) => {
     const absInterval = Math.abs(edge.intervalSemitones);
     if (absInterval > 3) {
       if (edge.direction < 0) return 0.4;  // large downward skip penalized
-      if (edge.direction > 0) return 1.2;  // large upward skip OK (was 1.1)
+      // Position-aware upward leap: stronger early, weaker late
+      if (edge.direction > 0) {
+        const step = ctx.stepInPhrase || 0;
+        if (step <= 2) return 1.35;  // First 3 notes: strong leap allowance
+        return 1.10;                  // Later: modest allowance
+      }
     }
     return 1.0;
   },
@@ -227,7 +232,7 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
     return { note, shouldRestart };
   }
 
-  const ctx = buildContext(currentNote, history);
+  const ctx = buildContext(currentNote, history, position);
   const effectiveSteps = position ? position.stepInPhrase : stepsInPhrase;
 
   // Score all candidates
@@ -303,4 +308,4 @@ export function getRestartNote(position = null) {
 }
 
 // Re-export phrase memory functions for app.js convenience
-export { recordNote } from '../phraseMemory.js';
+export { recordNote, freezePhrase } from '../phraseMemory.js';

@@ -10,8 +10,8 @@
  * MM-S-03: "Singers prefer repeating phrase a melody against subdominant support"
  */
 
-// Storage for phrase melodies
-const phraseNotes = {
+// Storage for phrase melodies (frozen snapshots)
+let phraseNotes = {
   'a': [],
   'b': [],
   'c': [],
@@ -20,8 +20,14 @@ const phraseNotes = {
   'f': []
 };
 
-// Variation probability when recalling
-const VARIATION_PROBABILITY = 0.2;
+// Frozen copies for repetition (deep copy when phrase ends)
+let frozenPhrases = {
+  'a': null,
+  'b': null
+};
+
+// Variation probability when recalling (small ornament chance)
+const VARIATION_PROBABILITY = 0.1;
 
 /**
  * Record a note played in a phrase
@@ -29,7 +35,17 @@ const VARIATION_PROBABILITY = 0.2;
 export function recordNote(phrase, note) {
   if (phraseNotes[phrase]) {
     phraseNotes[phrase].push(note);
-    console.log(`📝 Recorded ${note} to phrase ${phrase} (now ${phraseNotes[phrase].length} notes)`);
+  }
+}
+
+/**
+ * Freeze a phrase for later repetition (deep copy)
+ * Call this when phrase a or b ends
+ */
+export function freezePhrase(phrase) {
+  if (phrase === 'a' || phrase === 'b') {
+    frozenPhrases[phrase] = [...phraseNotes[phrase]]; // Deep copy
+    console.log(`🧊 Froze phrase ${phrase}: ${frozenPhrases[phrase].join(' → ')}`);
   }
 }
 
@@ -73,16 +89,14 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   const sourcePhrase = getSourcePhrase(phrase);
   if (!sourcePhrase) return null;
 
-  const sourceMelody = phraseNotes[sourcePhrase];
-  console.log(`🔍 Repetition check: phrase ${phrase} step ${stepInPhrase}, source ${sourcePhrase} has ${sourceMelody?.length || 0} notes`);
+  // Use frozen copy (deep copied when source phrase ended)
+  const sourceMelody = frozenPhrases[sourcePhrase];
 
   if (!sourceMelody || stepInPhrase >= sourceMelody.length) {
-    console.log(`🔍 No repetition: step ${stepInPhrase} >= source length ${sourceMelody?.length || 0}`);
     return null;
   }
 
   const targetNote = sourceMelody[stepInPhrase];
-  console.log(`🔍 Target note: ${targetNote}, candidates: ${candidates.join(', ')}`);
 
   // Check if target note is reachable
   if (candidates.includes(targetNote)) {
@@ -105,6 +119,7 @@ export function clearPhrases() {
   for (const phrase of Object.keys(phraseNotes)) {
     phraseNotes[phrase] = [];
   }
+  frozenPhrases = { 'a': null, 'b': null };
 }
 
 /**
