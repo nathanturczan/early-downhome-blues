@@ -36,19 +36,29 @@ Alan Kagan has suggested the following scheme to describe contour. If we conside
 | ID<sub>a</sub> | H > S, F > L, H is achieved before L |
 | ID<sub>b</sub> | H > S, F > L, L is achieved before H |
 
-### Contour II: Rising
-- IIA
-- IIB
-- IIC
-- IID<sub>a</sub>
-- IID<sub>b</sub>
+### Contour II: Rising (fig 66)
 
-### Contour III: Other
-- IIIA
-- IIIB
-- IIIC
-- IIID<sub>a</sub>
-- IIID<sub>b</sub>
+**General case II:** Starting pitch is lower than final pitch: S < F
+
+| Case | Definition |
+|------|------------|
+| IIA | S = L, F = H |
+| IIB | S = L, H > F |
+| IIC | S ≠ L, F = H |
+| IID<sub>a</sub> | S < H, F > L, H > F, H is achieved before L |
+| IID<sub>b</sub> | S < H, F > L, H > F, L is achieved before H |
+
+### Contour III: Level (fig 67)
+
+**General case III:** Starting pitch is the same as final pitch: S = F
+
+| Case | Definition |
+|------|------------|
+| IIIA | S = H = L |
+| IIIB | S < H, S = L |
+| IIIC | S = H, S > L |
+| IIID<sub>a</sub> | S < H, S > L, H is achieved before L |
+| IIID<sub>b</sub> | S < H, S > L, L is achieved before H |
 
 ## Figure 69: Melodic Contour of Phrases, Lines, Stanzas
 
