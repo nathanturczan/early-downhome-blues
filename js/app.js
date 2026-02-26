@@ -4,7 +4,8 @@ import { initMidi, sendMidiNote, sendHarmonyMidi } from './midi.js';
 import { initAudio, getAudioState, toggleMute, playNote } from './audio.js';
 import {
     initHarmony, setHarmonyChord, toggleHarmony, inflectHarmony,
-    resetInflection, setHarmonyChangeCallback, isHarmonyPlaying, getCurrentChord
+    resetInflection, setHarmonyChangeCallback, isHarmonyPlaying, getCurrentChord,
+    setHarmonyMode, HARMONY_MODES
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
@@ -36,6 +37,7 @@ const notationContainer = document.getElementById('notation');
 const stanzaIndicator = document.getElementById('stanzaIndicator');
 const phrasingToggle = document.getElementById('phrasingToggle');
 const autoHarmonyToggle = document.getElementById('autoHarmonyToggle');
+const harmonyModeSelect = document.getElementById('harmonyModeSelect');
 
 // Auto-harmony state
 let autoHarmonyEnabled = false;
@@ -469,6 +471,13 @@ function init() {
                 // Start playing the current position's chord
                 updateAutoHarmony();
             }
+        });
+    }
+
+    // Harmony mode selector
+    if (harmonyModeSelect) {
+        harmonyModeSelect.addEventListener('change', (e) => {
+            setHarmonyMode(e.target.value);
         });
     }
 

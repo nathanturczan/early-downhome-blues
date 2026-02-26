@@ -76,14 +76,38 @@ function findClosestOctave(currentFreq, targetPitchClass) {
     return closestOctave;
 }
 
+// === Harmony Modes ===
+// Based on Titon's three historical approaches
+export const HARMONY_MODES = {
+  FUNCTIONAL: 'functional',  // Full I-IV-V with all chord tones
+  ROOT_ONLY: 'root-only',    // Same timing, just root notes
+  STATIC_I: 'static-i'       // Stay on I chord throughout
+};
+
 // State
 const voices = {}; // { root: { osc, pc, oct }, third: {...}, ... }
 let currentChord = 'I';
 let harmonyGain = null;
 let isHarmonyActive = false;
+let harmonyMode = HARMONY_MODES.FUNCTIONAL;
 
 // Callbacks for external systems (MIDI)
 let onHarmonyChange = null;
+
+export function setHarmonyMode(mode) {
+  if (Object.values(HARMONY_MODES).includes(mode)) {
+    harmonyMode = mode;
+    console.log(`🎹 Harmony mode: ${mode}`);
+    // If harmony is playing, update the voicing
+    if (isHarmonyActive) {
+      setHarmonyChord(currentChord, true);
+    }
+  }
+}
+
+export function getHarmonyMode() {
+  return harmonyMode;
+}
 
 export function setHarmonyChangeCallback(callback) {
     onHarmonyChange = callback;
@@ -115,36 +139,56 @@ function getCurrentVoicingArray() {
 }
 
 /**
- * Set the harmony chord - ALWAYS resets to default voicings
+ * Set the harmony chord - respects harmonyMode setting
  */
 export function setHarmonyChord(chord, startPlaying = true) {
     if (!defaultVoicings[chord]) return;
 
     initHarmony();
-    currentChord = chord;
+
+    // Static I mode: always use I chord
+    const effectiveChord = harmonyMode === HARMONY_MODES.STATIC_I ? 'I' : chord;
+    currentChord = effectiveChord;
 
     if (startPlaying) {
         isHarmonyActive = true;
 
-        const voicing = defaultVoicings[chord];
-        const degrees = ['root', 'fifth', 'third', 'seventh'];
+        const voicing = defaultVoicings[effectiveChord];
 
-        degrees.forEach(deg => {
+        // Determine which degrees to play based on mode
+        let degreesToPlay;
+        if (harmonyMode === HARMONY_MODES.ROOT_ONLY) {
+            degreesToPlay = ['root'];
+        } else {
+            degreesToPlay = ['root', 'fifth', 'third', 'seventh'];
+        }
+
+        const allDegrees = ['root', 'fifth', 'third', 'seventh'];
+
+        allDegrees.forEach(deg => {
+            const shouldPlay = degreesToPlay.includes(deg);
             const { pc, oct } = voicing[deg];
             const freq = getFreq(pc, oct);
 
-            if (!voices[deg]) {
-                // Create new oscillator
-                const osc = new Tone.Oscillator(freq, 'sine').connect(harmonyGain);
-                osc.volume.value = -12;
-                osc.start();
-                osc.volume.rampTo(0, 0.1);
-                voices[deg] = { osc, pc, oct };
+            if (shouldPlay) {
+                if (!voices[deg]) {
+                    // Create new oscillator
+                    const osc = new Tone.Oscillator(freq, 'sine').connect(harmonyGain);
+                    osc.volume.value = -12;
+                    osc.start();
+                    osc.volume.rampTo(0, 0.1);
+                    voices[deg] = { osc, pc, oct };
+                } else {
+                    // Reset to default voicing
+                    voices[deg].osc.frequency.rampTo(freq, 0.1);
+                    voices[deg].pc = pc;
+                    voices[deg].oct = oct;
+                }
             } else {
-                // Reset to default voicing
-                voices[deg].osc.frequency.rampTo(freq, 0.1);
-                voices[deg].pc = pc;
-                voices[deg].oct = oct;
+                // Silence degrees not in current mode
+                if (voices[deg]) {
+                    voices[deg].osc.volume.rampTo(-Infinity, 0.1);
+                }
             }
         });
 

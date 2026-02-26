@@ -253,6 +253,14 @@ button:active {
     color: #aaa;
     cursor: not-allowed;
 }
+.harmony-mode-select {
+    font-size: 0.9em;
+    padding: 2px 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: white;
+    color: #333;
+}
 .stanza-indicator {
     position: relative;
     flex-shrink: 0;
