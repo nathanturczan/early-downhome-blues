@@ -1,10 +1,13 @@
 // js/rules/weightedSelection.js
 //
-// Phase 1: Weighted note selection based on melodic motion rules
-// Replaces uniform random selection in app.js
+// Weighted note selection based on melodic motion rules
+// Phase 1: Position-agnostic edge weighting
+// Phase 2: Phrase/line position awareness
 
 import { frequencies } from '../network.js';
 import { melodicMotionEdgeWeightRules } from './melodicMotionRules.js';
+import { applyPhase2Rules } from './positionRules.js';
+import { shouldRepeat, getRepetitionNote, recordNote } from '../phraseMemory.js';
 
 // Debug mode - set to true to see weight calculations in console
 const DEBUG = true;
@@ -157,8 +160,9 @@ function getCadenceBias(candidateNote, stepsInPhrase) {
 /**
  * Score a single candidate note
  * Returns { note, weight, ruleContributions }
+ * @param {Object} position - Optional stanza position from getPosition()
  */
-function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0) {
+function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0, position = null) {
   const edge = buildEdge(currentNote, candidateNote);
   const ruleContributions = {};
   let totalWeight = 1.0;
@@ -170,10 +174,21 @@ function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0) {
     totalWeight *= contribution;
   }
 
-  // Phase 1.5: Apply cadence bias
-  const cadenceBias = getCadenceBias(candidateNote, stepsInPhrase);
-  ruleContributions['CADENCE'] = cadenceBias;
-  totalWeight *= cadenceBias;
+  // Phase 1.5: Apply cadence bias (only if no position tracking)
+  if (!position) {
+    const cadenceBias = getCadenceBias(candidateNote, stepsInPhrase);
+    ruleContributions['CADENCE'] = cadenceBias;
+    totalWeight *= cadenceBias;
+  }
+
+  // Phase 2: Apply position-aware rules
+  if (position) {
+    const phase2Result = applyPhase2Rules(edge, ctx, position);
+    for (const [ruleId, contribution] of Object.entries(phase2Result.contributions)) {
+      ruleContributions[ruleId] = contribution;
+    }
+    totalWeight *= phase2Result.totalWeight;
+  }
 
   return {
     note: candidateNote,
@@ -188,21 +203,35 @@ function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0) {
  * @param {string} currentNote - Current note in LilyPond notation
  * @param {string[]} history - Recent note history
  * @param {string[]} candidates - Array of possible next notes
- * @param {number} stepsInPhrase - Current step count in phrase (Phase 1.5)
+ * @param {number} stepsInPhrase - Current step count in phrase (Phase 1.5, ignored if position provided)
+ * @param {Object} position - Optional stanza position from getPosition() (Phase 2)
  * @returns {{ note: string, shouldRestart: boolean }} Selected note and restart flag
  */
-export function selectWeightedNote(currentNote, history, candidates, stepsInPhrase = 0) {
+export function selectWeightedNote(currentNote, history, candidates, stepsInPhrase = 0, position = null) {
   if (candidates.length === 0) return { note: null, shouldRestart: false };
+
+  // Phase 2: Check for melodic repetition (phrases c, d repeat a, b)
+  if (position && shouldRepeat(position.phrase)) {
+    const repetitionNote = getRepetitionNote(position.phrase, position.stepInPhrase, candidates);
+    if (repetitionNote) {
+      if (DEBUG) {
+        console.log(`🔁 Repetition: playing ${repetitionNote} from phrase ${position.phrase === 'c' ? 'a' : 'b'}`);
+      }
+      return { note: repetitionNote, shouldRestart: false };
+    }
+  }
+
   if (candidates.length === 1) {
     const note = candidates[0];
-    const shouldRestart = isC(note) && stepsInPhrase >= MIN_PHRASE_STEPS;
+    const shouldRestart = isC(note) && (position ? position.isNearPhraseEnd : stepsInPhrase >= MIN_PHRASE_STEPS);
     return { note, shouldRestart };
   }
 
   const ctx = buildContext(currentNote, history);
+  const effectiveSteps = position ? position.stepInPhrase : stepsInPhrase;
 
   // Score all candidates
-  const scored = candidates.map(note => scoreCandidate(currentNote, note, ctx, stepsInPhrase));
+  const scored = candidates.map(note => scoreCandidate(currentNote, note, ctx, effectiveSteps, position));
 
   // Normalize weights
   const totalWeight = scored.reduce((sum, s) => sum + s.weight, 0);
@@ -233,9 +262,10 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
   for (const s of scored) {
     random -= s.weight;
     if (random <= 0) {
-      const shouldRestart = isC(s.note) && stepsInPhrase >= MIN_PHRASE_STEPS;
+      const shouldRestart = isC(s.note) && (position ? position.isNearPhraseEnd : effectiveSteps >= MIN_PHRASE_STEPS);
       if (DEBUG) {
-        console.log(`🎯 Selected: ${s.note} (${s.percentage})${shouldRestart ? ' [PHRASE END]' : ''}`);
+        const posInfo = position ? ` [${position.phrase}:${position.stepInPhrase}]` : '';
+        console.log(`🎯 Selected: ${s.note} (${s.percentage})${posInfo}${shouldRestart ? ' [PHRASE END]' : ''}`);
       }
       return { note: s.note, shouldRestart };
     }
@@ -243,16 +273,34 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
 
   // Fallback (shouldn't happen)
   const fallback = scored[scored.length - 1];
-  const shouldRestart = isC(fallback.note) && stepsInPhrase >= MIN_PHRASE_STEPS;
+  const shouldRestart = isC(fallback.note) && (position ? position.isNearPhraseEnd : effectiveSteps >= MIN_PHRASE_STEPS);
   return { note: fallback.note, shouldRestart };
 }
 
 /**
  * Get a restart note for beginning a new phrase
  * Uses soft restart: returns G' (hub note) with slight upward momentum
+ * @param {Object} position - Optional stanza position for context-aware restart
  */
-export function getRestartNote() {
-  // G' is the hub note with most connections
+export function getRestartNote(position = null) {
+  // Phase 2: Context-aware restart based on phrase
+  if (position) {
+    const phrase = position.phrase;
+    // MM-C-04: Phrases a and c often start with motion toward C'
+    if (phrase === 'a' || phrase === 'c') {
+      // Start from G to enable G→C' upward motion
+      return "g'";
+    }
+    // Phrase e (dominant): often starts from G or around Bb complex
+    if (phrase === 'e') {
+      return Math.random() < 0.6 ? "g'" : "a'";
+    }
+  }
+
+  // Default: G' is the hub note with most connections
   // Occasionally start from C' for variety
   return Math.random() < 0.7 ? "g'" : "c''";
 }
+
+// Re-export phrase memory functions for app.js convenience
+export { recordNote } from '../phraseMemory.js';

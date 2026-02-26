@@ -1,0 +1,123 @@
+// js/phraseMemory.js
+//
+// Phase 2: Melodic memory for phrase repetition
+// Stores Line 1 melody for replay in Line 2
+
+/**
+ * In downhome blues, Line 2 (phrases c+d) more or less repeats Line 1 (phrases a+b)
+ * even as harmony moves to IV underneath.
+ *
+ * MM-S-03: "Singers prefer repeating phrase a melody against subdominant support"
+ */
+
+// Storage for phrase melodies
+const phraseNotes = {
+  'a': [],
+  'b': [],
+  'c': [],
+  'd': [],
+  'e': [],
+  'f': []
+};
+
+// Variation probability when recalling
+const VARIATION_PROBABILITY = 0.2;
+
+/**
+ * Record a note played in a phrase
+ */
+export function recordNote(phrase, note) {
+  if (phraseNotes[phrase]) {
+    phraseNotes[phrase].push(note);
+  }
+}
+
+/**
+ * Get the stored melody for a phrase
+ */
+export function getPhraseMelody(phrase) {
+  return [...phraseNotes[phrase]];
+}
+
+/**
+ * Get the corresponding phrase to repeat from
+ * c repeats a, d repeats b
+ */
+function getSourcePhrase(targetPhrase) {
+  const mapping = {
+    'c': 'a',
+    'd': 'b'
+  };
+  return mapping[targetPhrase] || null;
+}
+
+/**
+ * Check if this phrase should repeat a previous melody
+ */
+export function shouldRepeat(phrase) {
+  return phrase === 'c' || phrase === 'd';
+}
+
+/**
+ * Get the note to play based on repetition logic
+ * @param {string} phrase - Current phrase (c or d)
+ * @param {number} stepInPhrase - Current step
+ * @param {string[]} candidates - Available next notes from network
+ * @returns {string|null} Suggested note, or null if no repetition applies
+ */
+export function getRepetitionNote(phrase, stepInPhrase, candidates) {
+  const sourcePhrase = getSourcePhrase(phrase);
+  if (!sourcePhrase) return null;
+
+  const sourceMelody = phraseNotes[sourcePhrase];
+  if (!sourceMelody || stepInPhrase >= sourceMelody.length) {
+    return null;
+  }
+
+  const targetNote = sourceMelody[stepInPhrase];
+
+  // Check if target note is reachable
+  if (candidates.includes(targetNote)) {
+    // Apply variation probability
+    if (Math.random() < VARIATION_PROBABILITY) {
+      return null; // Allow natural selection this time
+    }
+    return targetNote;
+  }
+
+  // Target not reachable - try to find closest match
+  // For now, return null and let weighted selection handle it
+  return null;
+}
+
+/**
+ * Clear all stored phrases (new stanza)
+ */
+export function clearPhrases() {
+  for (const phrase of Object.keys(phraseNotes)) {
+    phraseNotes[phrase] = [];
+  }
+}
+
+/**
+ * Clear a specific phrase
+ */
+export function clearPhrase(phrase) {
+  if (phraseNotes[phrase]) {
+    phraseNotes[phrase] = [];
+  }
+}
+
+/**
+ * Get debug info
+ */
+export function getDebugInfo() {
+  return {
+    a: phraseNotes['a'].length,
+    b: phraseNotes['b'].length,
+    c: phraseNotes['c'].length,
+    d: phraseNotes['d'].length,
+    e: phraseNotes['e'].length,
+    f: phraseNotes['f'].length
+  };
+}
