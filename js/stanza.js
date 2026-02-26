@@ -41,6 +41,24 @@ const PHRASE_F_SPLIT_POINT = 0.50;
 // Cadence harmony lock: last N notes of b/d/f force harmony to I
 const CADENCE_HARMONY_LOCK_NOTES = 2;
 
+// === Contour Types (from Figure 69) ===
+// Probabilities based on Titon's observed frequencies
+export const CONTOUR_TYPES = {
+  IB: 'IB',   // Rise-then-fall (inverted bowl) - most common
+  IA: 'IA',   // Pure descent (start high, fall throughout)
+  IIB: 'IIB'  // Rising overall (start low, rise to peak)
+};
+
+// Weights from Figure 69: IB=17, IA=3, IIB=2 (total ~22 of main types)
+const CONTOUR_WEIGHTS = {
+  IB: 17,
+  IA: 3,
+  IIB: 2
+};
+
+// Current contour type for this stanza
+let currentContourType = CONTOUR_TYPES.IB;
+
 // Split state (decided at start of phrase f only)
 let phraseFHasSplit = false;
 
@@ -61,6 +79,30 @@ let stepInPhrase = 0;
 let stepsPerPhrase = 8; // Approximate, can vary
 
 /**
+ * Choose contour type for a new stanza based on weighted probability
+ */
+export function chooseContourType() {
+  const total = Object.values(CONTOUR_WEIGHTS).reduce((a, b) => a + b, 0);
+  let r = random() * total;
+  for (const [type, weight] of Object.entries(CONTOUR_WEIGHTS)) {
+    r -= weight;
+    if (r <= 0) {
+      currentContourType = type;
+      return type;
+    }
+  }
+  currentContourType = CONTOUR_TYPES.IB; // fallback
+  return currentContourType;
+}
+
+/**
+ * Get current contour type
+ */
+export function getContourType() {
+  return currentContourType;
+}
+
+/**
  * Get current position in the stanza
  */
 export function getPosition() {
@@ -74,6 +116,7 @@ export function getPosition() {
     stepInPhrase: stepInPhrase,
     stepsPerPhrase: stepsPerPhrase,
     traits: PHRASE_TRAITS[phrase],
+    contourType: currentContourType,
     // Computed properties
     isNearPhraseStart: stepInPhrase < 2,
     isNearPhraseEnd: stepInPhrase >= stepsPerPhrase - 2,
@@ -103,9 +146,10 @@ export function advancePhrase() {
   currentPhraseIndex++;
 
   if (currentPhraseIndex >= PHRASE_SEQUENCE.length) {
-    // Stanza complete
+    // Stanza complete - choose new contour for next stanza
     currentPhraseIndex = 0;
     currentStanza++;
+    chooseContourType();
     return true;
   }
   return false;
@@ -117,6 +161,7 @@ export function advancePhrase() {
 export function resetStanza() {
   currentPhraseIndex = 0;
   stepInPhrase = 0;
+  chooseContourType();
   // Don't reset stanza counter - it tracks overall progress
 }
 
@@ -127,6 +172,7 @@ export function resetSong() {
   currentStanza = 1;
   currentPhraseIndex = 0;
   stepInPhrase = 0;
+  chooseContourType();
 }
 
 /**

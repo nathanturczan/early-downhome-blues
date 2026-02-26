@@ -70,13 +70,24 @@ function isEComplex(note) {
   return note.startsWith('ee') || note.startsWith("e'") || note === "e''";
 }
 
-// === IB Contour Configuration ===
-// Inverted-bowl contour: rise in first half of stanza, fall in second half
-const IB_CROSSOVER = 0.45; // Progress point where contour switches from rising to falling
-const IB_UP_MULT_RISING = 1.15;   // Boost upward motion in rising half
-const IB_DOWN_MULT_RISING = 0.95; // Slight penalty for downward in rising half
-const IB_UP_MULT_FALLING = 0.95;  // Slight penalty for upward in falling half
-const IB_DOWN_MULT_FALLING = 1.15; // Boost downward motion in falling half
+// === Contour Configuration ===
+// Based on Titon's Figure 69 contour classifications
+
+// Contour multiplier strengths (shared)
+const CONTOUR_BOOST = 1.15;
+const CONTOUR_PENALTY = 0.95;
+
+// IB: Rise-then-fall (inverted bowl) - most common (46%)
+// F=L, H>S: Start, rise to highest, fall to lowest/final
+const IB_CROSSOVER = 0.45;
+
+// IA: Pure descent (8%)
+// S=H, F=L: Start at highest, fall throughout to lowest/final
+// No crossover - always falling
+
+// IIB: Rising overall (5%)
+// S=L, H>F: Start at lowest, rise to peak (~60%), fall but end above start
+const IIB_PEAK = 0.60;
 
 /**
  * Calculate overall progress through stanza (0 to 1)
@@ -115,13 +126,16 @@ function isInPhraseStartLiftWindow(position) {
  */
 export const phase2Rules = {
   /**
-   * IB-CONTOUR: Inverted-bowl macro contour across the stanza
-   * Early stanza: prefer upward/flat motion
-   * Late stanza: prefer downward/flat motion
+   * CONTOUR: Macro contour bias across the stanza
+   * Polymorphic based on position.contourType (IB, IA, IIB)
+   *
+   * IB (inverted bowl): rise first half, fall second half
+   * IA (pure descent): fall throughout
+   * IIB (rising): rise to peak, fall but stay high
    *
    * Gated: only when phrasing ON, not during repetition/cadence/phrase-start-lift
    */
-  'IB-CONTOUR': (edge, ctx, position) => {
+  'CONTOUR': (edge, ctx, position) => {
     // Skip if phrasing is disabled
     if (!position.phrasingEnabled) return 1.0;
 
@@ -135,14 +149,53 @@ export const phase2Rules = {
     if (isInPhraseStartLiftWindow(position)) return 1.0;
 
     const progress = getStanzaProgress(position);
-    const isRisingHalf = progress < IB_CROSSOVER;
+    const contourType = position.contourType || 'IB';
 
+    // Determine direction preference based on contour type and progress
+    let preferUp = false;
+    let preferDown = false;
+
+    switch (contourType) {
+      case 'IB':
+        // Inverted bowl: rise in first half, fall in second half
+        if (progress < IB_CROSSOVER) {
+          preferUp = true;
+        } else {
+          preferDown = true;
+        }
+        break;
+
+      case 'IA':
+        // Pure descent: always prefer downward motion
+        preferDown = true;
+        break;
+
+      case 'IIB':
+        // Rising overall: rise to peak, then gentle fall (but still high)
+        if (progress < IIB_PEAK) {
+          preferUp = true;
+        } else {
+          // After peak: slight fall preference but weaker than IB
+          preferDown = true;
+        }
+        break;
+
+      default:
+        // Fallback to IB behavior
+        if (progress < IB_CROSSOVER) {
+          preferUp = true;
+        } else {
+          preferDown = true;
+        }
+    }
+
+    // Apply boost/penalty based on preference and edge direction
     if (edge.direction > 0) {
       // Upward motion
-      return isRisingHalf ? IB_UP_MULT_RISING : IB_UP_MULT_FALLING;
+      return preferUp ? CONTOUR_BOOST : CONTOUR_PENALTY;
     } else if (edge.direction < 0) {
       // Downward motion
-      return isRisingHalf ? IB_DOWN_MULT_RISING : IB_DOWN_MULT_FALLING;
+      return preferDown ? CONTOUR_BOOST : CONTOUR_PENALTY;
     }
 
     // Same note - no change
@@ -151,13 +204,17 @@ export const phase2Rules = {
 
   /**
    * PHRASE-START-LIFT: Strong upward bias for first 2 notes of phrase
-   * Creates the "rise" in IB contour before falling to cadence
+   * Creates the "rise" in IB/IIB contours before falling to cadence
    * Only applies to a/b/e (not repeated phrases c/d/f)
+   * Skipped for IA contour (pure descent - no rising)
    * Gated by phrasingEnabled (passed via position.phrasingEnabled)
    */
   'PHRASE-START-LIFT': (edge, ctx, position) => {
     // Skip if phrasing is disabled
     if (!position.phrasingEnabled) return 1.0;
+
+    // Skip for IA contour (pure descent - should not rise at phrase starts)
+    if (position.contourType === 'IA') return 1.0;
 
     // Only apply to non-repeated phrases (a, b, e)
     const phrase = position.phrase;

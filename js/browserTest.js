@@ -6,7 +6,17 @@
 import { adjacency } from './network.js';
 import { selectWeightedNote, getRestartNote, getPhrasingEnabled, setPhrasing } from './rules/weightedSelection.js';
 import { recordNote, freezePhrase, resetPhraseMemory, getDebugStats } from './phraseMemory.js';
-import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, PHRASE_SEQUENCE } from './stanza.js';
+import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, chooseContourType, PHRASE_SEQUENCE } from './stanza.js';
+import { frequencies } from './network.js';
+
+/**
+ * Convert note to MIDI for pitch height tracking
+ */
+function noteToMidi(note) {
+  const freq = frequencies[note];
+  if (!freq) return 60;
+  return 69 + 12 * Math.log2(freq / 440);
+}
 import { setSeed, clearSeed, getSeed, generateSeed } from './random.js';
 
 function isC(note) {
@@ -41,17 +51,30 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
     repetitionHits: { c: 0, d: 0, f: 0 },
     cadenceAttempts: { b: 0, d: 0, f: 0 },
     cadenceHits: { b: 0, d: 0, f: 0 },
-    phraseNoteCounts: { a: [], b: [], c: [], d: [], e: [], f: [] }
+    phraseNoteCounts: { a: [], b: [], c: [], d: [], e: [], f: [] },
+    contourStats: {
+      IB: { count: 0, lineAvgs: { 1: [], 2: [], 3: [] } },
+      IA: { count: 0, lineAvgs: { 1: [], 2: [], 3: [] } },
+      IIB: { count: 0, lineAvgs: { 1: [], 2: [], 3: [] } }
+    }
   };
 
   for (let stanza = 0; stanza < numStanzas; stanza++) {
     // Reset state for new stanza (mirrors app.js stanza reset)
     setPosition(0, 0);
     resetPhraseMemory();
+    chooseContourType();
+
+    // Get the chosen contour type
+    const startPos = getPosition();
+    const contourType = startPos.contourType || 'IB';
+
+    // Track heights per line for this stanza
+    const stanzaLineHeights = { 1: [], 2: [], 3: [] };
 
     // Start with restart note (mirrors app.js)
-    const startPos = getPosition();
     let currentNote = getRestartNote(startPos);
+    stanzaLineHeights[startPos.line].push(noteToMidi(currentNote));
     let history = [{ note: currentNote, position: null }];
 
     // Record first note
@@ -120,6 +143,9 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
         });
         recordNote(position.phrase, currentNote);
 
+        // Track pitch height for contour analysis
+        stanzaLineHeights[position.line].push(noteToMidi(currentNote));
+
         // Advance step
         const phraseEnded = advanceStep();
 
@@ -157,6 +183,18 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
         }
 
         if (history.length > 10) history = history.slice(-10);
+      }
+    }
+
+    // Record contour stats for this stanza
+    if (results.contourStats[contourType]) {
+      results.contourStats[contourType].count++;
+      for (const line of [1, 2, 3]) {
+        const heights = stanzaLineHeights[line];
+        if (heights.length > 0) {
+          const avg = heights.reduce((a, b) => a + b, 0) / heights.length;
+          results.contourStats[contourType].lineAvgs[line].push(avg);
+        }
       }
     }
   }
@@ -204,12 +242,40 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
   }
   console.table(report.phraseLengths);
 
+  // Contour stats
+  console.log('\nCONTOUR ANALYSIS (avg pitch by line):');
+  report.contour = {};
+  for (const [type, stats] of Object.entries(results.contourStats)) {
+    if (stats.count === 0) continue;
+    const line1Avg = stats.lineAvgs[1].length > 0
+      ? (stats.lineAvgs[1].reduce((a, b) => a + b, 0) / stats.lineAvgs[1].length).toFixed(1)
+      : 'N/A';
+    const line2Avg = stats.lineAvgs[2].length > 0
+      ? (stats.lineAvgs[2].reduce((a, b) => a + b, 0) / stats.lineAvgs[2].length).toFixed(1)
+      : 'N/A';
+    const line3Avg = stats.lineAvgs[3].length > 0
+      ? (stats.lineAvgs[3].reduce((a, b) => a + b, 0) / stats.lineAvgs[3].length).toFixed(1)
+      : 'N/A';
+    report.contour[type] = {
+      count: stats.count,
+      line1: line1Avg,
+      line2: line2Avg,
+      line3: line3Avg,
+      trend: `${line1Avg} → ${line2Avg} → ${line3Avg}`
+    };
+  }
+  console.table(report.contour);
+
   console.log('\n✅ Browser test complete');
   console.log(`\n🎲 Seed used: ${usedSeed}`);
   console.log('   To reproduce: runBrowserTest(' + numStanzas + ', ' + usedSeed + ')');
   console.log('\nExpected ranges:');
   console.log('  Repetition: ~80-90% (minus 10% variation chance)');
   console.log('  Cadence: ~55-65%');
+  console.log('\nContour expectations:');
+  console.log('  IB: Rise then fall (Line1 < Line2 > Line3)');
+  console.log('  IA: Pure descent (Line1 > Line2 > Line3)');
+  console.log('  IIB: Rising overall (Line1 < Line2, Line3 elevated)');
 
   // Clear seed so normal usage is random again
   clearSeed();
