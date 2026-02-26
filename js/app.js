@@ -8,11 +8,12 @@ import {
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
-import { selectWeightedNote } from './rules/weightedSelection.js';
+import { selectWeightedNote, getRestartNote } from './rules/weightedSelection.js';
 
 // State
 let currentNote = "g'";
 let history = ["g'"];
+let stepsInPhrase = 0; // Phase 1.5: Track steps in current phrase
 
 // DOM elements
 const currentNoteEl = document.getElementById('currentNote');
@@ -59,6 +60,7 @@ async function handleNoteClick(lily) {
 
     currentNote = lily;
     history.push(currentNote);
+    stepsInPhrase++;
     if (history.length > 10) history = history.slice(-10);
 
     playNote(currentNote);
@@ -149,12 +151,24 @@ async function nextNote() {
     const possible = adjacency[currentNote] || [];
 
     if (possible.length === 0) {
-        currentNote = "g'";
-        history.push("g'");
-    } else {
-        // Phase 1: Weighted selection based on melodic motion rules
-        currentNote = selectWeightedNote(currentNote, history, possible);
+        // Sink note (C) - restart phrase
+        currentNote = getRestartNote();
         history.push(currentNote);
+        stepsInPhrase = 0;
+        console.log('📍 New phrase started (sink reached)');
+    } else {
+        // Phase 1.5: Weighted selection with phrase awareness
+        const result = selectWeightedNote(currentNote, history, possible, stepsInPhrase);
+        currentNote = result.note;
+        history.push(currentNote);
+        stepsInPhrase++;
+
+        if (result.shouldRestart) {
+            // Landed on C after sufficient phrase length - restart
+            console.log(`📍 Phrase ended after ${stepsInPhrase} steps`);
+            stepsInPhrase = 0;
+        }
+
         if (history.length > 10) history = history.slice(-10);
     }
 

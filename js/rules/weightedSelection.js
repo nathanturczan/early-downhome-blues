@@ -9,6 +9,10 @@ import { melodicMotionEdgeWeightRules } from './melodicMotionRules.js';
 // Debug mode - set to true to see weight calculations in console
 const DEBUG = true;
 
+// Phase 1.5: Phrase length parameters
+const MIN_PHRASE_STEPS = 8;
+const MAX_PHRASE_STEPS = 12;
+
 /**
  * Convert frequency to approximate MIDI note number
  * Used for calculating semitone intervals
@@ -74,10 +78,10 @@ function buildContext(currentNote, history) {
  */
 const phase1Rules = {
   // MM-GP-01: Downward motion more frequent/gradual
-  // down *1.5, up *0.85, same *1.0
+  // Phase 1.5: Softened from (1.5, 0.85) to (1.4, 0.9) to prevent "stuck low"
   'MM-GP-01': (edge, _ctx) => {
-    if (edge.direction < 0) return 1.5;   // descending
-    if (edge.direction > 0) return 0.85;  // ascending
+    if (edge.direction < 0) return 1.4;   // descending (was 1.5)
+    if (edge.direction > 0) return 0.9;   // ascending (was 0.85)
     return 1.0;                            // same note
   },
 
@@ -105,12 +109,12 @@ const phase1Rules = {
 
   // MM-GP-04: Skip asymmetry
   // if downward interval magnitude > 3 semitones *0.4
-  // if upward > 3 semitones *1.1
+  // Phase 1.5: Bumped upward from 1.1 to 1.2 to help escape low register
   'MM-GP-04': (edge, _ctx) => {
     const absInterval = Math.abs(edge.intervalSemitones);
     if (absInterval > 3) {
       if (edge.direction < 0) return 0.4;  // large downward skip penalized
-      if (edge.direction > 0) return 1.1;  // large upward skip OK
+      if (edge.direction > 0) return 1.2;  // large upward skip OK (was 1.1)
     }
     return 1.0;
   },
@@ -128,10 +132,33 @@ const phase1Rules = {
 };
 
 /**
+ * Phase 1.5: Cadence bias rule
+ * When phrase is getting long, bias toward cadential notes (C, C')
+ * Returns multiplier based on steps into phrase
+ */
+function getCadenceBias(candidateNote, stepsInPhrase) {
+  if (stepsInPhrase < MIN_PHRASE_STEPS) {
+    return 1.0; // No bias early in phrase
+  }
+
+  // Progressive bias toward C/C' as phrase exceeds min steps
+  const overage = stepsInPhrase - MIN_PHRASE_STEPS;
+  const maxOverage = MAX_PHRASE_STEPS - MIN_PHRASE_STEPS;
+  const strength = Math.min(overage / maxOverage, 1.0); // 0 to 1
+
+  if (isC(candidateNote)) {
+    // Strong bias toward C when phrase is long
+    return 1.0 + (strength * 2.0); // up to 3x weight
+  }
+
+  return 1.0;
+}
+
+/**
  * Score a single candidate note
  * Returns { note, weight, ruleContributions }
  */
-function scoreCandidate(currentNote, candidateNote, ctx) {
+function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0) {
   const edge = buildEdge(currentNote, candidateNote);
   const ruleContributions = {};
   let totalWeight = 1.0;
@@ -142,6 +169,11 @@ function scoreCandidate(currentNote, candidateNote, ctx) {
     ruleContributions[ruleId] = contribution;
     totalWeight *= contribution;
   }
+
+  // Phase 1.5: Apply cadence bias
+  const cadenceBias = getCadenceBias(candidateNote, stepsInPhrase);
+  ruleContributions['CADENCE'] = cadenceBias;
+  totalWeight *= cadenceBias;
 
   return {
     note: candidateNote,
@@ -156,16 +188,21 @@ function scoreCandidate(currentNote, candidateNote, ctx) {
  * @param {string} currentNote - Current note in LilyPond notation
  * @param {string[]} history - Recent note history
  * @param {string[]} candidates - Array of possible next notes
- * @returns {string} Selected next note
+ * @param {number} stepsInPhrase - Current step count in phrase (Phase 1.5)
+ * @returns {{ note: string, shouldRestart: boolean }} Selected note and restart flag
  */
-export function selectWeightedNote(currentNote, history, candidates) {
-  if (candidates.length === 0) return null;
-  if (candidates.length === 1) return candidates[0];
+export function selectWeightedNote(currentNote, history, candidates, stepsInPhrase = 0) {
+  if (candidates.length === 0) return { note: null, shouldRestart: false };
+  if (candidates.length === 1) {
+    const note = candidates[0];
+    const shouldRestart = isC(note) && stepsInPhrase >= MIN_PHRASE_STEPS;
+    return { note, shouldRestart };
+  }
 
   const ctx = buildContext(currentNote, history);
 
   // Score all candidates
-  const scored = candidates.map(note => scoreCandidate(currentNote, note, ctx));
+  const scored = candidates.map(note => scoreCandidate(currentNote, note, ctx, stepsInPhrase));
 
   // Normalize weights
   const totalWeight = scored.reduce((sum, s) => sum + s.weight, 0);
@@ -196,13 +233,26 @@ export function selectWeightedNote(currentNote, history, candidates) {
   for (const s of scored) {
     random -= s.weight;
     if (random <= 0) {
+      const shouldRestart = isC(s.note) && stepsInPhrase >= MIN_PHRASE_STEPS;
       if (DEBUG) {
-        console.log(`🎯 Selected: ${s.note} (${s.percentage})`);
+        console.log(`🎯 Selected: ${s.note} (${s.percentage})${shouldRestart ? ' [PHRASE END]' : ''}`);
       }
-      return s.note;
+      return { note: s.note, shouldRestart };
     }
   }
 
   // Fallback (shouldn't happen)
-  return scored[scored.length - 1].note;
+  const fallback = scored[scored.length - 1];
+  const shouldRestart = isC(fallback.note) && stepsInPhrase >= MIN_PHRASE_STEPS;
+  return { note: fallback.note, shouldRestart };
+}
+
+/**
+ * Get a restart note for beginning a new phrase
+ * Uses soft restart: returns G' (hub note) with slight upward momentum
+ */
+export function getRestartNote() {
+  // G' is the hub note with most connections
+  // Occasionally start from C' for variety
+  return Math.random() < 0.7 ? "g'" : "c''";
 }
