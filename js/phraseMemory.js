@@ -113,7 +113,7 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   const sourceMelody = frozenPhrases[sourcePhrase];
 
   if (!sourceMelody || stepInPhrase >= sourceMelody.length) {
-    // console.log(`🔁 ${phrase}[${stepInPhrase}]: no source (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
+    console.log(`🔁 ${phrase}[${stepInPhrase}]: no source (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
     return null;
   }
 
@@ -123,15 +123,15 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   if (candidates.includes(targetNote)) {
     // Apply variation probability
     if (Math.random() < VARIATION_PROBABILITY) {
-      // console.log(`🔁 ${phrase}[${stepInPhrase}]: variation skip, wanted ${targetNote}`);
+      console.log(`🔁 ${phrase}[${stepInPhrase}]: variation skip, wanted ${targetNote}`);
       return null; // Allow natural selection this time
     }
-    // console.log(`🔁 ${phrase}[${stepInPhrase}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
+    console.log(`🔁 ${phrase}[${stepInPhrase}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
     return targetNote;
   }
 
   // Target not reachable - try to find closest match
-  // console.log(`🔁 ${phrase}[${stepInPhrase}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
+  console.log(`🔁 ${phrase}[${stepInPhrase}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
   return null;
 }
 
