@@ -1286,50 +1286,87 @@ button.phrase-end:active {
     /* Use CSS Grid for tablet layout */
     .two-column-layout {
         display: grid;
-        grid-template-columns: 1fr 1.5fr;
-        grid-template-rows: auto auto;
+        grid-template-columns: 1fr 1fr;
         gap: 12px;
         min-width: 0;
     }
-    /* Left column spans full width for notation and controls */
-    .left-column {
-        grid-column: 1 / -1;
-        grid-row: 1;
+    /* Flatten both columns so children become grid items */
+    .left-column,
+    .right-column {
         display: contents;
     }
-    .left-column .notation-container,
-    .left-column .controls {
-        grid-column: 1 / -1;
-    }
-    /* Harmony and MIDI go to left sub-column */
-    .left-column .harmony-section,
-    .left-column .midi-section-inline {
-        grid-column: 1;
-    }
-    /* Right column items go to right sub-column */
-    .right-column {
-        grid-column: 2;
-        grid-row: 2;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        width: 100%;
-        max-width: 100%;
-    }
+    /* Row 1: Notation (full width) */
     .notation-container {
+        grid-column: 1 / -1;
+        grid-row: 1;
         width: 100%;
         max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
+        align-self: start;  /* Prevent vertical stretching */
+        height: auto;
+        max-height: fit-content;
+    }
+    #notation {
+        height: auto;
+        max-height: fit-content;
+    }
+    #notation svg {
+        height: auto !important;
+    }
+    /* Row 2: Controls (full width) */
+    .controls {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        align-self: start;
+    }
+    /* Row 3: Two columns side by side */
+    /* Left sub-column: Harmony, MIDI */
+    .harmony-section {
+        grid-column: 1;
+        grid-row: 3;
+        align-self: start;
+    }
+    .midi-section-inline {
+        grid-column: 1;
+        grid-row: 4;
+        align-self: start;
+    }
+    /* Right sub-column: Use flex to stack without grid row alignment issues */
+    .right-column {
+        display: flex !important;
+        flex-direction: column;
+        gap: 10px;
+        grid-column: 2;
+        grid-row: 3 / span 3;
+        align-self: start;
+    }
+    .history {
+        max-height: 120px;
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+    .history-notes {
+        white-space: nowrap;
+    }
+    .history-note {
+        white-space: nowrap;
+        display: inline-block;
+    }
+    .phrasing-toggles {
+        /* No grid positioning needed - flex handles it */
+    }
+    .stanza-indicator {
+        margin-top: 0;
+    }
+    .inline-score {
+        display: none;
+    }
+    .mobile-score-btn {
+        display: block;
     }
     #notation, #notation svg {
         max-width: 100%;
-    }
-    .inline-score {
-        display: none;  /* Hide inline score on tablet */
-    }
-    .mobile-score-btn {
-        display: block;  /* Show score button on tablet */
     }
 }
 
@@ -1405,10 +1442,15 @@ button.phrase-end:active {
         min-width: 0;
     }
     .notation-container {
-        overflow-x: auto;
+        overflow-x: hidden;
         overflow-y: hidden;
     }
-    #notation, #notation svg {
+    #notation {
+        transform: scale(0.85);
+        transform-origin: top left;
+        width: 118%;  /* Compensate for scale to fill container */
+    }
+    #notation svg {
         max-width: 100%;
     }
     .controls {
@@ -1462,6 +1504,40 @@ button.phrase-end:active {
     }
     .mobile-score-btn {
         display: block;  /* Show score button on mobile */
+    }
+    /* Smaller stanza box for mobile */
+    .stanza-indicator {
+        padding: 10px 8px 6px;
+        gap: 3px;
+        margin-top: 4px;
+        font-size: 0.7em;
+    }
+    .stanza-box-label {
+        top: -6px;
+        font-size: 0.6em;
+    }
+    .stanza-line {
+        gap: 5px;
+    }
+    .line-label {
+        min-width: 35px;
+        font-size: 0.9em;
+    }
+    .line-harmony {
+        min-width: 22px;
+        font-size: 0.9em;
+    }
+    .phrase-box {
+        padding: 2px 5px;
+        height: 20px;
+        font-size: 0.75em;
+        border-radius: 3px;
+    }
+    .stanza-progress {
+        padding-top: 4px;
+    }
+    .phrase-progress-bar {
+        height: 4px;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {
