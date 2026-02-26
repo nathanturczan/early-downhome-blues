@@ -231,21 +231,25 @@ button:active {
 }
 
 /* Phase 2: Stanza Position Indicator */
-.auto-harmony-toggle {
+.phrasing-toggles {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: 16px;
     margin-top: 8px;
     font-size: 0.85em;
 }
-.auto-harmony-toggle input[type="checkbox"] {
+.phrasing-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.phrasing-toggle input[type="checkbox"] {
     accent-color: rgb(145, 56, 47);
 }
-.auto-harmony-toggle label {
+.phrasing-toggle label {
     cursor: pointer;
     color: #555;
 }
-.auto-harmony-toggle label.disabled {
+.phrasing-toggle label.disabled {
     color: #aaa;
     cursor: not-allowed;
 }
@@ -271,26 +275,6 @@ button:active {
     font-size: 0.65em;
     color: #888;
     text-transform: uppercase;
-}
-.stanza-toggles {
-    display: flex;
-    gap: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(0,0,0,0.1);
-    margin-bottom: 4px;
-}
-.stanza-toggle {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.stanza-toggle input[type="checkbox"] {
-    accent-color: rgb(145, 56, 47);
-}
-.stanza-toggle label {
-    cursor: pointer;
-    font-size: 0.9em;
-    color: #555;
 }
 .stanza-line {
     display: flex;
