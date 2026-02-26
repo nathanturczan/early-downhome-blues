@@ -41,21 +41,24 @@ export function getPhraseMelody(phrase) {
 
 /**
  * Get the corresponding phrase to repeat from
- * c repeats a, d repeats b
+ * c repeats a, d repeats b, f repeats b/d
+ * (per Titon: "phrases b, d, and f are usually identical or nearly so")
  */
 function getSourcePhrase(targetPhrase) {
   const mapping = {
     'c': 'a',
-    'd': 'b'
+    'd': 'b',
+    'f': 'b'  // f copies b (or d, but b is the original)
   };
   return mapping[targetPhrase] || null;
 }
 
 /**
  * Check if this phrase should repeat a previous melody
+ * c repeats a, d repeats b, f repeats b
  */
 export function shouldRepeat(phrase) {
-  return phrase === 'c' || phrase === 'd';
+  return phrase === 'c' || phrase === 'd' || phrase === 'f';
 }
 
 /**
