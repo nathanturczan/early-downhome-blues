@@ -43,9 +43,15 @@ export function initScoreHistory(modalElement, inlineCanvas = null) {
                 downloadMusicXml(currentHistoryData);
                 break;
             case 'pdf':
-                const svg = getSvgElement(modalCanvas);
+                // Try inline canvas first (desktop), then modal canvas (mobile/tablet)
+                let svg = inlineCanvas ? getSvgElement(inlineCanvas) : null;
+                if (!svg) {
+                    svg = getSvgElement(modalCanvas);
+                }
                 if (svg) {
                     exportToPdf(svg);
+                } else {
+                    console.warn('No SVG found for PDF export');
                 }
                 break;
             default:
@@ -96,9 +102,15 @@ export function initScoreHistory(modalElement, inlineCanvas = null) {
          * Export to PDF format
          */
         exportPdf() {
-            const svg = getSvgElement(modalCanvas);
+            // Try inline canvas first (desktop), then modal canvas (mobile/tablet)
+            let svg = inlineCanvas ? getSvgElement(inlineCanvas) : null;
+            if (!svg) {
+                svg = getSvgElement(modalCanvas);
+            }
             if (svg) {
                 exportToPdf(svg);
+            } else {
+                console.warn('No SVG found for PDF export');
             }
         }
     };
