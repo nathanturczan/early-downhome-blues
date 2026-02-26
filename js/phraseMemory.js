@@ -41,6 +41,8 @@ const VARIATION_PROBABILITY = 0.1;
 export function recordNote(phrase, note) {
   if (phraseNotes[phrase]) {
     phraseNotes[phrase].push(note);
+    // Uncomment for detailed logging:
+    // console.log(`📝 Record ${phrase}[${phraseNotes[phrase].length - 1}]: ${note}`);
   }
 }
 
@@ -50,9 +52,10 @@ export function recordNote(phrase, note) {
  */
 export function freezePhrase(phrase) {
   if (phrase === 'a' || phrase === 'b') {
-    frozenPhrases[phrase] = [...phraseNotes[phrase]]; // Deep copy
+    const notes = phraseNotes[phrase];
+    console.log(`🧊 FREEZE ${phrase}: ${notes.length} notes recorded: [${notes.join(', ')}]`);
+    frozenPhrases[phrase] = [...notes]; // Deep copy
     freezeTimestamps[phrase] = Date.now();
-    console.log(`🧊 Froze phrase ${phrase}: ${frozenPhrases[phrase].join(' → ')}`);
   }
 }
 
@@ -110,6 +113,7 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   const sourceMelody = frozenPhrases[sourcePhrase];
 
   if (!sourceMelody || stepInPhrase >= sourceMelody.length) {
+    // console.log(`🔁 ${phrase}[${stepInPhrase}]: no source (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
     return null;
   }
 
@@ -119,13 +123,15 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   if (candidates.includes(targetNote)) {
     // Apply variation probability
     if (Math.random() < VARIATION_PROBABILITY) {
+      // console.log(`🔁 ${phrase}[${stepInPhrase}]: variation skip, wanted ${targetNote}`);
       return null; // Allow natural selection this time
     }
+    // console.log(`🔁 ${phrase}[${stepInPhrase}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
     return targetNote;
   }
 
   // Target not reachable - try to find closest match
-  // For now, return null and let weighted selection handle it
+  // console.log(`🔁 ${phrase}[${stepInPhrase}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
   return null;
 }
 
