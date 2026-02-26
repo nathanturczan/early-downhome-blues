@@ -232,15 +232,27 @@ button:active {
 
 /* Phase 2: Stanza Position Indicator */
 .stanza-indicator {
+    position: relative;
     flex-shrink: 0;
-    padding: 10px 12px;
+    padding: 16px 12px 10px;
     background: rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.08);
     border-radius: 6px;
     margin-top: 8px;
     display: flex;
     flex-direction: column;
     gap: 6px;
     font-size: 0.8em;
+}
+.stanza-box-label {
+    position: absolute;
+    top: -8px;
+    left: 10px;
+    background: rgb(247, 239, 215);
+    padding: 0 6px;
+    font-size: 0.65em;
+    color: #888;
+    text-transform: uppercase;
 }
 .stanza-toggles {
     display: flex;

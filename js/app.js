@@ -9,7 +9,7 @@ import {
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
 import { selectWeightedNote, getRestartNote, recordNote, freezePhrase, setPhrasing } from './rules/weightedSelection.js';
-import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits } from './stanza.js';
+import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits, setPosition } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
 
 // Phase 2 feature flag - set to true to enable stanza tracking
@@ -17,7 +17,8 @@ const PHASE_2_ENABLED = true;
 
 // State
 let currentNote = "g'";
-let history = ["g'"];
+// History now stores objects with note and position for rewinding
+let history = [{ note: "g'", position: null }];
 let stepsInPhrase = 0; // Phase 1.5: Track steps in current phrase (fallback when Phase 2 disabled)
 
 // DOM elements
@@ -117,7 +118,7 @@ function updateChordButtonUI() {
     });
 }
 
-// Handle note selection
+// Handle note selection (from paths or notation)
 async function handleNoteClick(lily) {
     const { isInitialized } = getAudioState();
     if (!isInitialized) {
@@ -126,16 +127,55 @@ async function handleNoteClick(lily) {
     }
 
     currentNote = lily;
-    history.push(currentNote);
-    if (history.length > 10) history = history.slice(-10);
 
     // Phase 2: Record note and advance position
     if (PHASE_2_ENABLED) {
         const position = getPosition();
+        // Store note with position snapshot for history rewind
+        history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
         recordNote(position.phrase, currentNote);
         advanceStep();
     } else {
+        history.push({ note: currentNote, position: null });
         stepsInPhrase++;
+    }
+
+    if (history.length > 10) history = history.slice(-10);
+
+    playNote(currentNote);
+    sendMidiNote(currentNote);
+
+    // Apply inflection if enabled and harmony is playing
+    if (isHarmonyPlaying()) {
+        inflectHarmony(currentNote, inflectToggle.checked, latchToggle.checked);
+    }
+
+    // Update auto-harmony if enabled
+    updateAutoHarmony();
+
+    updateAudioToggleUI();
+    updateDisplay();
+}
+
+// Handle clicking a history note - rewind to that point
+async function handleHistoryClick(index) {
+    const entry = history[index];
+    if (!entry) return;
+
+    const { isInitialized } = getAudioState();
+    if (!isInitialized) {
+        await initAudio();
+        updateAudioToggleUI();
+    }
+
+    // Truncate history to this point
+    history = history.slice(0, index + 1);
+    currentNote = entry.note;
+
+    // Restore position if available
+    if (PHASE_2_ENABLED && entry.position) {
+        setPosition(entry.position.phraseIndex, entry.position.stepInPhrase);
+        console.log(`⏪ Rewound to phrase ${getPosition().phrase}, step ${entry.position.stepInPhrase}`);
     }
 
     playNote(currentNote);
@@ -159,20 +199,21 @@ function updateDisplay() {
     noteInfoEl.textContent = `${frequencies[currentNote].toFixed(2)} Hz`;
 
     const historyContent = history
-        .map((n, i) => {
+        .map((entry, i) => {
+            const note = entry.note;
             let opacity = 1;
             if (history.length === 10 && i === 0) opacity = 0.1;
             else if (history.length >= 9 && i === history.length - 9) opacity = 0.5;
             else if (history.length >= 8 && i === history.length - 8) opacity = 0.7;
             const isCurrent = i === history.length - 1;
-            return `<span class="history-note${isCurrent ? ' current' : ''}" data-note="${n}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[n]}</span>`;
+            return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${i}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>`;
         })
         .join(' \u2192 ');
     historyEl.innerHTML = `<span class="history-inner">${historyContent}</span>`;
 
-    // Make history notes clickable
+    // Make history notes clickable - rewind to that point
     historyEl.querySelectorAll('.history-note').forEach(el => {
-        el.addEventListener('click', () => handleNoteClick(el.dataset.note));
+        el.addEventListener('click', () => handleHistoryClick(parseInt(el.dataset.index)));
     });
 
     const possible = adjacency[currentNote] || [];
@@ -253,7 +294,8 @@ async function nextNote() {
             }
 
             currentNote = getRestartNote(newPosition);
-            history.push(currentNote);
+            // Store with new position for history rewind
+            history.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase } });
             recordNote(newPosition.phrase, currentNote);
             console.log(`📍 Phrase ${position.phrase} ended (sink) → starting phrase ${newPosition.phrase}`);
 
@@ -263,9 +305,12 @@ async function nextNote() {
             }
         } else {
             // Weighted selection with position awareness
-            const result = selectWeightedNote(currentNote, history, possible, 0, position);
+            // Extract just notes for the selection algorithm
+            const historyNotes = history.map(h => h.note);
+            const result = selectWeightedNote(currentNote, historyNotes, possible, 0, position);
             currentNote = result.note;
-            history.push(currentNote);
+            // Store with position for history rewind
+            history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
             recordNote(position.phrase, currentNote);
 
             const phraseEnded = advanceStep();
@@ -296,13 +341,14 @@ async function nextNote() {
         // Phase 1.5 fallback: Simple step tracking
         if (possible.length === 0) {
             currentNote = getRestartNote();
-            history.push(currentNote);
+            history.push({ note: currentNote, position: null });
             stepsInPhrase = 0;
             console.log('📍 New phrase started (sink reached)');
         } else {
-            const result = selectWeightedNote(currentNote, history, possible, stepsInPhrase);
+            const historyNotes = history.map(h => h.note);
+            const result = selectWeightedNote(currentNote, historyNotes, possible, stepsInPhrase);
             currentNote = result.note;
-            history.push(currentNote);
+            history.push({ note: currentNote, position: null });
             stepsInPhrase++;
 
             if (result.shouldRestart) {
