@@ -387,6 +387,10 @@ function init() {
     if (phrasingToggle) {
         phrasingToggle.addEventListener('change', (e) => {
             setPhrasing(e.target.checked);
+            // Hide/show stanza structure UI (but keep toggles visible)
+            stanzaIndicator.querySelectorAll('.stanza-line, .stanza-progress').forEach(el => {
+                el.style.display = e.target.checked ? '' : 'none';
+            });
         });
     }
 
