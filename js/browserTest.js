@@ -1,29 +1,32 @@
 // js/browserTest.js
 //
-// Browser parity test - runs the same logic as test-phase2.mjs
+// Browser parity test - mirrors the exact code path of app.js nextNote()
 // Call window.runBrowserTest() from console to execute
 
 import { adjacency } from './network.js';
-import { selectWeightedNote, getRestartNote, getPhrasingEnabled } from './rules/weightedSelection.js';
-import {
-  recordNote, freezePhrase, clearPhrases, shouldRepeat,
-  getRepetitionNote, getDebugStats, resetPhraseMemory
-} from './phraseMemory.js';
-import {
-  getPosition, advanceStep, advancePhrase, resetStanza,
-  setPosition, PHRASE_SEQUENCE
-} from './stanza.js';
+import { selectWeightedNote, getRestartNote, getPhrasingEnabled, setPhrasing } from './rules/weightedSelection.js';
+import { recordNote, freezePhrase, resetPhraseMemory, getDebugStats } from './phraseMemory.js';
+import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, PHRASE_SEQUENCE } from './stanza.js';
 
 function isC(note) {
   return note === "c'" || note === "c''";
 }
 
 /**
- * Run test harness - same logic as Node test
+ * Run test harness - mirrors app.js nextNote() exactly
  */
 export function runBrowserTest(numStanzas = 10) {
   console.log(`\n🧪 Browser Test: ${numStanzas} stanzas...\n`);
-  console.log(`📊 Phrasing enabled: ${getPhrasingEnabled()}`);
+
+  // Log current config
+  console.log('📊 Config:');
+  console.log('  phrasingEnabled:', getPhrasingEnabled());
+
+  // Ensure phrasing is ON for test
+  if (!getPhrasingEnabled()) {
+    console.log('  ⚠️ Phrasing was OFF, enabling for test');
+    setPhrasing(true);
+  }
 
   const results = {
     repetitionAttempts: { c: 0, d: 0, f: 0 },
@@ -34,85 +37,114 @@ export function runBrowserTest(numStanzas = 10) {
   };
 
   for (let stanza = 0; stanza < numStanzas; stanza++) {
-    // Reset state for new stanza
+    // Reset state for new stanza (mirrors app.js stanza reset)
     setPosition(0, 0);
     resetPhraseMemory();
 
-    let currentNote = getRestartNote();
+    // Start with restart note (mirrors app.js)
+    const startPos = getPosition();
+    let currentNote = getRestartNote(startPos);
     let history = [{ note: currentNote, position: null }];
-    let stanzaComplete = false;
 
     // Record first note
-    const firstPos = getPosition();
-    recordNote(firstPos.phrase, currentNote);
+    recordNote(startPos.phrase, currentNote);
+
+    let stanzaComplete = false;
 
     while (!stanzaComplete) {
       const position = getPosition();
       const candidates = adjacency[currentNote] || [];
 
       if (candidates.length === 0) {
-        // Sink - freeze phrase and advance
-        const lastPhrase = position.phrase;
-        if (lastPhrase === 'a' || lastPhrase === 'b') {
-          freezePhrase(lastPhrase);
-        }
-        results.phraseNoteCounts[lastPhrase].push(position.stepInPhrase + 1);
-
-        // Check cadence
-        if (['b', 'd', 'f'].includes(lastPhrase)) {
-          results.cadenceAttempts[lastPhrase]++;
-          if (isC(currentNote)) results.cadenceHits[lastPhrase]++;
+        // SINK PATH - mirrors app.js exactly
+        // Freeze phrase for repetition before advancing
+        if (position.phrase === 'a' || position.phrase === 'b') {
+          freezePhrase(position.phrase);
         }
 
+        // Record phrase length
+        results.phraseNoteCounts[position.phrase].push(position.stepInPhrase + 1);
+
+        // Check cadence (did we end on C?)
+        if (['b', 'd', 'f'].includes(position.phrase)) {
+          results.cadenceAttempts[position.phrase]++;
+          if (isC(currentNote)) {
+            results.cadenceHits[position.phrase]++;
+          }
+        }
+
+        // Advance to next phrase
         stanzaComplete = advancePhrase();
+
         if (!stanzaComplete) {
-          const newPos = getPosition();
-          currentNote = getRestartNote(newPos);
+          const newPosition = getPosition();
+
+          // Decide splits for phrases e and f
+          if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
+            decideSplits(newPosition.phrase);
+          }
+
+          currentNote = getRestartNote(newPosition);
           history = [{ note: currentNote, position: null }];
-          recordNote(newPos.phrase, currentNote);
+          recordNote(newPosition.phrase, currentNote);
         }
       } else {
-        // Check for repetition
-        let fromRepetition = false;
-        if (shouldRepeat(position.phrase)) {
+        // NORMAL PATH - mirrors app.js exactly
+        // Extract just notes for the selection algorithm
+        const historyNotes = history.map(h => h.note);
+
+        // Call selectWeightedNote - this handles repetition internally!
+        const result = selectWeightedNote(currentNote, historyNotes, candidates, 0, position);
+        currentNote = result.note;
+
+        // Track repetition using the flag from selectWeightedNote
+        if (['c', 'd', 'f'].includes(position.phrase)) {
           results.repetitionAttempts[position.phrase]++;
-          const repNote = getRepetitionNote(position.phrase, position.stepInPhrase, candidates);
-          if (repNote) {
-            currentNote = repNote;
-            fromRepetition = true;
+          if (result.fromRepetition) {
             results.repetitionHits[position.phrase]++;
           }
         }
 
-        if (!fromRepetition) {
-          const historyNotes = history.map(h => h.note);
-          const result = selectWeightedNote(currentNote, historyNotes, candidates, 0, position);
-          currentNote = result.note;
-        }
-
-        history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
+        // Store with position for history
+        history.push({
+          note: currentNote,
+          position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }
+        });
         recordNote(position.phrase, currentNote);
 
+        // Advance step
         const phraseEnded = advanceStep();
-        if (phraseEnded) {
-          const lastPhrase = position.phrase;
-          if (lastPhrase === 'a' || lastPhrase === 'b') {
-            freezePhrase(lastPhrase);
+
+        if (phraseEnded || result.shouldRestart) {
+          // Freeze phrase for repetition before advancing
+          if (position.phrase === 'a' || position.phrase === 'b') {
+            freezePhrase(position.phrase);
           }
-          results.phraseNoteCounts[lastPhrase].push(position.stepInPhrase + 1);
+
+          // Record phrase length
+          results.phraseNoteCounts[position.phrase].push(position.stepInPhrase + 1);
 
           // Check cadence
-          if (['b', 'd', 'f'].includes(lastPhrase)) {
-            results.cadenceAttempts[lastPhrase]++;
-            if (isC(currentNote)) results.cadenceHits[lastPhrase]++;
+          if (['b', 'd', 'f'].includes(position.phrase)) {
+            results.cadenceAttempts[position.phrase]++;
+            if (isC(currentNote)) {
+              results.cadenceHits[position.phrase]++;
+            }
           }
 
           stanzaComplete = advancePhrase();
+
           if (!stanzaComplete) {
-            const newPos = getPosition();
-            currentNote = getRestartNote(newPos);
+            const newPosition = getPosition();
+
+            // Decide splits for phrases e and f
+            if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
+              decideSplits(newPosition.phrase);
+            }
+
+            currentNote = getRestartNote(newPosition);
             history = [{ note: currentNote, position: null }];
-            recordNote(newPos.phrase, currentNote);
+            recordNote(newPosition.phrase, currentNote);
           }
         }
 
@@ -128,13 +160,18 @@ export function runBrowserTest(numStanzas = 10) {
     phraseLengths: {}
   };
 
+  console.log('\n📊 BROWSER TEST RESULTS\n');
+
+  console.log('REPETITION (notes matched from source phrase):');
   for (const p of ['c', 'd', 'f']) {
     const attempts = results.repetitionAttempts[p];
     const hits = results.repetitionHits[p];
     const pct = attempts > 0 ? Math.round(100 * hits / attempts) : 0;
     report.repetition[p] = { hits, attempts, pct: `${pct}%` };
   }
+  console.table(report.repetition);
 
+  console.log('\nCADENCES (phrase ending on C):');
   let totalCadenceAttempts = 0, totalCadenceHits = 0;
   for (const p of ['b', 'd', 'f']) {
     const attempts = results.cadenceAttempts[p];
@@ -149,21 +186,20 @@ export function runBrowserTest(numStanzas = 10) {
     attempts: totalCadenceAttempts,
     pct: `${Math.round(100 * totalCadenceHits / totalCadenceAttempts)}%`
   };
+  console.table(report.cadence);
 
+  console.log('\nPHRASE LENGTHS:');
   for (const p of PHRASE_SEQUENCE) {
     const counts = results.phraseNoteCounts[p];
     const avg = counts.length > 0 ? (counts.reduce((a, b) => a + b, 0) / counts.length).toFixed(1) : 'N/A';
     report.phraseLengths[p] = { avg, samples: counts.length };
   }
-
-  console.log('\n📊 BROWSER TEST RESULTS\n');
-  console.log('REPETITION (notes matched from source phrase):');
-  console.table(report.repetition);
-  console.log('\nCADENCES (phrase ending on C):');
-  console.table(report.cadence);
-  console.log('\nPHRASE LENGTHS:');
   console.table(report.phraseLengths);
+
   console.log('\n✅ Browser test complete');
+  console.log('\nExpected ranges:');
+  console.log('  Repetition: ~80-90% (minus 10% variation chance)');
+  console.log('  Cadence: ~55-65%');
 
   return report;
 }
@@ -172,5 +208,5 @@ export function runBrowserTest(numStanzas = 10) {
 if (typeof window !== 'undefined') {
   window.runBrowserTest = runBrowserTest;
   window.getDebugStats = getDebugStats;
-  console.log('🧪 Browser test ready: call window.runBrowserTest(10) in console');
+  console.log('🧪 Browser test ready: call window.runBrowserTest(20) in console');
 }

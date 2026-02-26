@@ -225,10 +225,10 @@ function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0, posi
  * @param {string[]} candidates - Array of possible next notes
  * @param {number} stepsInPhrase - Current step count in phrase (Phase 1.5, ignored if position provided)
  * @param {Object} position - Optional stanza position from getPosition() (Phase 2)
- * @returns {{ note: string, shouldRestart: boolean }} Selected note and restart flag
+ * @returns {{ note: string, shouldRestart: boolean, fromRepetition: boolean }} Selected note, restart flag, and repetition flag
  */
 export function selectWeightedNote(currentNote, history, candidates, stepsInPhrase = 0, position = null) {
-  if (candidates.length === 0) return { note: null, shouldRestart: false };
+  if (candidates.length === 0) return { note: null, shouldRestart: false, fromRepetition: false };
 
   // Phase 2: Check for melodic repetition (phrases c, d repeat a, b)
   // Only when phrasing is enabled
@@ -238,14 +238,14 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
       if (DEBUG) {
         console.log(`🔁 Repetition: playing ${repetitionNote} from phrase ${position.phrase === 'c' ? 'a' : 'b'}`);
       }
-      return { note: repetitionNote, shouldRestart: false };
+      return { note: repetitionNote, shouldRestart: false, fromRepetition: true };
     }
   }
 
   if (candidates.length === 1) {
     const note = candidates[0];
     const shouldRestart = isC(note) && (position ? position.isNearPhraseEnd : stepsInPhrase >= MIN_PHRASE_STEPS);
-    return { note, shouldRestart };
+    return { note, shouldRestart, fromRepetition: false };
   }
 
   const ctx = buildContext(currentNote, history, position);
@@ -288,14 +288,14 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
         const posInfo = position ? ` [${position.phrase}:${position.stepInPhrase}]` : '';
         console.log(`🎯 Selected: ${s.note} (${s.percentage})${posInfo}${shouldRestart ? ' [PHRASE END]' : ''}`);
       }
-      return { note: s.note, shouldRestart };
+      return { note: s.note, shouldRestart, fromRepetition: false };
     }
   }
 
   // Fallback (shouldn't happen)
   const fallback = scored[scored.length - 1];
   const shouldRestart = isC(fallback.note) && (position ? position.isNearPhraseEnd : effectiveSteps >= MIN_PHRASE_STEPS);
-  return { note: fallback.note, shouldRestart };
+  return { note: fallback.note, shouldRestart, fromRepetition: false };
 }
 
 /**
