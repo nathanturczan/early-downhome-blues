@@ -7,7 +7,7 @@
 import { frequencies } from '../network.js';
 import { melodicMotionEdgeWeightRules } from './melodicMotionRules.js';
 import { applyPhase2Rules } from './positionRules.js';
-import { shouldRepeat, getRepetitionNote, recordNote } from '../phraseMemory.js';
+import { shouldRepeat, getRepetitionNote, recordNote, getFrozenPhrase } from '../phraseMemory.js';
 
 // Debug mode - set to true to see weight calculations in console
 const DEBUG = true;
@@ -301,14 +301,26 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
 /**
  * Get a restart note for beginning a new phrase
  * Uses soft restart: returns G' (hub note) with slight upward momentum
+ * For repeated phrases (c/d/f): starts at the same note as the source phrase
  * @param {Object} position - Optional stanza position for context-aware restart
  */
 export function getRestartNote(position = null) {
   // Phase 2: Context-aware restart based on phrase
   if (position) {
     const phrase = position.phrase;
+
+    // For repeated phrases: start at the same note as the source phrase
+    // This ensures the repetition path can follow the original
+    if (shouldRepeat(phrase)) {
+      const sourcePhrase = phrase === 'c' ? 'a' : 'b'; // c copies a, d/f copy b
+      const sourceMelody = getFrozenPhrase(sourcePhrase);
+      if (sourceMelody && sourceMelody.length > 0) {
+        return sourceMelody[0]; // Start at same note as source
+      }
+    }
+
     // MM-C-04: Phrases a and c often start with motion toward C'
-    if (phrase === 'a' || phrase === 'c') {
+    if (phrase === 'a') {
       // Start from G to enable G→C' upward motion
       return "g'";
     }

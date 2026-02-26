@@ -64,6 +64,16 @@ export function getPhraseMelody(phrase) {
 }
 
 /**
+ * Get the frozen copy of a phrase (for repetition start note)
+ */
+export function getFrozenPhrase(phrase) {
+  if (phrase === 'a' || phrase === 'b') {
+    return frozenPhrases[phrase] ? [...frozenPhrases[phrase]] : null;
+  }
+  return null;
+}
+
+/**
  * Get the corresponding phrase to repeat from
  * c repeats a, d repeats b, f repeats b/d
  * (per Titon: "phrases b, d, and f are usually identical or nearly so")
