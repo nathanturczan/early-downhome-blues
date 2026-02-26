@@ -3,8 +3,11 @@
 // Phase 2: Melodic memory for phrase repetition
 // Stores Line 1 melody for replay in Line 2
 
-// Module instance check - log URL to detect duplicate imports
-console.log('📦 phraseMemory.js loaded from:', import.meta.url);
+// Debug mode - set to true for verbose repetition logging
+const DEBUG = false;
+
+// Module instance check - log URL to detect duplicate imports (debug only)
+if (DEBUG) console.log('📦 phraseMemory.js loaded from:', import.meta.url);
 
 /**
  * In downhome blues, Line 2 (phrases c+d) more or less repeats Line 1 (phrases a+b)
@@ -53,7 +56,7 @@ export function recordNote(phrase, note) {
 export function freezePhrase(phrase) {
   if (phrase === 'a' || phrase === 'b') {
     const notes = phraseNotes[phrase];
-    console.log(`🧊 FREEZE ${phrase}: ${notes.length} notes recorded: [${notes.join(', ')}]`);
+    if (DEBUG) console.log(`🧊 FREEZE ${phrase}: ${notes.length} notes recorded: [${notes.join(', ')}]`);
     frozenPhrases[phrase] = [...notes]; // Deep copy
     freezeTimestamps[phrase] = Date.now();
   }
@@ -117,7 +120,7 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   const lookupIndex = stepInPhrase + 1;
 
   if (!sourceMelody || lookupIndex >= sourceMelody.length) {
-    console.log(`🔁 ${phrase}[${stepInPhrase}]: no source at index ${lookupIndex} (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
+    if (DEBUG) console.log(`🔁 ${phrase}[${stepInPhrase}]: no source at index ${lookupIndex} (frozen${sourcePhrase.toUpperCase()} has ${sourceMelody?.length || 0} notes)`);
     return null;
   }
 
@@ -127,15 +130,15 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   if (candidates.includes(targetNote)) {
     // Apply variation probability
     if (Math.random() < VARIATION_PROBABILITY) {
-      console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: variation skip, wanted ${targetNote}`);
+      if (DEBUG) console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: variation skip, wanted ${targetNote}`);
       return null; // Allow natural selection this time
     }
-    console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
+    if (DEBUG) console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: SUCCESS playing ${targetNote} from frozen${sourcePhrase.toUpperCase()}`);
     return targetNote;
   }
 
   // Target not reachable - try to find closest match
-  console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
+  if (DEBUG) console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: FAIL - ${targetNote} not reachable from candidates [${candidates.join(', ')}]`);
   return null;
 }
 

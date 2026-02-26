@@ -10,7 +10,7 @@ import { applyPhase2Rules } from './positionRules.js';
 import { shouldRepeat, getRepetitionNote, recordNote, getFrozenPhrase } from '../phraseMemory.js';
 
 // Debug mode - set to true to see weight calculations in console
-const DEBUG = true;
+const DEBUG = false;
 
 // === Phrasing Toggle ===
 // When OFF: skip repetition, cadence bias, phrase-start lift
