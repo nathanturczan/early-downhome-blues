@@ -43,7 +43,7 @@
         };
     </script>
 </head>
-<body>
+<body class="midi-minimized">
     <div class="header">
         <img src="icon.png" alt="Blues" class="header-icon">
         <div class="header-text">
@@ -174,7 +174,9 @@
                 <span class="phrase-box" data-phrase="f">phrase f</span>
             </div>
             <div class="stanza-progress">
-                <span class="phrase-step">Step <span id="phraseStep">0</span>/<span id="phraseSteps">8</span></span>
+                <div class="phrase-progress-bar" id="phraseProgressBar">
+                    <div class="phrase-progress-fill" id="phraseProgressFill"></div>
+                </div>
             </div>
         </div>
 
@@ -187,7 +189,7 @@
     </div>
 
     <!-- MIDI Footer -->
-    <div class="midi-footer">
+    <div class="midi-footer minimized">
         <button class="midi-toggle" id="midiToggle" title="Toggle MIDI panel">
             <span class="midi-toggle-label">MIDI</span>
             <span class="midi-toggle-arrow">&#9660;</span>

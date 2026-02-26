@@ -230,6 +230,55 @@ button:active {
     cursor: pointer;
 }
 
+/* Phrase grouping in history */
+.history-inner.with-phrases {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 3px;
+}
+.phrase-group {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(67, 116, 96, 0.08);
+    border-radius: 4px;
+    padding: 3px 5px 4px;
+    min-height: 48px;
+}
+.phrase-group.no-label {
+    background: transparent;
+    padding: 3px 2px 4px;
+    min-height: auto;
+}
+.phrase-label {
+    font-size: 0.65em;
+    font-weight: 600;
+    color: rgba(67, 116, 96, 0.9);
+    margin-bottom: 3px;
+    text-transform: lowercase;
+    letter-spacing: 0.5px;
+}
+.phrase-notes-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+}
+.phrase-group .history-note {
+    margin: 0 1px;
+}
+.phrase-arrow {
+    color: #999;
+    padding: 0 2px;
+    font-size: 0.85em;
+}
+.phrase-group-arrow {
+    color: #888;
+    padding: 0 4px;
+    font-size: 0.85em;
+    align-self: flex-end;
+    margin-bottom: 6px;
+}
+
 /* Phase 2: Stanza Position Indicator */
 .phrasing-toggles {
     display: flex;
@@ -330,11 +379,31 @@ button:active {
 }
 .stanza-progress {
     display: flex;
-    justify-content: space-between;
-    padding-top: 6px;
+    justify-content: center;
+    padding-top: 8px;
     border-top: 1px solid rgba(0,0,0,0.1);
-    color: #888;
-    font-size: 0.9em;
+}
+
+/* Phrase progress bar - shows progression toward closure */
+.phrase-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(0,0,0,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.phrase-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: rgba(145, 56, 47, 0.3);
+    border-radius: 3px;
+    transition: width 0.15s ease-out, background 0.3s ease;
+}
+
+/* After MIN_LENGTH (closure eligible) - subtle color shift */
+.phrase-progress-fill.eligible {
+    background: rgba(145, 56, 47, 0.6);
 }
 
 .description-wrapper {

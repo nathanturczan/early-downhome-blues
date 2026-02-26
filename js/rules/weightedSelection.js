@@ -4,8 +4,9 @@
 // Phase 1: Position-agnostic edge weighting
 // Phase 2: Phrase/line position awareness
 
-import { frequencies } from '../network.js';
+import { frequencies, adjacency } from '../network.js';
 import { melodicMotionEdgeWeightRules } from './melodicMotionRules.js';
+import { MIN_LENGTH } from './closure.js';
 import { applyPhase2Rules } from './positionRules.js';
 import { shouldRepeat, getRepetitionNote, recordNote, getFrozenPhrase } from '../phraseMemory.js';
 import { random } from '../random.js';
@@ -26,9 +27,7 @@ export function getPhrasingEnabled() {
   return phrasingEnabled;
 }
 
-// Phase 1.5: Phrase length parameters
-const MIN_PHRASE_STEPS = 8;
-const MAX_PHRASE_STEPS = 12;
+// Phase 1.5: Phrase length moved to closure.js
 
 /**
  * Convert frequency to approximate MIDI note number
@@ -58,6 +57,14 @@ function isC(note) {
  */
 function isG(note) {
   return note === "g'" || note === "g''";
+}
+
+/**
+ * Check if a note is a sink node (no outgoing edges)
+ */
+function isSinkNode(note) {
+  const neighbors = adjacency[note] || [];
+  return neighbors.length === 0;
 }
 
 /**
@@ -153,28 +160,7 @@ const phase1Rules = {
   },
 };
 
-/**
- * Phase 1.5: Cadence bias rule
- * When phrase is getting long, bias toward cadential notes (C, C')
- * Returns multiplier based on steps into phrase
- */
-function getCadenceBias(candidateNote, stepsInPhrase) {
-  if (stepsInPhrase < MIN_PHRASE_STEPS) {
-    return 1.0; // No bias early in phrase
-  }
-
-  // Progressive bias toward C/C' as phrase exceeds min steps
-  const overage = stepsInPhrase - MIN_PHRASE_STEPS;
-  const maxOverage = MAX_PHRASE_STEPS - MIN_PHRASE_STEPS;
-  const strength = Math.min(overage / maxOverage, 1.0); // 0 to 1
-
-  if (isC(candidateNote)) {
-    // Strong bias toward C when phrase is long
-    return 1.0 + (strength * 2.0); // up to 3x weight
-  }
-
-  return 1.0;
-}
+// Cadence bias removed - closure.js handles phrase endings
 
 /**
  * Score a single candidate note
@@ -193,12 +179,7 @@ function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0, posi
     totalWeight *= contribution;
   }
 
-  // Phase 1.5: Apply cadence bias (only if no position tracking)
-  if (!position) {
-    const cadenceBias = getCadenceBias(candidateNote, stepsInPhrase);
-    ruleContributions['CADENCE'] = cadenceBias;
-    totalWeight *= cadenceBias;
-  }
+  // Cadence bias removed - closure.js handles phrase endings
 
   // Phase 2: Apply position-aware rules
   if (position) {
@@ -224,12 +205,12 @@ function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0, posi
  * @param {string} currentNote - Current note in LilyPond notation
  * @param {string[]} history - Recent note history
  * @param {string[]} candidates - Array of possible next notes
- * @param {number} stepsInPhrase - Current step count in phrase (Phase 1.5, ignored if position provided)
+ * @param {number} stepsInPhrase - Current step count in phrase (legacy, ignored if position provided)
  * @param {Object} position - Optional stanza position from getPosition() (Phase 2)
- * @returns {{ note: string, shouldRestart: boolean, fromRepetition: boolean }} Selected note, restart flag, and repetition flag
+ * @returns {{ note: string, fromRepetition: boolean }} Selected note and repetition flag
  */
 export function selectWeightedNote(currentNote, history, candidates, stepsInPhrase = 0, position = null) {
-  if (candidates.length === 0) return { note: null, shouldRestart: false, fromRepetition: false };
+  if (candidates.length === 0) return { note: null, fromRepetition: false };
 
   // Phase 2: Check for melodic repetition (phrases c, d repeat a, b)
   // Only when phrasing is enabled
@@ -239,14 +220,12 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
       if (DEBUG) {
         console.log(`🔁 Repetition: playing ${repetitionNote} from phrase ${position.phrase === 'c' ? 'a' : 'b'}`);
       }
-      return { note: repetitionNote, shouldRestart: false, fromRepetition: true };
+      return { note: repetitionNote, fromRepetition: true };
     }
   }
 
   if (candidates.length === 1) {
-    const note = candidates[0];
-    const shouldRestart = isC(note) && (position ? position.isNearPhraseEnd : stepsInPhrase >= MIN_PHRASE_STEPS);
-    return { note, shouldRestart, fromRepetition: false };
+    return { note: candidates[0], fromRepetition: false };
   }
 
   const ctx = buildContext(currentNote, history, position);
@@ -254,6 +233,17 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
 
   // Score all candidates
   const scored = candidates.map(note => scoreCandidate(currentNote, note, ctx, effectiveSteps, position));
+
+  // Anti-sink penalty: before MIN_LENGTH, heavily penalize sink nodes
+  // This prevents forced short endings from polluting cadence stats
+  if (position && position.stepInPhrase < (MIN_LENGTH - 1)) {
+    for (const s of scored) {
+      if (isSinkNode(s.note)) {
+        s.weight *= 0.1;
+        s.ruleContributions['ANTI_SINK'] = 0.1;
+      }
+    }
+  }
 
   // Normalize weights
   const totalWeight = scored.reduce((sum, s) => sum + s.weight, 0);
@@ -284,19 +274,16 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
   for (const s of scored) {
     randomValue -= s.weight;
     if (randomValue <= 0) {
-      const shouldRestart = isC(s.note) && (position ? position.isNearPhraseEnd : effectiveSteps >= MIN_PHRASE_STEPS);
       if (DEBUG) {
         const posInfo = position ? ` [${position.phrase}:${position.stepInPhrase}]` : '';
-        console.log(`🎯 Selected: ${s.note} (${s.percentage})${posInfo}${shouldRestart ? ' [PHRASE END]' : ''}`);
+        console.log(`🎯 Selected: ${s.note} (${s.percentage})${posInfo}`);
       }
-      return { note: s.note, shouldRestart, fromRepetition: false };
+      return { note: s.note, fromRepetition: false };
     }
   }
 
   // Fallback (shouldn't happen)
-  const fallback = scored[scored.length - 1];
-  const shouldRestart = isC(fallback.note) && (position ? position.isNearPhraseEnd : effectiveSteps >= MIN_PHRASE_STEPS);
-  return { note: fallback.note, shouldRestart, fromRepetition: false };
+  return { note: scored[scored.length - 1].note, fromRepetition: false };
 }
 
 /**

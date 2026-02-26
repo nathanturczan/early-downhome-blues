@@ -10,6 +10,7 @@ import {
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
 import { selectWeightedNote, getRestartNote, recordNote, freezePhrase, setPhrasing } from './rules/weightedSelection.js';
+import { evaluateClosure, buildClosureContext } from './rules/closure.js';
 import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits, setPosition } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
 import './browserTest.js'; // Load browser test harness
@@ -69,11 +70,17 @@ function updateStanzaIndicator() {
     const stanzaNum = document.getElementById('stanzaNumber');
     if (stanzaNum) stanzaNum.textContent = position.stanza;
 
-    // Update step counter (display 1-indexed)
-    const stepEl = document.getElementById('phraseStep');
-    const stepsEl = document.getElementById('phraseSteps');
-    if (stepEl) stepEl.textContent = position.stepInPhrase + 1;
-    if (stepsEl) stepsEl.textContent = position.stepsPerPhrase;
+    // Update progress bar (visual, no numbers)
+    const progressFill = document.getElementById('phraseProgressFill');
+    if (progressFill) {
+        const noteCount = position.stepInPhrase + 1;
+        const maxLength = 12; // MAX_LENGTH from closure.js
+        const minLength = 5;  // MIN_LENGTH from closure.js
+        const progress = Math.min(noteCount / maxLength, 1.0) * 100;
+        progressFill.style.width = `${progress}%`;
+        // Add 'eligible' class when closure can fire
+        progressFill.classList.toggle('eligible', noteCount >= minLength);
+    }
 
     // Update line highlighting
     stanzaIndicator.querySelectorAll('.stanza-line').forEach(line => {
@@ -201,18 +208,75 @@ function updateDisplay() {
     currentNoteEl.innerHTML = displayNames[currentNote];
     noteInfoEl.textContent = `${frequencies[currentNote].toFixed(2)} Hz`;
 
-    const historyContent = history
-        .map((entry, i) => {
-            const note = entry.note;
-            let opacity = 1;
-            if (history.length === 10 && i === 0) opacity = 0.1;
-            else if (history.length >= 9 && i === history.length - 9) opacity = 0.5;
-            else if (history.length >= 8 && i === history.length - 8) opacity = 0.7;
-            const isCurrent = i === history.length - 1;
-            return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${i}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>`;
-        })
-        .join(' \u2192 ');
-    historyEl.innerHTML = `<span class="history-inner">${historyContent}</span>`;
+    const phrasingEnabled = phrasingToggle && phrasingToggle.checked;
+    const phraseOrder = ['a', 'b', 'c', 'd', 'e', 'f'];
+
+    // Check if we should show phrase groups (phrasing enabled and have position data)
+    const hasPositionData = history.some(e => e.position && typeof e.position.phraseIndex === 'number');
+
+    if (phrasingEnabled && hasPositionData) {
+        // Group notes by phrase
+        const groups = [];
+        let currentGroup = null;
+
+        history.forEach((entry, i) => {
+            const phraseIndex = entry.position?.phraseIndex ?? null;
+
+            if (phraseIndex !== null && (currentGroup === null || currentGroup.phraseIndex !== phraseIndex)) {
+                // Start a new group
+                if (currentGroup) groups.push(currentGroup);
+                currentGroup = { phraseIndex, entries: [{ entry, index: i }] };
+            } else if (currentGroup) {
+                currentGroup.entries.push({ entry, index: i });
+            } else {
+                // No position data yet, create ungrouped
+                if (!groups.length || groups[groups.length - 1].phraseIndex !== null) {
+                    groups.push({ phraseIndex: null, entries: [{ entry, index: i }] });
+                } else {
+                    groups[groups.length - 1].entries.push({ entry, index: i });
+                }
+            }
+        });
+        if (currentGroup) groups.push(currentGroup);
+
+        // Build HTML with phrase labels on top, notes below
+        const groupsHtml = groups.map((group, gi) => {
+            const notesHtml = group.entries.map(({ entry, index }, ni) => {
+                const note = entry.note;
+                let opacity = 1;
+                if (history.length === 10 && index === 0) opacity = 0.1;
+                else if (history.length >= 9 && index === history.length - 9) opacity = 0.5;
+                else if (history.length >= 8 && index === history.length - 8) opacity = 0.7;
+                const isCurrent = index === history.length - 1;
+                const arrow = ni < group.entries.length - 1 ? '<span class="phrase-arrow">→</span>' : '';
+                return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${index}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>${arrow}`;
+            }).join('');
+
+            const phraseLabel = group.phraseIndex !== null ? phraseOrder[group.phraseIndex] : '';
+            const labelHtml = phraseLabel ? `<span class="phrase-label">${phraseLabel}</span>` : '';
+            const noLabelClass = phraseLabel ? '' : ' no-label';
+
+            const groupArrow = gi < groups.length - 1 ? '<span class="phrase-group-arrow">→</span>' : '';
+
+            return `<span class="phrase-group${noLabelClass}">${labelHtml}<span class="phrase-notes-row">${notesHtml}</span></span>${groupArrow}`;
+        }).join('');
+
+        historyEl.innerHTML = `<span class="history-inner with-phrases">${groupsHtml}</span>`;
+    } else {
+        // Simple display without phrase grouping
+        const historyContent = history
+            .map((entry, i) => {
+                const note = entry.note;
+                let opacity = 1;
+                if (history.length === 10 && i === 0) opacity = 0.1;
+                else if (history.length >= 9 && i === history.length - 9) opacity = 0.5;
+                else if (history.length >= 8 && i === history.length - 8) opacity = 0.7;
+                const isCurrent = i === history.length - 1;
+                return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${i}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>`;
+            })
+            .join(' \u2192 ');
+        historyEl.innerHTML = `<span class="history-inner">${historyContent}</span>`;
+    }
 
     // Make history notes clickable - rewind to that point
     historyEl.querySelectorAll('.history-note').forEach(el => {
@@ -316,8 +380,16 @@ async function nextNote() {
             history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
             recordNote(position.phrase, currentNote);
 
-            const phraseEnded = advanceStep();
-            if (phraseEnded || result.shouldRestart) {
+            // Evaluate closure probability for phrase ending
+            const chord = getChordForPosition(position);
+            const previousNote = historyNotes.length >= 1 ? historyNotes[historyNotes.length - 1] : null;
+            const closureContext = buildClosureContext(position, previousNote, chord);
+            const closureResult = evaluateClosure(currentNote, closureContext);
+
+            // Advance step counter (still needed for position tracking)
+            advanceStep();
+
+            if (closureResult.shouldEnd) {
                 // Freeze phrase for repetition before advancing
                 if (position.phrase === 'a' || position.phrase === 'b') {
                     freezePhrase(position.phrase);
@@ -330,7 +402,7 @@ async function nextNote() {
                     decideSplits(newPosition.phrase);
                 }
 
-                console.log(`📍 Phrase ${position.phrase} ended → starting phrase ${newPosition.phrase}`);
+                console.log(`📍 Phrase ${position.phrase} ended (closure p=${closureResult.probability.toFixed(2)}) → starting phrase ${newPosition.phrase}`);
 
                 if (stanzaEnded) {
                     clearPhrases();
@@ -468,8 +540,12 @@ function init() {
                     await initAudio();
                     updateAudioToggleUI();
                 }
-                // Start playing the current position's chord
-                updateAutoHarmony();
+                // Start playing the current position's chord immediately
+                const position = getPosition();
+                const chord = getChordForPosition(position);
+                setHarmonyChord(chord, true);
+                updateChordButtonUI();
+                console.log(`🎹 Auto-harmony started on ${chord}`);
             }
         });
     }

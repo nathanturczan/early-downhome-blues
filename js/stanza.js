@@ -30,13 +30,15 @@ const PHRASE_TO_HARMONY = {
 };
 
 // === Auto-Harmony Configuration ===
+// Harmony tied to measure position, not phrase progress (12-bar structure)
 
-// Phrase e: always V → IV (switch at 50% through phrase)
-const PHRASE_E_SPLIT_POINT = 0.50;
+// Phrase e (measures 9-10): V for first ~4 notes, then IV
+// Using fixed step count to approximate measure boundary
+const PHRASE_E_SPLIT_STEP = 4;  // Switch to IV after 4 notes
 
-// Phrase f: always I first half, sometimes V second half (35% probability)
+// Phrase f (measures 11-12): I, sometimes V mid-phrase
 const PHRASE_F_SPLIT_PROBABILITY = 0.35;
-const PHRASE_F_SPLIT_POINT = 0.50;
+const PHRASE_F_SPLIT_STEP = 4;  // If split, switch to V after 4 notes
 
 // Cadence harmony lock: last N notes of b/d/f force harmony to I
 const CADENCE_HARMONY_LOCK_NOTES = 2;
@@ -72,11 +74,15 @@ const PHRASE_TRAITS = {
   'f': { isLineEnd: true, isPhraseEnd: true, isFalling: true, isStanzaEnd: true }
 };
 
+// Closure constants (imported for consistency)
+const MIN_PHRASE_LENGTH = 5;
+const MAX_PHRASE_LENGTH = 12;
+
 // State
 let currentStanza = 1;
 let currentPhraseIndex = 0;
 let stepInPhrase = 0;
-let stepsPerPhrase = 8; // Approximate, can vary
+let stepsPerPhrase = MAX_PHRASE_LENGTH; // Max phrase length for progress calculation
 
 /**
  * Choose contour type for a new stanza based on weighted probability
@@ -119,8 +125,8 @@ export function getPosition() {
     contourType: currentContourType,
     // Computed properties
     isNearPhraseStart: stepInPhrase < 2,
-    isNearPhraseEnd: stepInPhrase >= stepsPerPhrase - 2,
-    progressInPhrase: stepInPhrase / stepsPerPhrase // 0 to 1
+    isNearPhraseEnd: stepInPhrase >= MIN_PHRASE_LENGTH, // Closure eligible
+    progressInPhrase: stepInPhrase / MAX_PHRASE_LENGTH // 0 to 1, based on max
   };
 }
 
@@ -203,13 +209,13 @@ export function decideSplits(phrase) {
 /**
  * Get the chord for current position (auto-harmony logic)
  * Implements splits for phrases e and f, plus cadence lock
+ * Harmony tied to measure position (step counts), not phrase progress
  *
  * @param {Object} position - Current position from getPosition()
  * @returns {string} Chord name: 'I', 'IV', or 'V'
  */
 export function getChordForPosition(position) {
   const { phrase, stepInPhrase, stepsPerPhrase, traits } = position;
-  const progress = stepInPhrase / stepsPerPhrase;
   const stepsRemaining = stepsPerPhrase - stepInPhrase;
 
   // Cadence lock: last 2 notes of b/d/f force I
@@ -217,17 +223,18 @@ export function getChordForPosition(position) {
     return 'I';
   }
 
-  // Phrase e: always V → IV (switch at 50%)
+  // Phrase e (measures 9-10): V first, then IV
+  // Fixed step count approximates measure boundary
   if (phrase === 'e') {
-    if (progress >= PHRASE_E_SPLIT_POINT) {
+    if (stepInPhrase >= PHRASE_E_SPLIT_STEP) {
       return 'IV';
     }
     return 'V';
   }
 
-  // Phrase f: always I first half, sometimes V second half (before cadence lock)
+  // Phrase f (measures 11-12): I, sometimes V mid-phrase
   if (phrase === 'f') {
-    if (phraseFHasSplit && progress >= PHRASE_F_SPLIT_POINT) {
+    if (phraseFHasSplit && stepInPhrase >= PHRASE_F_SPLIT_STEP) {
       return 'V';
     }
     return 'I';
