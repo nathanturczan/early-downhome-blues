@@ -32,9 +32,9 @@ const PHRASE_TO_HARMONY = {
 // Phrase e: always V → IV (switch at 50% through phrase)
 const PHRASE_E_SPLIT_POINT = 0.50;
 
-// Phrase f: sometimes V at start, then I (35% probability, switch at 60%)
+// Phrase f: always I first half, sometimes V second half (35% probability)
 const PHRASE_F_SPLIT_PROBABILITY = 0.35;
-const PHRASE_F_SPLIT_POINT = 0.60;
+const PHRASE_F_SPLIT_POINT = 0.50;
 
 // Cadence harmony lock: last N notes of b/d/f force harmony to I
 const CADENCE_HARMONY_LOCK_NOTES = 2;
@@ -177,9 +177,9 @@ export function getChordForPosition(position) {
     return 'V';
   }
 
-  // Phrase f: I → V split (if active), then back to I
+  // Phrase f: always I first half, sometimes V second half (before cadence lock)
   if (phrase === 'f') {
-    if (phraseFHasSplit && progress < PHRASE_F_SPLIT_POINT) {
+    if (phraseFHasSplit && progress >= PHRASE_F_SPLIT_POINT) {
       return 'V';
     }
     return 'I';
