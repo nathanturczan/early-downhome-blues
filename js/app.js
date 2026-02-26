@@ -430,6 +430,7 @@ function init() {
     });
 
     // Phrasing toggle
+    const autoHarmonyLabel = document.querySelector('label[for="autoHarmonyToggle"]');
     if (phrasingToggle) {
         phrasingToggle.addEventListener('change', (e) => {
             setPhrasing(e.target.checked);
@@ -437,6 +438,17 @@ function init() {
             stanzaIndicator.querySelectorAll('.stanza-line, .stanza-progress').forEach(el => {
                 el.style.display = e.target.checked ? '' : 'none';
             });
+            // Enable/disable auto-harmony (requires phrasing)
+            if (autoHarmonyToggle) {
+                autoHarmonyToggle.disabled = !e.target.checked;
+                autoHarmonyLabel?.classList.toggle('disabled', !e.target.checked);
+                // Turn off auto-harmony if phrasing is turned off
+                if (!e.target.checked && autoHarmonyEnabled) {
+                    autoHarmonyToggle.checked = false;
+                    autoHarmonyEnabled = false;
+                    console.log('🎹 Auto-harmony OFF (phrasing disabled)');
+                }
+            }
         });
     }
 

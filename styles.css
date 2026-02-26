@@ -231,6 +231,24 @@ button:active {
 }
 
 /* Phase 2: Stanza Position Indicator */
+.auto-harmony-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 0.85em;
+}
+.auto-harmony-toggle input[type="checkbox"] {
+    accent-color: rgb(145, 56, 47);
+}
+.auto-harmony-toggle label {
+    cursor: pointer;
+    color: #555;
+}
+.auto-harmony-toggle label.disabled {
+    color: #aaa;
+    cursor: not-allowed;
+}
 .stanza-indicator {
     position: relative;
     flex-shrink: 0;
