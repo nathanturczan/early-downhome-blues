@@ -8,6 +8,7 @@ import {
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
+import { selectWeightedNote } from './rules/weightedSelection.js';
 
 // State
 let currentNote = "g'";
@@ -98,7 +99,7 @@ function updateDisplay() {
         pathsNotesEl.innerHTML = possible.map(note =>
             `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
         ).join('');
-        nextBtn.textContent = 'Random';
+        nextBtn.textContent = 'Next';
 
         pathsNotesEl.querySelectorAll('.path-note').forEach(el => {
             el.addEventListener('click', () => handleNoteClick(el.dataset.note));
@@ -151,7 +152,8 @@ async function nextNote() {
         currentNote = "g'";
         history.push("g'");
     } else {
-        currentNote = possible[Math.floor(Math.random() * possible.length)];
+        // Phase 1: Weighted selection based on melodic motion rules
+        currentNote = selectWeightedNote(currentNote, history, possible);
         history.push(currentNote);
         if (history.length > 10) history = history.slice(-10);
     }
