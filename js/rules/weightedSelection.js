@@ -8,6 +8,7 @@ import { frequencies } from '../network.js';
 import { melodicMotionEdgeWeightRules } from './melodicMotionRules.js';
 import { applyPhase2Rules } from './positionRules.js';
 import { shouldRepeat, getRepetitionNote, recordNote, getFrozenPhrase } from '../phraseMemory.js';
+import { random } from '../random.js';
 
 // Debug mode - set to true to see weight calculations in console
 const DEBUG = false;
@@ -279,10 +280,10 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
   }
 
   // Weighted random selection
-  let random = Math.random() * totalWeight;
+  let randomValue = random() * totalWeight;
   for (const s of scored) {
-    random -= s.weight;
-    if (random <= 0) {
+    randomValue -= s.weight;
+    if (randomValue <= 0) {
       const shouldRestart = isC(s.note) && (position ? position.isNearPhraseEnd : effectiveSteps >= MIN_PHRASE_STEPS);
       if (DEBUG) {
         const posInfo = position ? ` [${position.phrase}:${position.stepInPhrase}]` : '';
@@ -326,13 +327,13 @@ export function getRestartNote(position = null) {
     }
     // Phrase e (dominant): often starts from G or around Bb complex
     if (phrase === 'e') {
-      return Math.random() < 0.6 ? "g'" : "a'";
+      return random() < 0.6 ? "g'" : "a'";
     }
   }
 
   // Default: G' is the hub note with most connections
   // Occasionally start from C' for variety
-  return Math.random() < 0.7 ? "g'" : "c''";
+  return random() < 0.7 ? "g'" : "c''";
 }
 
 // Re-export phrase memory functions for app.js convenience

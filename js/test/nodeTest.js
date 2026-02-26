@@ -1,13 +1,17 @@
-// js/browserTest.js
+#!/usr/bin/env node
+// js/test/nodeTest.js
 //
-// Browser parity test - mirrors the exact code path of app.js nextNote()
-// Call window.runBrowserTest() from console to execute
+// Node.js test harness - mirrors browserTest.js exactly
+// Usage: node js/test/nodeTest.js [numStanzas] [seed]
 
-import { adjacency } from './network.js';
-import { selectWeightedNote, getRestartNote, getPhrasingEnabled, setPhrasing } from './rules/weightedSelection.js';
-import { recordNote, freezePhrase, resetPhraseMemory, getDebugStats } from './phraseMemory.js';
-import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, PHRASE_SEQUENCE } from './stanza.js';
-import { setSeed, clearSeed, getSeed, generateSeed } from './random.js';
+// Mock browser globals for module compatibility
+globalThis.window = undefined;
+
+import { adjacency } from '../network.js';
+import { selectWeightedNote, getRestartNote, getPhrasingEnabled, setPhrasing } from '../rules/weightedSelection.js';
+import { recordNote, freezePhrase, resetPhraseMemory, getDebugStats } from '../phraseMemory.js';
+import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, PHRASE_SEQUENCE } from '../stanza.js';
+import { setSeed, clearSeed, generateSeed } from '../random.js';
 
 function isC(note) {
   return note === "c'" || note === "c''";
@@ -18,17 +22,13 @@ function isC(note) {
  * @param {number} numStanzas - Number of stanzas to simulate
  * @param {number|null} seed - Optional seed for reproducibility (null = random)
  */
-export function runBrowserTest(numStanzas = 10, seed = null) {
+export function runNodeTest(numStanzas = 10, seed = null) {
   // Set up seed for reproducibility
   const usedSeed = seed !== null ? seed : generateSeed();
   setSeed(usedSeed);
 
-  console.log(`\n🧪 Browser Test: ${numStanzas} stanzas...\n`);
+  console.log(`\n🧪 Node Test: ${numStanzas} stanzas...\n`);
   console.log(`🎲 Seed: ${usedSeed}`);
-
-  // Log current config
-  console.log('📊 Config:');
-  console.log('  phrasingEnabled:', getPhrasingEnabled());
 
   // Ensure phrasing is ON for test
   if (!getPhrasingEnabled()) {
@@ -41,20 +41,23 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
     repetitionHits: { c: 0, d: 0, f: 0 },
     cadenceAttempts: { b: 0, d: 0, f: 0 },
     cadenceHits: { b: 0, d: 0, f: 0 },
-    phraseNoteCounts: { a: [], b: [], c: [], d: [], e: [], f: [] }
+    phraseNoteCounts: { a: [], b: [], c: [], d: [], e: [], f: [] },
+    // Track pitch heights per line for contour analysis
+    lineHeights: { 1: [], 2: [], 3: [] }
   };
 
   for (let stanza = 0; stanza < numStanzas; stanza++) {
-    // Reset state for new stanza (mirrors app.js stanza reset)
+    // Reset state for new stanza
     setPosition(0, 0);
     resetPhraseMemory();
 
-    // Start with restart note (mirrors app.js)
+    // Track heights per line for this stanza
+    const stanzaLineHeights = { 1: [], 2: [], 3: [] };
+
+    // Start with restart note
     const startPos = getPosition();
     let currentNote = getRestartNote(startPos);
     let history = [{ note: currentNote, position: null }];
-
-    // Record first note
     recordNote(startPos.phrase, currentNote);
 
     let stanzaComplete = false;
@@ -64,16 +67,12 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
       const candidates = adjacency[currentNote] || [];
 
       if (candidates.length === 0) {
-        // SINK PATH - mirrors app.js exactly
-        // Freeze phrase for repetition before advancing
+        // SINK PATH
         if (position.phrase === 'a' || position.phrase === 'b') {
           freezePhrase(position.phrase);
         }
-
-        // Record phrase length
         results.phraseNoteCounts[position.phrase].push(position.stepInPhrase + 1);
 
-        // Check cadence (did we end on C?)
         if (['b', 'd', 'f'].includes(position.phrase)) {
           results.cadenceAttempts[position.phrase]++;
           if (isC(currentNote)) {
@@ -81,31 +80,23 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
           }
         }
 
-        // Advance to next phrase
         stanzaComplete = advancePhrase();
 
         if (!stanzaComplete) {
           const newPosition = getPosition();
-
-          // Decide splits for phrases e and f
           if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
             decideSplits(newPosition.phrase);
           }
-
           currentNote = getRestartNote(newPosition);
           history = [{ note: currentNote, position: null }];
           recordNote(newPosition.phrase, currentNote);
         }
       } else {
-        // NORMAL PATH - mirrors app.js exactly
-        // Extract just notes for the selection algorithm
+        // NORMAL PATH
         const historyNotes = history.map(h => h.note);
-
-        // Call selectWeightedNote - this handles repetition internally!
         const result = selectWeightedNote(currentNote, historyNotes, candidates, 0, position);
         currentNote = result.note;
 
-        // Track repetition using the flag from selectWeightedNote
         if (['c', 'd', 'f'].includes(position.phrase)) {
           results.repetitionAttempts[position.phrase]++;
           if (result.fromRepetition) {
@@ -113,26 +104,20 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
           }
         }
 
-        // Store with position for history
         history.push({
           note: currentNote,
           position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }
         });
         recordNote(position.phrase, currentNote);
 
-        // Advance step
         const phraseEnded = advanceStep();
 
         if (phraseEnded || result.shouldRestart) {
-          // Freeze phrase for repetition before advancing
           if (position.phrase === 'a' || position.phrase === 'b') {
             freezePhrase(position.phrase);
           }
-
-          // Record phrase length
           results.phraseNoteCounts[position.phrase].push(position.stepInPhrase + 1);
 
-          // Check cadence
           if (['b', 'd', 'f'].includes(position.phrase)) {
             results.cadenceAttempts[position.phrase]++;
             if (isC(currentNote)) {
@@ -144,12 +129,9 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
 
           if (!stanzaComplete) {
             const newPosition = getPosition();
-
-            // Decide splits for phrases e and f
             if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
               decideSplits(newPosition.phrase);
             }
-
             currentNote = getRestartNote(newPosition);
             history = [{ note: currentNote, position: null }];
             recordNote(newPosition.phrase, currentNote);
@@ -163,12 +145,14 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
 
   // Calculate and report results
   const report = {
+    seed: usedSeed,
+    numStanzas,
     repetition: {},
     cadence: {},
     phraseLengths: {}
   };
 
-  console.log('\n📊 BROWSER TEST RESULTS\n');
+  console.log('\n📊 NODE TEST RESULTS\n');
 
   console.log('REPETITION (notes matched from source phrase):');
   for (const p of ['c', 'd', 'f']) {
@@ -204,26 +188,21 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
   }
   console.table(report.phraseLengths);
 
-  console.log('\n✅ Browser test complete');
+  console.log('\n✅ Node test complete');
   console.log(`\n🎲 Seed used: ${usedSeed}`);
-  console.log('   To reproduce: runBrowserTest(' + numStanzas + ', ' + usedSeed + ')');
+  console.log(`   To reproduce: node js/test/nodeTest.js ${numStanzas} ${usedSeed}`);
   console.log('\nExpected ranges:');
   console.log('  Repetition: ~80-90% (minus 10% variation chance)');
   console.log('  Cadence: ~55-65%');
 
-  // Clear seed so normal usage is random again
   clearSeed();
-
-  // Include seed in report
-  report.seed = usedSeed;
-  report.numStanzas = numStanzas;
 
   return report;
 }
 
-// Expose to window for console access
-if (typeof window !== 'undefined') {
-  window.runBrowserTest = runBrowserTest;
-  window.getDebugStats = getDebugStats;
-  console.log('🧪 Browser test ready: call window.runBrowserTest(20) or runBrowserTest(20, seed) in console');
-}
+// CLI entrypoint
+const args = process.argv.slice(2);
+const numStanzas = args[0] ? parseInt(args[0], 10) : 50;
+const seed = args[1] ? parseInt(args[1], 10) : null;
+
+runNodeTest(numStanzas, seed);

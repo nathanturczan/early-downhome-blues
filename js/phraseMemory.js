@@ -3,6 +3,8 @@
 // Phase 2: Melodic memory for phrase repetition
 // Stores Line 1 melody for replay in Line 2
 
+import { random } from './random.js';
+
 // Debug mode - set to true for verbose repetition logging
 const DEBUG = false;
 
@@ -135,7 +137,7 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
   if (candidates.includes(targetNote)) {
     // Apply variation probability (per-phrase)
     const variationProb = VARIATION_PROBABILITY[phrase] || 0.10;
-    if (Math.random() < variationProb) {
+    if (random() < variationProb) {
       if (DEBUG) console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: variation skip, wanted ${targetNote}`);
       return null; // Allow natural selection this time
     }

@@ -3,6 +3,8 @@
 // Phase 2: Stanza state machine
 // Tracks position within the 12-bar blues form
 
+import { random } from './random.js';
+
 /**
  * Stanza structure:
  * - Line 1 (measures 1-4): Phrases a, b - Harmony: I
@@ -148,7 +150,7 @@ export function setPosition(phraseIndex, step = 0) {
  */
 export function decideSplits(phrase) {
   if (phrase === 'f') {
-    phraseFHasSplit = Math.random() < PHRASE_F_SPLIT_PROBABILITY;
+    phraseFHasSplit = random() < PHRASE_F_SPLIT_PROBABILITY;
   }
 }
 
