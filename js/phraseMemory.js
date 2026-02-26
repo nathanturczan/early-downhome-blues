@@ -36,7 +36,12 @@ let frozenPhrases = {
 };
 
 // Variation probability when recalling (small ornament chance)
-const VARIATION_PROBABILITY = 0.1;
+// f gets lower variation to improve repetition fidelity
+const VARIATION_PROBABILITY = {
+  'c': 0.10,
+  'd': 0.10,
+  'f': 0.05  // Lower variation for f
+};
 
 /**
  * Record a note played in a phrase
@@ -128,8 +133,9 @@ export function getRepetitionNote(phrase, stepInPhrase, candidates) {
 
   // Check if target note is reachable
   if (candidates.includes(targetNote)) {
-    // Apply variation probability
-    if (Math.random() < VARIATION_PROBABILITY) {
+    // Apply variation probability (per-phrase)
+    const variationProb = VARIATION_PROBABILITY[phrase] || 0.10;
+    if (Math.random() < variationProb) {
       if (DEBUG) console.log(`🔁 ${phrase}[${stepInPhrase}→${lookupIndex}]: variation skip, wanted ${targetNote}`);
       return null; // Allow natural selection this time
     }

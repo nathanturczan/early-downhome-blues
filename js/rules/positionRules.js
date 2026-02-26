@@ -197,13 +197,13 @@ export const phase2Rules = {
 
     // Direct C/C' bias
     if (isC(edge.to)) {
-      if (stepsRemaining <= 1) weight *= 30.0;       // Final note
-      else if (stepsRemaining <= 2) weight *= 8.0;   // Penultimate
+      if (stepsRemaining <= 1) weight *= 50.0;       // Final note
+      else if (stepsRemaining <= 2) weight *= 12.0;  // Penultimate
     }
 
-    // Boost notes that can reach C (approach tones)
+    // Boost notes that can reach C (approach tones) - critical for reachability
     if (!isC(edge.to) && canNoteReachC(edge.to)) {
-      weight *= 2.0;
+      weight *= 6.0;  // Strong boost to ensure C becomes reachable
     }
 
     return weight;
