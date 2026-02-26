@@ -1,0 +1,46 @@
+{
+  "_source": "Jeff Titon, Early Downhome Blues, Figure 45",
+  "_description": "Microtonal pitch complexes - zones where related pitch variants cluster as melodic resting points",
+
+  "E": {
+    "octave": 4,
+    "pitches": [
+      { "name": "Eb", "microtone": "f", "count": 86 },
+      { "name": "Eb slightly sharp", "microtone": "f+", "count": 53 },
+      { "name": "E natural slightly flat", "microtone": "n-", "count": 6 },
+      { "name": "E natural", "microtone": "n", "count": 201 }
+    ],
+    "total": 346
+  },
+
+  "G": {
+    "octave": 4,
+    "pitches": [
+      { "name": "Gb", "microtone": "f", "count": 43 },
+      { "name": "G natural slightly flat", "microtone": "n-", "count": 12 },
+      { "name": "G natural", "microtone": "n", "count": 416 }
+    ],
+    "total": 471
+  },
+
+  "B": {
+    "octave": 4,
+    "pitches": [
+      { "name": "Bb", "microtone": "f", "count": 72 },
+      { "name": "Bb slightly sharp", "microtone": "f+", "count": 15 },
+      { "name": "B natural", "microtone": "n", "count": 21 }
+    ],
+    "total": 108
+  },
+
+  "E'": {
+    "octave": 5,
+    "pitches": [
+      { "name": "Eb", "microtone": "f", "count": 108 },
+      { "name": "Eb slightly sharp", "microtone": "f+", "count": 37 },
+      { "name": "E natural slightly flat", "microtone": "n-", "count": 12 },
+      { "name": "E natural", "microtone": "n", "count": 47 }
+    ],
+    "total": 204
+  }
+}

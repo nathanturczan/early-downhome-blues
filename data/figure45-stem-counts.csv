@@ -1,0 +1,57 @@
+# Figure 45: Stem-counts in the downhome blues sample
+# Source: Jeff Titon, "Early Downhome Blues"
+# Range: G3 to G5
+#
+# Microtone notation (Titon's terminology):
+#   3qf = three-quarter-flat (below the flat, outside complex)
+#   f = flat
+#   f+ = flat slightly sharp (between flat and natural, closer to flat)
+#   n- = natural slightly flat (between flat and natural, closer to natural)
+#   n = natural
+#   n+ = natural slightly sharp (above natural, outside complex)
+#   f- = flat slightly flat (below standard flat)
+#
+# Complexes: E(346), G(471), B(108), E'(204)
+#
+pitch,octave,microtone,count,in_complex
+G,3,n,11,
+A,3,f,1,
+A,3,n,13,
+B,3,f,2,
+C,4,f+,2,
+C,4,n,365,
+D,4,n,35,
+E,4,3qf,10,
+E,4,f,86,E
+E,4,f+,53,E
+E,4,n-,6,E
+E,4,n,201,E
+E,4,n+,1,
+F,4,f+,1,
+F,4,n,90,
+F,4,n+,4,
+G,4,3qf,1,
+G,4,f,43,G
+G,4,n-,12,G
+G,4,n,416,G
+G,4,n+,1,
+A,4,f,1,
+A,4,n-,2,
+A,4,n,156,
+B,4,n+,6,
+B,4,f-,9,
+B,4,f,72,B
+B,4,f+,15,B
+B,4,n,21,B
+B,4,n++,2,
+C,5,n-,1,
+C,5,n,275,
+D,5,n,34,
+D,5,n+,6,
+E,5,3qf,6,
+E,5,f,108,E'
+E,5,f+,37,E'
+E,5,n-,12,E'
+E,5,n,47,E'
+F,5,n,2,
+G,5,n,8,
