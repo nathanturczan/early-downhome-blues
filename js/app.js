@@ -49,6 +49,17 @@ const harmonyModeSelect = document.getElementById('harmonyModeSelect');
 // Auto-harmony state
 let autoHarmonyEnabled = false;
 
+// Get max history length based on screen width
+function getMaxHistoryLength() {
+    const width = window.innerWidth;
+    if (width <= 600) return 40;      // Mobile: most history (vertical space)
+    if (width <= 1024) return 30;     // Tablet
+    return 25;                         // Desktop
+}
+
+// Score history instance (initialized in init())
+let scoreHistoryInstance = null;
+
 // Update harmony based on current position (auto-harmony mode)
 function updateAutoHarmony() {
     if (!autoHarmonyEnabled) return;
@@ -149,20 +160,21 @@ async function handleNoteClick(lily) {
     // Phase 2: Record note and advance position
     if (PHASE_2_ENABLED) {
         const position = getPosition();
-        // Store note with position snapshot for history rewind
-        history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
         // Also store in full history for score rendering
         fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza });
+        // Store note with position snapshot for history rewind (include fullHistory index for rollback)
+        history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza, fullHistoryIndex: fullHistory.length - 1 });
         lastPlayedPosition = { ...position }; // Sync stanza indicator with this note
         recordNote(position.phrase, currentNote);
         advanceStep();
     } else {
-        history.push({ note: currentNote, position: null });
         fullHistory.push({ note: currentNote, position: null, stanza: null });
+        history.push({ note: currentNote, position: null, stanza: null, fullHistoryIndex: fullHistory.length - 1 });
         stepsInPhrase++;
     }
 
-    if (history.length > 10) history = history.slice(-10);
+    const maxHistory = getMaxHistoryLength();
+    if (history.length > maxHistory) history = history.slice(-maxHistory);
 
     playNote(currentNote);
     sendMidiNote(currentNote);
@@ -194,10 +206,21 @@ async function handleHistoryClick(index) {
     history = history.slice(0, index + 1);
     currentNote = entry.note;
 
-    // Restore position if available
+    // Truncate fullHistory to match (for score rollback)
+    if (typeof entry.fullHistoryIndex === 'number') {
+        fullHistory = fullHistory.slice(0, entry.fullHistoryIndex + 1);
+    }
+
+    // Restore position and stanza if available
     if (PHASE_2_ENABLED && entry.position) {
-        setPosition(entry.position.phraseIndex, entry.position.stepInPhrase);
-        console.log(`⏪ Rewound to phrase ${getPosition().phrase}, step ${entry.position.stepInPhrase}`);
+        setPosition(entry.position.phraseIndex, entry.position.stepInPhrase, entry.stanza);
+        lastPlayedPosition = {
+            phraseIndex: entry.position.phraseIndex,
+            stepInPhrase: entry.position.stepInPhrase,
+            stanza: entry.stanza,
+            phrase: ['a', 'b', 'c', 'd', 'e', 'f'][entry.position.phraseIndex]
+        };
+        console.log(`⏪ Rewound to stanza ${entry.stanza}, phrase ${getPosition().phrase}, step ${entry.position.stepInPhrase}`);
     }
 
     playNote(currentNote);
@@ -260,18 +283,22 @@ function updateDisplay() {
         const groupsHtml = groups.map((group, gi) => {
             const notesHtml = group.entries.map(({ entry, index }, ni) => {
                 const note = entry.note;
-                let opacity = 1;
                 const visibleLen = visibleHistory.length;
                 const visibleIdx = visibleHistory.findIndex(v => v.originalIndex === index);
-                if (visibleLen === 10 && visibleIdx === 0) opacity = 0.1;
-                else if (visibleLen >= 9 && visibleIdx === visibleLen - 9) opacity = 0.5;
-                else if (visibleLen >= 8 && visibleIdx === visibleLen - 8) opacity = 0.7;
+                // Fade first 5 items progressively (0.3, 0.45, 0.6, 0.75, 0.9)
+                let opacity = 1;
+                const fadeCount = 5;
+                if (visibleIdx < fadeCount && visibleLen > fadeCount) {
+                    opacity = 0.3 + (visibleIdx / fadeCount) * 0.6;
+                }
                 const isCurrent = index === history.length - 1;
                 const arrow = ni < group.entries.length - 1 ? '<span class="phrase-arrow">→</span>' : '';
                 return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${index}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>${arrow}`;
             }).join('');
 
-            const phraseLabel = group.phraseIndex !== null ? phraseOrder[group.phraseIndex] : '';
+            const phraseChar = group.phraseIndex !== null ? phraseOrder[group.phraseIndex] : '';
+            // Show "Phrase A" if group has 3+ notes, otherwise just "a"
+            const phraseLabel = phraseChar ? (group.entries.length >= 3 ? `Phrase ${phraseChar}` : phraseChar) : '';
             const labelHtml = phraseLabel ? `<span class="phrase-label">${phraseLabel}</span>` : '';
             const noLabelClass = phraseLabel ? '' : ' no-label';
 
@@ -286,11 +313,13 @@ function updateDisplay() {
         const historyContent = visibleHistory
             .map(({ entry, originalIndex }, i) => {
                 const note = entry.note;
-                let opacity = 1;
                 const visibleLen = visibleHistory.length;
-                if (visibleLen === 10 && i === 0) opacity = 0.1;
-                else if (visibleLen >= 9 && i === visibleLen - 9) opacity = 0.5;
-                else if (visibleLen >= 8 && i === visibleLen - 8) opacity = 0.7;
+                // Fade first 5 items progressively (0.3, 0.45, 0.6, 0.75, 0.9)
+                let opacity = 1;
+                const fadeCount = 5;
+                if (i < fadeCount && visibleLen > fadeCount) {
+                    opacity = 0.3 + (i / fadeCount) * 0.6;
+                }
                 const isCurrent = originalIndex === history.length - 1;
                 return `<span class="history-note${isCurrent ? ' current' : ''}" data-index="${originalIndex}" data-note="${note}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[note]}</span>`;
             })
@@ -321,6 +350,12 @@ function updateDisplay() {
 
     renderNotation(notationContainer, currentNote, handleNoteClick);
     updateStanzaIndicator();
+
+    // Update inline score
+    if (scoreHistoryInstance) {
+        const visibleHistory = fullHistory.filter(h => !h.hidden);
+        scoreHistoryInstance.renderInline(visibleHistory);
+    }
 }
 
 // Handle ensemble room updates (for member mode)
@@ -436,7 +471,8 @@ async function nextNote() {
                 }
             }
 
-            if (history.length > 10) history = history.slice(-10);
+            const maxHistory = getMaxHistoryLength();
+    if (history.length > maxHistory) history = history.slice(-maxHistory);
         }
     } else {
         // Phase 1.5 fallback: Simple step tracking
@@ -459,7 +495,8 @@ async function nextNote() {
                 stepsInPhrase = 0;
             }
 
-            if (history.length > 10) history = history.slice(-10);
+            const maxHistory = getMaxHistoryLength();
+    if (history.length > maxHistory) history = history.slice(-maxHistory);
         }
     }
 
@@ -496,24 +533,49 @@ function init() {
         infoModal.classList.add('hidden');
     });
 
-    // Score modal
-    const scoreBtn = document.getElementById('score-btn');
+    // Score modal and inline score
     const scoreModal = document.getElementById('score-modal');
-    const scoreModalClose = scoreModal.querySelector('.modal-close');
-    const scoreModalBackdrop = scoreModal.querySelector('.modal-backdrop');
-    const scoreHistory = initScoreHistory(scoreModal);
+    const inlineScoreCanvas = document.getElementById('inline-score-canvas');
+    scoreHistoryInstance = initScoreHistory(scoreModal, inlineScoreCanvas);
 
-    scoreBtn.addEventListener('click', () => {
-        // Filter out hidden entries and render
-        const visibleHistory = fullHistory.filter(h => !h.hidden);
-        scoreHistory.render(visibleHistory);
-        scoreModal.classList.remove('hidden');
-    });
-    scoreModalClose.addEventListener('click', () => {
-        scoreModal.classList.add('hidden');
-    });
-    scoreModalBackdrop.addEventListener('click', () => {
-        scoreModal.classList.add('hidden');
+    // Modal close handlers (modal may still exist for export functionality)
+    if (scoreModal) {
+        const scoreModalClose = scoreModal.querySelector('.modal-close');
+        const scoreModalBackdrop = scoreModal.querySelector('.modal-backdrop');
+        if (scoreModalClose) {
+            scoreModalClose.addEventListener('click', () => {
+                scoreModal.classList.add('hidden');
+            });
+        }
+        if (scoreModalBackdrop) {
+            scoreModalBackdrop.addEventListener('click', () => {
+                scoreModal.classList.add('hidden');
+            });
+        }
+    }
+
+    // Mobile score button (opens modal on tablet/mobile)
+    const mobileScoreBtn = document.getElementById('mobile-score-btn');
+    if (mobileScoreBtn && scoreModal) {
+        mobileScoreBtn.addEventListener('click', () => {
+            const visibleHistory = fullHistory.filter(h => !h.hidden);
+            scoreHistoryInstance.render(visibleHistory);
+            scoreModal.classList.remove('hidden');
+        });
+    }
+
+    // Inline export buttons (desktop)
+    document.querySelectorAll('.inline-export-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const format = btn.dataset.format;
+            if (format === 'lilypond') {
+                scoreHistoryInstance.exportLilypond();
+            } else if (format === 'musicxml') {
+                scoreHistoryInstance.exportMusicXml();
+            } else if (format === 'pdf') {
+                scoreHistoryInstance.exportPdf();
+            }
+        });
     });
 
     // MIDI

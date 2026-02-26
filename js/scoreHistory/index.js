@@ -9,10 +9,11 @@ import { exportToPdf } from './exportPdf.js';
 /**
  * Initialize score history functionality
  * @param {HTMLElement} modalElement - The score modal element
+ * @param {HTMLElement} inlineCanvas - Optional inline score canvas element
  * @returns {Object} Score history API
  */
-export function initScoreHistory(modalElement) {
-    const canvas = modalElement.querySelector('#score-canvas');
+export function initScoreHistory(modalElement, inlineCanvas = null) {
+    const modalCanvas = modalElement.querySelector('#score-canvas');
     const exportBtns = modalElement.querySelectorAll('.export-btn');
     let currentHistoryData = [];
 
@@ -42,7 +43,7 @@ export function initScoreHistory(modalElement) {
                 downloadMusicXml(currentHistoryData);
                 break;
             case 'pdf':
-                const svg = getSvgElement(canvas);
+                const svg = getSvgElement(modalCanvas);
                 if (svg) {
                     exportToPdf(svg);
                 }
@@ -56,10 +57,25 @@ export function initScoreHistory(modalElement) {
         /**
          * Render score with given history data
          * @param {Array} historyData - Array of {note, position, stanza}
+         * @param {boolean} modalOnly - If true, only render to modal canvas
          */
-        render(historyData) {
+        render(historyData, modalOnly = false) {
             currentHistoryData = historyData || [];
-            renderScore(canvas, currentHistoryData);
+            if (!modalOnly && inlineCanvas) {
+                renderScore(inlineCanvas, currentHistoryData);
+            }
+            renderScore(modalCanvas, currentHistoryData);
+        },
+
+        /**
+         * Render only to inline canvas (for live updates)
+         * @param {Array} historyData - Array of {note, position, stanza}
+         */
+        renderInline(historyData) {
+            currentHistoryData = historyData || [];
+            if (inlineCanvas) {
+                renderScore(inlineCanvas, currentHistoryData);
+            }
         },
 
         /**
@@ -80,7 +96,7 @@ export function initScoreHistory(modalElement) {
          * Export to PDF format
          */
         exportPdf() {
-            const svg = getSvgElement(canvas);
+            const svg = getSvgElement(modalCanvas);
             if (svg) {
                 exportToPdf(svg);
             }

@@ -43,7 +43,8 @@
         };
     </script>
 </head>
-<body class="midi-minimized">
+<body>
+    <div class="app-wrapper">
     <div class="header">
         <img src="icon.png" alt="Blues" class="header-icon">
         <div class="header-text">
@@ -56,17 +57,6 @@
         <button id="ensemble-btn" class="ensemble-btn" type="button" aria-label="Ensemble Mode">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                 <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-        </button>
-        <button id="score-btn" class="score-btn" type="button" aria-label="View Score">
-            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" stroke-width="1"/>
-                <line x1="4" y1="10" x2="20" y2="10" stroke="currentColor" stroke-width="1"/>
-                <line x1="4" y1="13" x2="20" y2="13" stroke="currentColor" stroke-width="1"/>
-                <line x1="4" y1="16" x2="20" y2="16" stroke="currentColor" stroke-width="1"/>
-                <line x1="4" y1="19" x2="20" y2="19" stroke="currentColor" stroke-width="1"/>
-                <ellipse cx="8" cy="8.5" rx="2.5" ry="2" fill="currentColor"/>
-                <ellipse cx="14" cy="14.5" rx="2.5" ry="2" fill="currentColor"/>
             </svg>
         </button>
         <button id="info-btn" class="info-btn" type="button" aria-label="Information">
@@ -90,8 +80,9 @@
     </div>
 
     <div class="main-content">
-        <div class="top-row">
-            <div class="left-panel">
+        <div class="two-column-layout">
+            <!-- Left Column: Notation + Controls -->
+            <div class="left-column">
                 <div class="notation-container">
                     <div id="notation"></div>
                 </div>
@@ -108,147 +99,156 @@
                         <span class="note-box-label">Paths</span>
                         <div class="paths-box">
                             <div class="paths-notes" id="pathsNotes"></div>
-                            <button id="nextBtn">Random</button>
+                            <button id="nextBtn">Next</button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Harmony Section -->
+                <div class="harmony-section">
+                    <div class="harmony-header">
+                        <div class="harmony-label">Harmony</div>
+                        <div class="harmony-toggles">
+                            <div class="harmony-toggle">
+                                <input type="checkbox" id="inflectToggle">
+                                <label for="inflectToggle">Inflect</label>
+                            </div>
+                            <div class="harmony-toggle">
+                                <input type="checkbox" id="latchToggle" disabled>
+                                <label for="latchToggle" class="disabled">Latch</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="harmony-buttons">
+                        <button class="chord-btn" data-chord="I">I</button>
+                        <button class="chord-btn" data-chord="IV">IV</button>
+                        <button class="chord-btn" data-chord="V">V</button>
+                    </div>
+                </div>
+
+                <!-- MIDI Section -->
+                <div class="midi-section-inline">
+                    <div class="midi-header">
+                        <span class="midi-label">MIDI Output</span>
+                        <span class="midi-hint-inline">*±2 semitones for quarter-tones</span>
+                    </div>
+                    <div class="midi-outputs" id="midiOutputs">
+                        <div class="midi-row" data-row-id="0">
+                            <div class="midi-select">
+                                <label>Type</label>
+                                <select class="midi-type">
+                                    <option value="melody" selected>Melody</option>
+                                    <option value="drone">Drone</option>
+                                </select>
+                            </div>
+                            <div class="midi-select">
+                                <label>Port</label>
+                                <select class="midi-port">
+                                    <option value="">None</option>
+                                </select>
+                            </div>
+                            <div class="midi-select">
+                                <label>Ch</label>
+                                <select class="midi-channel">
+                                    <option value="0">1</option>
+                                    <option value="1">2</option>
+                                    <option value="2">3</option>
+                                    <option value="3">4</option>
+                                    <option value="4">5</option>
+                                    <option value="5">6</option>
+                                    <option value="6">7</option>
+                                    <option value="7">8</option>
+                                    <option value="8">9</option>
+                                    <option value="9">10</option>
+                                    <option value="10">11</option>
+                                    <option value="11">12</option>
+                                    <option value="12">13</option>
+                                    <option value="13">14</option>
+                                    <option value="14">15</option>
+                                    <option value="15">16</option>
+                                </select>
+                            </div>
+                            <button class="midi-remove-btn hidden" title="Remove">&times;</button>
+                        </div>
+                    </div>
+                    <button class="midi-add-btn" id="addMidiOutput">+ Add Output</button>
+                </div>
             </div>
 
-            <!-- Harmony Section -->
-            <div class="drone-section">
-            <div class="drone-header">
-                <div class="drone-title">Harmony</div>
-                <div class="inflect-toggles">
-                    <div class="inflect-toggle">
-                        <input type="checkbox" id="inflectToggle">
-                        <label for="inflectToggle">Inflect</label>
+            <!-- Right Column: Stanza + History + Score -->
+            <div class="right-column">
+                <!-- Phrasing toggles -->
+                <div class="phrasing-toggles">
+                    <div class="phrasing-toggle">
+                        <input type="checkbox" id="phrasingToggle" checked>
+                        <label for="phrasingToggle">Phrasing</label>
                     </div>
-                    <div class="inflect-toggle">
-                        <input type="checkbox" id="latchToggle" disabled>
-                        <label for="latchToggle" class="disabled">Latch</label>
+                    <div class="phrasing-toggle">
+                        <input type="checkbox" id="autoHarmonyToggle">
+                        <label for="autoHarmonyToggle">Auto Harmony</label>
+                    </div>
+                    <div class="phrasing-toggle">
+                        <label for="harmonyModeSelect">Mode:</label>
+                        <select id="harmonyModeSelect" class="harmony-mode-select">
+                            <option value="functional" selected>Full I-IV-V</option>
+                            <option value="root-only">Root Only</option>
+                            <option value="static-i">Static I</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Stanza Position Indicator -->
+                <div class="stanza-indicator" id="stanzaIndicator">
+                    <span class="stanza-box-label">Stanza <span id="stanzaNumber">1</span></span>
+                    <div class="stanza-line" data-line="1">
+                        <span class="line-label">Line 1</span>
+                        <span class="line-harmony">I</span>
+                        <span class="phrase-box" data-phrase="a">phrase a</span>
+                        <span class="phrase-box" data-phrase="b">phrase b</span>
+                    </div>
+                    <div class="stanza-line" data-line="2">
+                        <span class="line-label">Line 2</span>
+                        <span class="line-harmony">IV-I</span>
+                        <span class="phrase-box" data-phrase="c">phrase c</span>
+                        <span class="phrase-box" data-phrase="d">phrase d</span>
+                    </div>
+                    <div class="stanza-line" data-line="3">
+                        <span class="line-label">Line 3</span>
+                        <span class="line-harmony">V-IV-I</span>
+                        <span class="phrase-box" data-phrase="e">phrase e</span>
+                        <span class="phrase-box" data-phrase="f">phrase f</span>
+                    </div>
+                    <div class="stanza-progress">
+                        <div class="phrase-progress-bar" id="phraseProgressBar">
+                            <div class="phrase-progress-fill" id="phraseProgressFill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="history">
+                    <div class="history-header">
+                        <h3>History</h3>
+                        <button id="mobile-score-btn" class="mobile-score-btn" type="button">View Score</button>
+                    </div>
+                    <div class="history-notes" id="history"></div>
+                </div>
+
+                <!-- Inline Score -->
+                <div class="inline-score">
+                    <div class="inline-score-container" id="inline-score-canvas"></div>
+                    <div class="inline-export-toolbar">
+                        <span class="export-label">Export:</span>
+                        <button class="inline-export-btn" data-format="lilypond">LilyPond</button>
+                        <button class="inline-export-btn" data-format="musicxml">MusicXML</button>
+                        <button class="inline-export-btn" data-format="pdf">PDF</button>
                     </div>
                 </div>
             </div>
-            <div class="harmony-buttons">
-                <button class="chord-btn" data-chord="I">I</button>
-                <button class="chord-btn" data-chord="IV">IV</button>
-                <button class="chord-btn" data-chord="V">V</button>
-            </div>
-        </div>
-        </div>
-        <!-- end top-row -->
-
-        <div class="history">
-            <h3>History</h3>
-            <div class="history-notes" id="history"></div>
-        </div>
-
-        <!-- Phrasing toggles (outside stanza box) -->
-        <div class="phrasing-toggles">
-            <div class="phrasing-toggle">
-                <input type="checkbox" id="phrasingToggle" checked>
-                <label for="phrasingToggle">Phrasing</label>
-            </div>
-            <div class="phrasing-toggle">
-                <input type="checkbox" id="autoHarmonyToggle">
-                <label for="autoHarmonyToggle">Auto Harmony</label>
-            </div>
-            <div class="phrasing-toggle">
-                <label for="harmonyModeSelect">Mode:</label>
-                <select id="harmonyModeSelect" class="harmony-mode-select">
-                    <option value="functional" selected>Full I-IV-V</option>
-                    <option value="root-only">Root Only</option>
-                    <option value="static-i">Static I</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Phase 2: Stanza Position Indicator -->
-        <div class="stanza-indicator" id="stanzaIndicator">
-            <span class="stanza-box-label">Stanza <span id="stanzaNumber">1</span></span>
-            <div class="stanza-line" data-line="1">
-                <span class="line-label">Line 1</span>
-                <span class="line-harmony">I</span>
-                <span class="phrase-box" data-phrase="a">phrase a</span>
-                <span class="phrase-box" data-phrase="b">phrase b</span>
-            </div>
-            <div class="stanza-line" data-line="2">
-                <span class="line-label">Line 2</span>
-                <span class="line-harmony">IV-I</span>
-                <span class="phrase-box" data-phrase="c">phrase c</span>
-                <span class="phrase-box" data-phrase="d">phrase d</span>
-            </div>
-            <div class="stanza-line" data-line="3">
-                <span class="line-label">Line 3</span>
-                <span class="line-harmony">V-IV-I</span>
-                <span class="phrase-box" data-phrase="e">phrase e</span>
-                <span class="phrase-box" data-phrase="f">phrase f</span>
-            </div>
-            <div class="stanza-progress">
-                <div class="phrase-progress-bar" id="phraseProgressBar">
-                    <div class="phrase-progress-fill" id="phraseProgressFill"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="description-wrapper">
-            <p class="description">
-                Randomly walk through Jeff Todd Titon's pitch network from
-                <em>Early Downhome Blues</em> (Fig. 64). Click notes or use the button to explore the mode.
-            </p>
         </div>
     </div>
 
-    <!-- MIDI Footer -->
-    <div class="midi-footer minimized">
-        <button class="midi-toggle" id="midiToggle" title="Toggle MIDI panel">
-            <span class="midi-toggle-label">MIDI</span>
-            <span class="midi-toggle-arrow">&#9660;</span>
-        </button>
-        <div class="midi-section">
-            <div class="midi-outputs" id="midiOutputs">
-                <div class="midi-row" data-row-id="0">
-                    <div class="midi-select">
-                        <label>Type</label>
-                        <select class="midi-type">
-                            <option value="melody" selected>Melody</option>
-                            <option value="drone">Drone</option>
-                        </select>
-                    </div>
-                    <div class="midi-select">
-                        <label>Port</label>
-                        <select class="midi-port">
-                            <option value="">None</option>
-                        </select>
-                    </div>
-                    <div class="midi-select">
-                        <label>Ch</label>
-                        <select class="midi-channel">
-                            <option value="0">1</option>
-                            <option value="1">2</option>
-                            <option value="2">3</option>
-                            <option value="3">4</option>
-                            <option value="4">5</option>
-                            <option value="5">6</option>
-                            <option value="6">7</option>
-                            <option value="7">8</option>
-                            <option value="8">9</option>
-                            <option value="9">10</option>
-                            <option value="10">11</option>
-                            <option value="11">12</option>
-                            <option value="12">13</option>
-                            <option value="13">14</option>
-                            <option value="14">15</option>
-                            <option value="15">16</option>
-                        </select>
-                    </div>
-                    <button class="midi-remove-btn hidden" title="Remove">&times;</button>
-                </div>
-            </div>
-            <button class="midi-add-btn" id="addMidiOutput">+ Add Output</button>
-        </div>
-        <span class="midi-hint">*Pitch bend ±2 semitones for quarter-tones</span>
-    </div>
+    </div><!-- end app-wrapper -->
 
     <!-- Ensemble Modal -->
     <div id="ensemble-modal" class="modal hidden">
@@ -325,7 +325,7 @@
         <div class="modal-content">
             <button class="modal-close" aria-label="Close">&times;</button>
             <h2>About This App</h2>
-            <p>This interactive tool lets you explore the <strong>pitch transition network</strong> from Jeff Todd Titon's influential book <em>Early Downhome Blues: A Musical and Cultural Analysis</em> (Figure 64).</p>
+            <p>This interactive tool generates melodies using the <strong>pitch transition network</strong> from Jeff Todd Titon's influential book <em>Early Downhome Blues: A Musical and Cultural Analysis</em> (Figure 64), combined with weighted selection rules that follow traditional blues phrasing and contour.</p>
 
             <h3>The Network</h3>
             <p>Titon analyzed early blues recordings and mapped how melodies move between notes. This network captures those patterns, including:</p>
@@ -335,12 +335,22 @@
                 <li><strong>Hub note</strong> &mdash; G4 connects to the most destinations (6 notes)</li>
             </ul>
 
+            <h3>Melody Generation</h3>
+            <p>Note selection uses weighted rules based on Titon's analysis:</p>
+            <ul>
+                <li><strong>Phrase structure</strong> &mdash; 12-bar blues form (phrases a-f) with natural rise-and-fall contours</li>
+                <li><strong>Graded closure</strong> &mdash; Phrases end probabilistically based on melodic context</li>
+                <li><strong>Auto Harmony</strong> &mdash; Chord changes follow the standard I-IV-V blues progression</li>
+            </ul>
+
             <h3>How to Use</h3>
             <ul>
-                <li><strong>Click notes</strong> on the staff or in the Paths box to navigate</li>
-                <li><strong>Random</strong> picks a random valid next note</li>
-                <li><strong>I / IV / V</strong> play chord drones; click again to stop. Check "Inflect" to bend pitches with the melody</li>
-                <li><strong>MIDI Output</strong> sends notes to external instruments (set pitch bend to &plusmn;2 semitones)</li>
+                <li><strong>Next</strong> generates the next note using weighted selection</li>
+                <li><strong>Click notes</strong> on the staff or in Paths to choose specific notes</li>
+                <li><strong>History</strong> &mdash; Click any past note to rewind to that point</li>
+                <li><strong>Score</strong> &mdash; View your melody as notation; export to LilyPond, MusicXML, or PDF</li>
+                <li><strong>I / IV / V</strong> &mdash; Play chord drones; "Inflect" bends pitches with the melody</li>
+                <li><strong>MIDI</strong> &mdash; Send notes to external instruments (&plusmn;2 semitones pitch bend for quarter-tones)</li>
             </ul>
 
             <h3>Reference</h3>

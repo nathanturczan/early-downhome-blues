@@ -3,11 +3,20 @@
     margin: 0;
     padding: 0;
 }
-html, body {
-    overflow: hidden;
-    position: fixed;
+html {
+    overflow-x: clip;
+    overflow-y: auto;
     width: 100%;
+    max-width: 100vw;
     height: 100%;
+}
+body {
+    overflow-x: clip;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100vw;
+    height: 100%;
+    position: relative;
 }
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -17,6 +26,16 @@ body {
     flex-direction: column;
     height: 100vh;
 }
+/* Max-width wrapper for centered layout on wide screens */
+.app-wrapper {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
 .header {
     width: 100%;
     padding: 20px;
@@ -24,7 +43,7 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
-    overflow: hidden;  /* Prevent header from overflowing viewport */
+    overflow: hidden;
 }
 .header-icon {
     height: clamp(50px, 14vw, 80px);
@@ -65,20 +84,30 @@ h1 {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 10px 20px;
     gap: 10px;
-    padding-bottom: 0;
+    padding-bottom: 10px;
+    width: 100%;
 }
 .notation-container {
     flex-shrink: 0;
     background: #fff;
     border-radius: 8px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     border: 1px solid #ddd;
+    max-width: 100%;
+    width: 100%;
 }
 #notation {
     width: 100%;
+    overflow: hidden;
+}
+#notation svg {
+    max-width: 100%;
+    height: auto;
 }
 #notation svg rect {
     stroke: none !important;
@@ -200,12 +229,34 @@ button:active {
     padding: 8px 12px;
     background: rgba(0,0,0,0.03);
     border-radius: 6px;
+    margin: 0;
 }
 .history h3 {
     font-size: 0.7em;
     color: #888;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     text-transform: uppercase;
+}
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.mobile-score-btn {
+    display: none;  /* Hidden on desktop */
+    background: rgb(67, 116, 96);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.7em;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.mobile-score-btn:hover {
+    background: rgb(87, 140, 118);
 }
 .history-notes {
     font-family: 'Times New Roman', serif;
@@ -411,67 +462,136 @@ button:active {
     background: rgba(145, 56, 47, 0.6);
 }
 
-.description-wrapper {
+
+/* Two-column layout */
+.two-column-layout {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+}
+.left-column {
+    flex: 0 0 580px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    overflow: hidden;
+}
+.right-column {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
 }
-.description {
-    color: #666;
-    font-size: 0.85em;
-    line-height: 1.4;
-    padding: 10px 12px;
-    background: rgba(0,0,0,0.03);
-    border-radius: 6px;
-    text-align: center;
-    max-width: 500px;
+.right-column > * {
+    width: 100%;
 }
 
-/* Drone section */
-.drone-section {
-    flex-shrink: 0;
-    padding: 10px 20px 70px 20px;
-    background: rgb(54, 51, 50);
-    margin-top: auto;
-    margin-left: -20px;
-    margin-right: -20px;
-    margin-bottom: 0;
+/* Inline score in right column */
+.inline-score {
+    flex: 1;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    overflow: hidden;
+    min-height: 200px;
+    position: relative;
+    max-width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
 }
-.drone-header {
+/* Score container - vertically scrollable */
+.inline-score-container,
+#inline-score-canvas {
+    flex: 1;
+    min-height: 0;
+    padding: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+/* Inline export toolbar */
+.inline-export-toolbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(247, 239, 215, 0.95);
+    border-top: 1px solid #ddd;
+}
+.export-label {
+    font-size: 0.7em;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+.inline-export-btn {
+    flex: 1;
+    padding: 6px 12px;
+    font-size: 0.75em;
+    background: rgba(67, 116, 96, 0.1);
+    color: rgb(67, 116, 96);
+    border: 1px solid rgba(67, 116, 96, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.inline-export-btn:hover {
+    background: rgb(67, 116, 96);
+    color: white;
+}
+
+/* Harmony Section in left column */
+.harmony-section {
+    flex-shrink: 0;
+    padding: 12px 15px;
+    background: rgb(54, 51, 50);
+    border-radius: 8px;
+}
+.harmony-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
-.drone-title {
+.harmony-label {
     font-size: 0.7em;
     color: #888;
     text-transform: uppercase;
 }
-.inflect-toggles {
+.harmony-toggles {
     display: flex;
     gap: 12px;
 }
-.inflect-toggle {
+.harmony-toggle {
     display: flex;
     align-items: center;
     gap: 5px;
     font-size: 0.65em;
     color: #888;
 }
-.inflect-toggle input {
+.harmony-toggle input {
     cursor: pointer;
     accent-color: rgb(67, 116, 96);
 }
-.inflect-toggle input:disabled {
+.harmony-toggle input:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
-.inflect-toggle label {
+.harmony-toggle label {
     cursor: pointer;
 }
-.inflect-toggle label.disabled {
+.harmony-toggle label.disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
@@ -479,12 +599,9 @@ button:active {
     display: flex;
     gap: 8px;
     justify-content: center;
-    flex-wrap: wrap;
-    padding: 10px 0;
 }
 .chord-btn {
     flex: 1;
-    max-width: 100px;
     padding: 15px 20px;
     font-size: 1.2em;
     font-weight: bold;
@@ -504,6 +621,113 @@ button:active {
     background: rgb(67, 116, 96);
     color: white;
     border-color: rgb(87, 140, 118);
+}
+
+/* Inline MIDI Section */
+.midi-section-inline {
+    background: rgb(54, 51, 50);
+    border-radius: 8px;
+    padding: 12px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.midi-section-inline .midi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.midi-section-inline .midi-label {
+    font-size: 0.7em;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.midi-section-inline .midi-hint-inline {
+    font-size: 0.6em;
+    color: #666;
+    font-style: italic;
+}
+.midi-section-inline .midi-outputs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.midi-section-inline .midi-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.midi-section-inline .midi-select {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.midi-section-inline .midi-select label {
+    font-size: 0.6em;
+    color: #888;
+    text-transform: uppercase;
+}
+.midi-section-inline .midi-select select {
+    background: rgba(255,255,255,0.1);
+    color: #ddd;
+    border: 1px solid rgba(255,255,255,0.2);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+.midi-section-inline .midi-select select:focus {
+    outline: none;
+    border-color: rgb(145, 56, 47);
+}
+.midi-section-inline .midi-type {
+    min-width: 80px;
+}
+.midi-section-inline .midi-port {
+    min-width: 120px;
+    flex: 1;
+}
+.midi-section-inline .midi-channel {
+    min-width: 50px;
+}
+.midi-section-inline .midi-remove-btn {
+    background: rgba(255,255,255,0.05);
+    color: #888;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.midi-section-inline .midi-remove-btn:hover {
+    background: rgba(145, 56, 47, 0.3);
+    color: rgb(145, 56, 47);
+    border-color: rgb(145, 56, 47);
+}
+.midi-section-inline .midi-add-btn {
+    background: rgba(255,255,255,0.05);
+    color: #888;
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 0.75em;
+    cursor: pointer;
+    transition: all 0.15s;
+    align-self: flex-start;
+}
+.midi-section-inline .midi-add-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #bbb;
+    border-color: rgba(255,255,255,0.3);
+}
+
+/* Phrasing toggles in right column */
+.right-column .phrasing-toggles {
+    margin-top: 0;
+    margin-bottom: 0;
 }
 
 /* MIDI Footer */
@@ -997,143 +1221,14 @@ button:active {
     background: rgba(145, 56, 47, 0.1);
 }
 
-/* Top row and left panel - default (mobile/tablet uses display:contents) */
-.top-row {
-    display: contents;
-}
-.left-panel {
-    display: contents;
-}
-/* On mobile/tablet, use order to arrange: notation, controls, history, description, drone */
-.notation-container {
-    order: 1;
-}
-.controls {
-    order: 2;
-}
-.history {
-    order: 3;
-}
-.description-wrapper {
-    order: 4;
-}
-.drone-section {
-    order: 5;
-}
 
-/* Tablet - center history and fix overflow */
-@media (min-width: 601px) and (max-width: 1024px) {
-    html, body {
-        overflow: auto;
-        position: static;
-    }
-    body {
-        min-height: 100vh;
-        height: auto;
-    }
-    .main-content {
-        overflow: visible;
-        flex: none;
-        padding: 8px 15px;
-        gap: 8px;
-    }
-    .notation-container {
-        transform-origin: top left;
-        transform: scale(0.85);
-        width: 118%;
-        margin-bottom: -60px;
-    }
-    .note-box {
-        padding: 12px 15px;
-    }
-    .note-box.current {
-        width: 130px;
-    }
-    .current-note {
-        font-size: 2.2em;
-    }
-    .path-note {
-        padding: 10px 16px;
-        font-size: 1.3em;
-    }
-    .description-wrapper {
-        display: none;
-    }
-    .drone-section {
-        padding: 12px 20px 80px 20px !important;
-        margin-bottom: 0 !important;
-    }
-    .chord-btn {
-        padding: 12px 18px;
-        font-size: 1.1em;
-    }
-    body.midi-minimized .drone-section {
-        padding-bottom: 40px !important;
-    }
-    .history {
-        text-align: center;
-        padding: 6px 10px;
-    }
-    .history h3 {
-        text-align: center;
-    }
-}
-
-/* Desktop ONLY - side by side layout */
+/* Desktop - two column layout (default) */
 @media (min-width: 1025px) {
-    .main-content {
-        flex-direction: column;
-        padding: 10px 20px;
-        gap: 15px;
-    }
-    .top-row {
-        display: flex;
-        flex-direction: row;
-        gap: 20px;
-        align-items: stretch;
-        justify-content: center;
-    }
-    .left-panel {
-        flex: 0 0 auto;
-        width: 500px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .notation-container {
-        width: 100%;
-    }
-    .controls {
-        width: 100%;
-        justify-content: flex-start;
-    }
-    .drone-section {
-        flex: 0 0 auto;
-        width: 400px;
-        margin: 0;
-        border-radius: 8px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-    }
-    .drone-header {
-        flex-shrink: 0;
-    }
-    .harmony-buttons {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-    .chord-btn {
-        padding: 25px 30px;
-        font-size: 1.4em;
-    }
     .header {
         padding: 15px 20px;
     }
     h1 {
-        font-size: 2.5em;  /* Smaller on desktop to fit buttons */
+        font-size: 2.5em;
     }
     .subtitle {
         font-size: 1em;
@@ -1151,50 +1246,76 @@ button:active {
         width: 36px;
         height: 36px;
     }
-    .history {
-        width: 920px;
-        max-width: 100%;
-        margin: 0 auto;
-        text-align: center;
-    }
-    .history h3 {
-        text-align: left;
-    }
-    .description-wrapper {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .description {
-        padding: 8px 12px;
-        font-size: 0.8em;
-    }
-    /* Reset order on desktop */
-    .notation-container,
-    .controls,
-    .history,
-    .description-wrapper,
-    .drone-section {
-        order: unset;
+    .left-column {
+        width: 500px;
+        max-width: 45%;
+        flex-shrink: 1;
     }
 }
 
-/* Mobile responsive styles */
-@media (max-width: 600px) {
+/* Tablet - stack columns */
+@media (min-width: 601px) and (max-width: 1024px) {
     html, body {
-        overflow: auto;
-        position: static;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
     body {
         min-height: 100vh;
         height: auto;
     }
     .main-content {
-        overflow: visible;
+        overflow-x: hidden;
         flex: none;
-        padding: 5px 10px;
-        gap: 5px;
+        padding: 8px 15px;
+        gap: 8px;
+        min-width: 0;
+    }
+    .two-column-layout {
+        flex-direction: column;
+        min-width: 0;
+    }
+    .left-column {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+    .right-column {
+        width: 100%;
+        max-width: 100%;
+    }
+    .notation-container {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    #notation, #notation svg {
+        max-width: 100%;
+    }
+    .inline-score {
+        display: none;  /* Hide inline score on tablet */
+    }
+    .mobile-score-btn {
+        display: block;  /* Show score button on tablet */
+    }
+}
+
+/* Mobile responsive styles */
+@media (max-width: 600px) {
+    html, body {
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    body {
+        min-height: 100vh;
+        height: auto;
+    }
+    .main-content {
+        overflow-x: hidden;
+        flex: none;
+        padding: 8px 12px;
+        gap: 8px;
+        min-width: 0;
     }
     .header {
         padding: 8px 12px;
@@ -1218,15 +1339,24 @@ button:active {
         width: 28px;
         height: 28px;
     }
-    .main-content {
-        padding: 8px 12px;
-        gap: 8px;
+    .two-column-layout {
+        flex-direction: column;
+        min-width: 0;
+    }
+    .left-column,
+    .right-column {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
     }
     .notation-container {
-        transform-origin: top left;
-        transform: scale(0.75);
-        width: 133%;
-        margin-bottom: -92px;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    #notation, #notation svg {
+        max-width: 100%;
     }
     .controls {
         gap: 7px;
@@ -1272,37 +1402,11 @@ button:active {
     .history-notes {
         font-size: 0.87em;
     }
-    .description-wrapper {
-        display: none;
+    .inline-score {
+        display: none;  /* Hide inline score on mobile */
     }
-    .drone-section {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        padding: 6px 12px 18px 12px !important;
-        margin: 0 !important;
-        z-index: 50;
-    }
-    .drone-header {
-        margin-bottom: 3px;
-    }
-    .drone-title {
-        font-size: 0.6em;
-    }
-    .inflect-toggle {
-        font-size: 0.55em;
-    }
-    .harmony-buttons {
-        gap: 6px;
-        padding: 6px 0;
-    }
-    .chord-btn {
-        padding: 10px 16px;
-        font-size: 1em;
-    }
-    .main-content {
-        padding-bottom: 200px !important;
+    .mobile-score-btn {
+        display: block;  /* Show score button on mobile */
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {

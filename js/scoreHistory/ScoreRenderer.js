@@ -1,35 +1,39 @@
 // VexFlow Score Renderer
 // Renders melody history as stemless quarter notes with phrase span indicators
 
-const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental } = Vex.Flow;
+const { Renderer, Stave, StaveNote, Voice, Formatter, Accidental, BarNote } = Vex.Flow;
 
 // Constants
-const NOTE_CELL_WIDTH = 50;
+const MIN_NOTE_CELL_WIDTH = 30;  // Minimum width per note
+const MAX_NOTE_CELL_WIDTH = 50;  // Maximum/preferred width per note
 const STAVE_HEIGHT = 80;
 const LEFT_MARGIN = 60;
 const RIGHT_MARGIN = 20;
+const CONTAINER_PADDING = 20;    // Account for CSS padding (10px each side)
 const TOP_MARGIN = 50;
 const PHRASE_SPAN_HEIGHT = 28;
 const PHRASE_SPAN_Y_OFFSET = 8;  // Distance from top
 
 // Map lily notation to VexFlow format
+// E, G, and B natural notes get explicit natural accidentals
+// Quarter-flat uses "d" (half-flat) to match main notation
 const lilyToVex = {
     "c'": { key: "c/4", acc: null },
     "d'": { key: "d/4", acc: null },
     "ees'": { key: "e/4", acc: "b" },
-    "eeh'": { key: "e/4", acc: "db" },  // quarter-flat (half-flat)
-    "e'": { key: "e/4", acc: null },
+    "eeh'": { key: "e/4", acc: "d" },   // quarter-flat (half-flat) - matches network.js
+    "e'": { key: "e/4", acc: "n" },     // E natural - explicit
     "f'": { key: "f/4", acc: null },
     "ges'": { key: "g/4", acc: "b" },
-    "g'": { key: "g/4", acc: null },
+    "g'": { key: "g/4", acc: "n" },     // G natural - explicit
     "a'": { key: "a/4", acc: null },
     "bes'": { key: "b/4", acc: "b" },
-    "b'": { key: "b/4", acc: null },
+    "b'": { key: "b/4", acc: "n" },     // B natural - explicit
     "c''": { key: "c/5", acc: null },
     "d''": { key: "d/5", acc: null },
     "ees''": { key: "e/5", acc: "b" },
-    "eeh''": { key: "e/5", acc: "db" },  // quarter-flat
-    "e''": { key: "e/5", acc: null }
+    "eeh''": { key: "e/5", acc: "d" },  // quarter-flat (half-flat) - matches network.js
+    "e''": { key: "e/5", acc: "n" }     // E natural - explicit
 };
 
 // Phrase labels
@@ -54,29 +58,57 @@ export function renderScore(container, historyData) {
         return;
     }
 
-    // Calculate dimensions
+    // Split notes into lines based on phrase boundaries
+    // New line after phrase b (index 1), d (index 3), f (index 5)
+    const lines = [];
+    let currentLine = [];
+
+    historyData.forEach((entry, i) => {
+        currentLine.push(entry);
+
+        const currentPhrase = entry.position?.phraseIndex ?? null;
+        const nextEntry = historyData[i + 1];
+        const nextPhrase = nextEntry?.position?.phraseIndex ?? null;
+
+        // Line break after phrases b(1), d(3), f(5) when phrase changes
+        if (currentPhrase !== null && nextPhrase !== null &&
+            (currentPhrase === 1 || currentPhrase === 3 || currentPhrase === 5) &&
+            currentPhrase !== nextPhrase) {
+            lines.push(currentLine);
+            currentLine = [];
+        }
+    });
+
+    // Push remaining notes
+    if (currentLine.length > 0) {
+        lines.push(currentLine);
+    }
+
+    // Calculate dimensions - use available width minus padding
     const containerWidth = container.clientWidth || 800;
-    const availableWidth = containerWidth - LEFT_MARGIN - RIGHT_MARGIN;
-    const notesPerLine = Math.max(1, Math.floor(availableWidth / NOTE_CELL_WIDTH));
-    const numLines = Math.ceil(historyData.length / notesPerLine);
+    const drawingWidth = containerWidth - CONTAINER_PADDING;  // Leave room for CSS padding
     const lineHeight = STAVE_HEIGHT + PHRASE_SPAN_HEIGHT + 20;
-    const totalHeight = numLines * lineHeight + TOP_MARGIN + 20;
+    const totalHeight = lines.length * lineHeight + TOP_MARGIN + 20;
 
     // Create renderer
     const renderer = new Renderer(container, Renderer.Backends.SVG);
-    renderer.resize(containerWidth, totalHeight);
+    renderer.resize(drawingWidth, totalHeight);
     const context = renderer.getContext();
 
     // Process each line
-    let noteIndex = 0;
-    for (let lineNum = 0; lineNum < numLines; lineNum++) {
-        const lineStartIndex = noteIndex;
-        const notesOnLine = historyData.slice(noteIndex, noteIndex + notesPerLine);
-        if (notesOnLine.length === 0) break;
+    lines.forEach((notesOnLine, lineNum) => {
+        if (notesOnLine.length === 0) return;
 
         const yPos = TOP_MARGIN + lineNum * lineHeight;
         const staveY = yPos + PHRASE_SPAN_HEIGHT;
-        const staveWidth = notesOnLine.length * NOTE_CELL_WIDTH;
+
+        // Calculate note width to fit within container (account for margins and padding)
+        const availableWidth = containerWidth - LEFT_MARGIN - RIGHT_MARGIN - CONTAINER_PADDING;
+        const noteCellWidth = Math.max(
+            MIN_NOTE_CELL_WIDTH,
+            Math.min(MAX_NOTE_CELL_WIDTH, availableWidth / notesOnLine.length)
+        );
+        const staveWidth = Math.min(notesOnLine.length * noteCellWidth, availableWidth);
 
         // Track phrase spans for this line
         const phraseSpans = [];
@@ -84,7 +116,7 @@ export function renderScore(container, historyData) {
 
         // First pass: calculate phrase spans
         notesOnLine.forEach((entry, localIndex) => {
-            const xPos = LEFT_MARGIN + localIndex * NOTE_CELL_WIDTH;
+            const xPos = LEFT_MARGIN + localIndex * noteCellWidth;
             const phraseIndex = entry.position?.phraseIndex ?? null;
             const stanza = entry.stanza ?? null;
 
@@ -104,11 +136,11 @@ export function renderScore(container, historyData) {
                     stanza,
                     label: phraseIndex !== null ? phraseLabels[phraseIndex] : null,
                     startX: xPos,
-                    endX: xPos + NOTE_CELL_WIDTH
+                    endX: xPos + noteCellWidth
                 };
             } else {
                 // Extend current span
-                currentSpan.endX = xPos + NOTE_CELL_WIDTH;
+                currentSpan.endX = xPos + noteCellWidth;
             }
         });
 
@@ -117,19 +149,22 @@ export function renderScore(container, historyData) {
             phraseSpans.push(currentSpan);
         }
 
-        // Create stave
+        // Create stave with treble clef on every line
         const stave = new Stave(LEFT_MARGIN, staveY, staveWidth);
-        if (lineNum === 0) {
-            stave.addClef('treble');
-        }
+        stave.addClef('treble');
         stave.setContext(context).draw();
 
-        // Create notes
-        const staveNotes = notesOnLine.map(entry => {
+        // Create notes with bar lines at phrase boundaries
+        const tickables = [];
+        let totalBeats = 0;
+
+        notesOnLine.forEach((entry, localIndex) => {
             const mapping = lilyToVex[entry.note];
             if (!mapping) {
                 console.warn(`Unknown note: ${entry.note}`);
-                return new StaveNote({ keys: ['c/4'], duration: 'q' });
+                tickables.push(new StaveNote({ keys: ['c/4'], duration: 'q' }));
+                totalBeats += 1;
+                return;
             }
 
             const note = new StaveNote({
@@ -145,24 +180,40 @@ export function renderScore(container, historyData) {
             // Hide stem
             note.setStemStyle({ strokeStyle: 'transparent' });
 
-            return note;
+            tickables.push(note);
+            totalBeats += 1;
+
+            // Check if this is the end of a phrase (next note has different phrase)
+            const nextEntry = notesOnLine[localIndex + 1];
+            if (nextEntry) {
+                const currentPhrase = entry.position?.phraseIndex ?? null;
+                const currentStanza = entry.stanza ?? null;
+                const nextPhrase = nextEntry.position?.phraseIndex ?? null;
+                const nextStanza = nextEntry.stanza ?? null;
+
+                // Insert bar line if phrase changes
+                if (currentPhrase !== null && (currentPhrase !== nextPhrase || currentStanza !== nextStanza)) {
+                    tickables.push(new BarNote());
+                }
+            }
         });
 
         // Create voice and format
         const voice = new Voice({
-            num_beats: notesOnLine.length,
+            num_beats: totalBeats,
             beat_value: 4
         });
-        voice.addTickables(staveNotes);
+        voice.setStrict(false);  // Allow bar notes without affecting beat count
+        voice.addTickables(tickables);
         new Formatter().joinVoices([voice]).format([voice], staveWidth - 60);
         voice.draw(context, stave);
 
-        // Draw phrase spans above the staff (directly on SVG)
+        // Draw phrase spans above the staff and bar lines at phrase boundaries (directly on SVG)
         const svg = container.querySelector('svg');
         if (svg) {
             const NS = 'http://www.w3.org/2000/svg';
 
-            phraseSpans.forEach(span => {
+            phraseSpans.forEach((span, spanIndex) => {
                 if (span.label === null) return;  // Skip ungrouped notes
 
                 const spanWidth = span.endX - span.startX;
@@ -194,15 +245,15 @@ export function renderScore(container, historyData) {
                 text.setAttribute('font-weight', '600');
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('dominant-baseline', 'middle');
-                text.textContent = span.label;
+                // Show "Phrase A" if wide enough, otherwise just "a"
+                const fullLabel = spanWidth >= 120 ? `Phrase ${span.label}` : span.label;
+                text.textContent = fullLabel;
                 group.appendChild(text);
 
                 svg.appendChild(group);
             });
         }
-
-        noteIndex += notesOnLine.length;
-    }
+    });
 }
 
 /**

@@ -191,9 +191,12 @@ export function setStepsPerPhrase(n) {
 /**
  * Force position (for testing)
  */
-export function setPosition(phraseIndex, step = 0) {
+export function setPosition(phraseIndex, step = 0, stanza = null) {
   currentPhraseIndex = phraseIndex % PHRASE_SEQUENCE.length;
   stepInPhrase = step;
+  if (stanza !== null) {
+    currentStanza = stanza;
+  }
 }
 
 /**
