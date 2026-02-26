@@ -29,19 +29,17 @@ const PHRASE_TO_HARMONY = {
 
 // === Auto-Harmony Configuration ===
 
-// Phrase e: V → IV split (50% of the time, switch at 50% through phrase)
-const PHRASE_E_SPLIT_PROBABILITY = 0.50;
+// Phrase e: always V → IV (switch at 50% through phrase)
 const PHRASE_E_SPLIT_POINT = 0.50;
 
-// Phrase f: sometimes I → V at start, then back to I
+// Phrase f: sometimes V at start, then I (35% probability, switch at 60%)
 const PHRASE_F_SPLIT_PROBABILITY = 0.35;
 const PHRASE_F_SPLIT_POINT = 0.60;
 
 // Cadence harmony lock: last N notes of b/d/f force harmony to I
 const CADENCE_HARMONY_LOCK_NOTES = 2;
 
-// Split state (decided at start of each phrase)
-let phraseEHasSplit = false;
+// Split state (decided at start of phrase f only)
 let phraseFHasSplit = false;
 
 // Phrase characteristics for rule application
@@ -145,12 +143,11 @@ export function setPosition(phraseIndex, step = 0) {
 }
 
 /**
- * Decide splits for a new phrase (call when entering phrase e or f)
+ * Decide splits for a new phrase (call when entering phrase f)
+ * Phrase e always has V → IV split, no decision needed
  */
 export function decideSplits(phrase) {
-  if (phrase === 'e') {
-    phraseEHasSplit = Math.random() < PHRASE_E_SPLIT_PROBABILITY;
-  } else if (phrase === 'f') {
+  if (phrase === 'f') {
     phraseFHasSplit = Math.random() < PHRASE_F_SPLIT_PROBABILITY;
   }
 }
@@ -172,9 +169,9 @@ export function getChordForPosition(position) {
     return 'I';
   }
 
-  // Phrase e: V → IV split (if active)
+  // Phrase e: always V → IV (switch at 50%)
   if (phrase === 'e') {
-    if (phraseEHasSplit && progress >= PHRASE_E_SPLIT_POINT) {
+    if (progress >= PHRASE_E_SPLIT_POINT) {
       return 'IV';
     }
     return 'V';
