@@ -8,12 +8,17 @@ import {
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
-import { selectWeightedNote, getRestartNote } from './rules/weightedSelection.js';
+import { selectWeightedNote, getRestartNote, recordNote } from './rules/weightedSelection.js';
+import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase } from './stanza.js';
+import { clearPhrases } from './phraseMemory.js';
+
+// Phase 2 feature flag - set to true to enable stanza tracking
+const PHASE_2_ENABLED = true;
 
 // State
 let currentNote = "g'";
 let history = ["g'"];
-let stepsInPhrase = 0; // Phase 1.5: Track steps in current phrase
+let stepsInPhrase = 0; // Phase 1.5: Track steps in current phrase (fallback when Phase 2 disabled)
 
 // DOM elements
 const currentNoteEl = document.getElementById('currentNote');
@@ -60,8 +65,16 @@ async function handleNoteClick(lily) {
 
     currentNote = lily;
     history.push(currentNote);
-    stepsInPhrase++;
     if (history.length > 10) history = history.slice(-10);
+
+    // Phase 2: Record note and advance position
+    if (PHASE_2_ENABLED) {
+        const position = getPosition();
+        recordNote(position.phrase, currentNote);
+        advanceStep();
+    } else {
+        stepsInPhrase++;
+    }
 
     playNote(currentNote);
     sendMidiNote(currentNote);
@@ -150,26 +163,64 @@ async function nextNote() {
 
     const possible = adjacency[currentNote] || [];
 
-    if (possible.length === 0) {
-        // Sink note (C) - restart phrase
-        currentNote = getRestartNote();
-        history.push(currentNote);
-        stepsInPhrase = 0;
-        console.log('📍 New phrase started (sink reached)');
-    } else {
-        // Phase 1.5: Weighted selection with phrase awareness
-        const result = selectWeightedNote(currentNote, history, possible, stepsInPhrase);
-        currentNote = result.note;
-        history.push(currentNote);
-        stepsInPhrase++;
+    if (PHASE_2_ENABLED) {
+        // Phase 2: Full stanza tracking
+        const position = getPosition();
 
-        if (result.shouldRestart) {
-            // Landed on C after sufficient phrase length - restart
-            console.log(`📍 Phrase ended after ${stepsInPhrase} steps`);
-            stepsInPhrase = 0;
+        if (possible.length === 0) {
+            // Sink note (C) - advance to next phrase
+            const stanzaEnded = advancePhrase();
+            const newPosition = getPosition();
+            currentNote = getRestartNote(newPosition);
+            history.push(currentNote);
+            recordNote(newPosition.phrase, currentNote);
+            console.log(`📍 Phrase ${position.phrase} ended (sink) → starting phrase ${newPosition.phrase}`);
+
+            if (stanzaEnded) {
+                clearPhrases(); // Clear melodic memory for new stanza
+                console.log('🎼 New stanza started');
+            }
+        } else {
+            // Weighted selection with position awareness
+            const result = selectWeightedNote(currentNote, history, possible, 0, position);
+            currentNote = result.note;
+            history.push(currentNote);
+            recordNote(position.phrase, currentNote);
+
+            const phraseEnded = advanceStep();
+            if (phraseEnded || result.shouldRestart) {
+                const stanzaEnded = advancePhrase();
+                const newPosition = getPosition();
+                console.log(`📍 Phrase ${position.phrase} ended → starting phrase ${newPosition.phrase}`);
+
+                if (stanzaEnded) {
+                    clearPhrases();
+                    console.log('🎼 New stanza started');
+                }
+            }
+
+            if (history.length > 10) history = history.slice(-10);
         }
+    } else {
+        // Phase 1.5 fallback: Simple step tracking
+        if (possible.length === 0) {
+            currentNote = getRestartNote();
+            history.push(currentNote);
+            stepsInPhrase = 0;
+            console.log('📍 New phrase started (sink reached)');
+        } else {
+            const result = selectWeightedNote(currentNote, history, possible, stepsInPhrase);
+            currentNote = result.note;
+            history.push(currentNote);
+            stepsInPhrase++;
 
-        if (history.length > 10) history = history.slice(-10);
+            if (result.shouldRestart) {
+                console.log(`📍 Phrase ended after ${stepsInPhrase} steps`);
+                stepsInPhrase = 0;
+            }
+
+            if (history.length > 10) history = history.slice(-10);
+        }
     }
 
     playNote(currentNote);
