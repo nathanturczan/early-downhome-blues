@@ -78,8 +78,17 @@ export const phase2Rules = {
   /**
    * PHRASE-START-LIFT: Strong upward bias for first 2 notes of phrase
    * Creates the "rise" in IB contour before falling to cadence
+   * Only applies to a/b/e (not repeated phrases c/d/f)
+   * Gated by phrasingEnabled (passed via position.phrasingEnabled)
    */
   'PHRASE-START-LIFT': (edge, ctx, position) => {
+    // Skip if phrasing is disabled
+    if (!position.phrasingEnabled) return 1.0;
+
+    // Only apply to non-repeated phrases (a, b, e)
+    const phrase = position.phrase;
+    if (phrase === 'c' || phrase === 'd' || phrase === 'f') return 1.0;
+
     const step = position.stepInPhrase;
     if (step > 1) return 1.0;  // Only apply to first 2 notes
 
@@ -94,24 +103,33 @@ export const phase2Rules = {
   /**
    * MM-C-01: C/C' are rest points at close of phrases b, d, f
    * VERY strong bias - applied last, not undone by other rules
+   * Only applies to cadential phrases (b, d, f), last 2 notes
+   * Gated by phrasingEnabled (passed via position.phrasingEnabled)
    */
   'MM-C-01': (edge, ctx, position) => {
-    if (!position.traits?.isPhraseEnd) return 1.0;
+    // Skip if phrasing is disabled
+    if (!position.phrasingEnabled) return 1.0;
+
+    // Only apply to cadential phrases (b, d, f)
+    const phrase = position.phrase;
+    if (phrase !== 'b' && phrase !== 'd' && phrase !== 'f') return 1.0;
 
     const stepsRemaining = position.stepsPerPhrase - position.stepInPhrase;
+
+    // Only apply to last 2 notes
+    if (stepsRemaining > 2) return 1.0;
+
     let weight = 1.0;
 
     // Direct C/C' bias
     if (isC(edge.to)) {
       if (stepsRemaining <= 1) weight *= 20.0;       // Final note
       else if (stepsRemaining <= 2) weight *= 6.0;   // Penultimate
-      else if (stepsRemaining <= 3) weight *= 2.0;   // Antepenultimate
     }
 
     // Boost notes that can reach C (approach tones)
-    if (stepsRemaining <= 2 && !isC(edge.to)) {
-      const canReachC = canNoteReachC(edge.to);
-      if (canReachC) weight *= 2.0;
+    if (!isC(edge.to) && canNoteReachC(edge.to)) {
+      weight *= 2.0;
     }
 
     return weight;

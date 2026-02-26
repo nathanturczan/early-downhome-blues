@@ -20,12 +20,29 @@ const PHRASE_TO_LINE = {
   'e': 3, 'f': 3
 };
 
-// Map phrase to harmony
+// Map phrase to harmony (basic model - without splits)
 const PHRASE_TO_HARMONY = {
   'a': 'I', 'b': 'I',
   'c': 'IV', 'd': 'I',
   'e': 'V', 'f': 'I'
 };
+
+// === Auto-Harmony Configuration ===
+
+// Phrase e: V → IV split (50% of the time, switch at 50% through phrase)
+const PHRASE_E_SPLIT_PROBABILITY = 0.50;
+const PHRASE_E_SPLIT_POINT = 0.50;
+
+// Phrase f: sometimes I → V at start, then back to I
+const PHRASE_F_SPLIT_PROBABILITY = 0.35;
+const PHRASE_F_SPLIT_POINT = 0.60;
+
+// Cadence harmony lock: last N notes of b/d/f force harmony to I
+const CADENCE_HARMONY_LOCK_NOTES = 2;
+
+// Split state (decided at start of each phrase)
+let phraseEHasSplit = false;
+let phraseFHasSplit = false;
 
 // Phrase characteristics for rule application
 const PHRASE_TRAITS = {
@@ -125,6 +142,54 @@ export function setStepsPerPhrase(n) {
 export function setPosition(phraseIndex, step = 0) {
   currentPhraseIndex = phraseIndex % PHRASE_SEQUENCE.length;
   stepInPhrase = step;
+}
+
+/**
+ * Decide splits for a new phrase (call when entering phrase e or f)
+ */
+export function decideSplits(phrase) {
+  if (phrase === 'e') {
+    phraseEHasSplit = Math.random() < PHRASE_E_SPLIT_PROBABILITY;
+  } else if (phrase === 'f') {
+    phraseFHasSplit = Math.random() < PHRASE_F_SPLIT_PROBABILITY;
+  }
+}
+
+/**
+ * Get the chord for current position (auto-harmony logic)
+ * Implements splits for phrases e and f, plus cadence lock
+ *
+ * @param {Object} position - Current position from getPosition()
+ * @returns {string} Chord name: 'I', 'IV', or 'V'
+ */
+export function getChordForPosition(position) {
+  const { phrase, stepInPhrase, stepsPerPhrase, traits } = position;
+  const progress = stepInPhrase / stepsPerPhrase;
+  const stepsRemaining = stepsPerPhrase - stepInPhrase;
+
+  // Cadence lock: last 2 notes of b/d/f force I
+  if (traits?.isPhraseEnd && stepsRemaining < CADENCE_HARMONY_LOCK_NOTES) {
+    return 'I';
+  }
+
+  // Phrase e: V → IV split (if active)
+  if (phrase === 'e') {
+    if (phraseEHasSplit && progress >= PHRASE_E_SPLIT_POINT) {
+      return 'IV';
+    }
+    return 'V';
+  }
+
+  // Phrase f: I → V split (if active), then back to I
+  if (phrase === 'f') {
+    if (phraseFHasSplit && progress < PHRASE_F_SPLIT_POINT) {
+      return 'V';
+    }
+    return 'I';
+  }
+
+  // Default: use basic phrase-to-harmony map
+  return PHRASE_TO_HARMONY[phrase] || 'I';
 }
 
 // Export constants for external use

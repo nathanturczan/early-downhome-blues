@@ -8,8 +8,8 @@ import {
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
-import { selectWeightedNote, getRestartNote, recordNote, freezePhrase } from './rules/weightedSelection.js';
-import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase } from './stanza.js';
+import { selectWeightedNote, getRestartNote, recordNote, freezePhrase, setPhrasing } from './rules/weightedSelection.js';
+import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
 
 // Phase 2 feature flag - set to true to enable stanza tracking
@@ -32,6 +32,28 @@ const latchToggle = document.getElementById('latchToggle');
 const latchLabel = document.querySelector('label[for="latchToggle"]');
 const notationContainer = document.getElementById('notation');
 const stanzaIndicator = document.getElementById('stanzaIndicator');
+const phrasingToggle = document.getElementById('phrasingToggle');
+const autoHarmonyToggle = document.getElementById('autoHarmonyToggle');
+
+// Auto-harmony state
+let autoHarmonyEnabled = false;
+
+// Update harmony based on current position (auto-harmony mode)
+function updateAutoHarmony() {
+    if (!autoHarmonyEnabled) return;
+    if (!PHASE_2_ENABLED) return;
+
+    const position = getPosition();
+    const chord = getChordForPosition(position);
+    const currentChord = getCurrentChord();
+
+    // Only change if different
+    if (chord !== currentChord) {
+        setHarmonyChord(chord, true); // Play the chord
+        console.log(`🎹 Auto-harmony: ${chord}`);
+        updateChordButtonUI();
+    }
+}
 
 // Update stanza position indicator
 function updateStanzaIndicator() {
@@ -124,6 +146,9 @@ async function handleNoteClick(lily) {
         inflectHarmony(currentNote, inflectToggle.checked, latchToggle.checked);
     }
 
+    // Update auto-harmony if enabled
+    updateAutoHarmony();
+
     updateAudioToggleUI();
     updateDisplay();
 }
@@ -140,10 +165,15 @@ function updateDisplay() {
             else if (history.length >= 9 && i === history.length - 9) opacity = 0.5;
             else if (history.length >= 8 && i === history.length - 8) opacity = 0.7;
             const isCurrent = i === history.length - 1;
-            return `<span class="history-note${isCurrent ? ' current' : ''}" style="opacity: ${opacity}">${displayNames[n]}</span>`;
+            return `<span class="history-note${isCurrent ? ' current' : ''}" data-note="${n}" style="opacity: ${opacity}; cursor: pointer;">${displayNames[n]}</span>`;
         })
         .join(' \u2192 ');
     historyEl.innerHTML = `<span class="history-inner">${historyContent}</span>`;
+
+    // Make history notes clickable
+    historyEl.querySelectorAll('.history-note').forEach(el => {
+        el.addEventListener('click', () => handleNoteClick(el.dataset.note));
+    });
 
     const possible = adjacency[currentNote] || [];
 
@@ -216,6 +246,12 @@ async function nextNote() {
             // Advance to next phrase
             const stanzaEnded = advancePhrase();
             const newPosition = getPosition();
+
+            // Decide splits for phrases e and f
+            if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
+                decideSplits(newPosition.phrase);
+            }
+
             currentNote = getRestartNote(newPosition);
             history.push(currentNote);
             recordNote(newPosition.phrase, currentNote);
@@ -240,6 +276,12 @@ async function nextNote() {
                 }
                 const stanzaEnded = advancePhrase();
                 const newPosition = getPosition();
+
+                // Decide splits for phrases e and f
+                if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
+                    decideSplits(newPosition.phrase);
+                }
+
                 console.log(`📍 Phrase ${position.phrase} ended → starting phrase ${newPosition.phrase}`);
 
                 if (stanzaEnded) {
@@ -279,6 +321,9 @@ async function nextNote() {
     if (isHarmonyPlaying()) {
         inflectHarmony(currentNote, inflectToggle.checked, latchToggle.checked);
     }
+
+    // Update auto-harmony if enabled
+    updateAutoHarmony();
 
     updateAudioToggleUI();
     updateDisplay();
@@ -337,6 +382,32 @@ function init() {
             inflectHarmony(currentNote, true, latchToggle.checked);
         }
     });
+
+    // Phrasing toggle
+    if (phrasingToggle) {
+        phrasingToggle.addEventListener('change', (e) => {
+            setPhrasing(e.target.checked);
+        });
+    }
+
+    // Auto-harmony toggle
+    if (autoHarmonyToggle) {
+        autoHarmonyToggle.addEventListener('change', async (e) => {
+            autoHarmonyEnabled = e.target.checked;
+            console.log(`🎹 Auto-harmony ${autoHarmonyEnabled ? 'ON' : 'OFF'}`);
+
+            if (autoHarmonyEnabled) {
+                // Initialize audio if needed
+                const { isInitialized } = getAudioState();
+                if (!isInitialized) {
+                    await initAudio();
+                    updateAudioToggleUI();
+                }
+                // Start playing the current position's chord
+                updateAutoHarmony();
+            }
+        });
+    }
 
     // Chord buttons - simplified: click = play that chord
     document.querySelectorAll('.chord-btn').forEach(btn => {

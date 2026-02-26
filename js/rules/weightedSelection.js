@@ -12,6 +12,19 @@ import { shouldRepeat, getRepetitionNote, recordNote } from '../phraseMemory.js'
 // Debug mode - set to true to see weight calculations in console
 const DEBUG = true;
 
+// === Phrasing Toggle ===
+// When OFF: skip repetition, cadence bias, phrase-start lift
+let phrasingEnabled = true;
+
+export function setPhrasing(enabled) {
+  phrasingEnabled = enabled;
+  console.log(`🎭 Phrasing ${enabled ? 'ON' : 'OFF'}`);
+}
+
+export function getPhrasingEnabled() {
+  return phrasingEnabled;
+}
+
 // Phase 1.5: Phrase length parameters
 const MIN_PHRASE_STEPS = 8;
 const MAX_PHRASE_STEPS = 12;
@@ -188,7 +201,9 @@ function scoreCandidate(currentNote, candidateNote, ctx, stepsInPhrase = 0, posi
 
   // Phase 2: Apply position-aware rules
   if (position) {
-    const phase2Result = applyPhase2Rules(edge, ctx, position);
+    // Augment position with phrasing state
+    const positionWithPhrasing = { ...position, phrasingEnabled };
+    const phase2Result = applyPhase2Rules(edge, ctx, positionWithPhrasing);
     for (const [ruleId, contribution] of Object.entries(phase2Result.contributions)) {
       ruleContributions[ruleId] = contribution;
     }
@@ -216,7 +231,8 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
   if (candidates.length === 0) return { note: null, shouldRestart: false };
 
   // Phase 2: Check for melodic repetition (phrases c, d repeat a, b)
-  if (position && shouldRepeat(position.phrase)) {
+  // Only when phrasing is enabled
+  if (phrasingEnabled && position && shouldRepeat(position.phrase)) {
     const repetitionNote = getRepetitionNote(position.phrase, position.stepInPhrase, candidates);
     if (repetitionNote) {
       if (DEBUG) {

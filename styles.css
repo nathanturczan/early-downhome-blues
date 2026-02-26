@@ -225,6 +225,10 @@ button:active {
     background: rgb(145, 56, 47);
     color: white;
 }
+.history-note:not(.current):hover {
+    background: rgba(145, 56, 47, 0.3);
+    cursor: pointer;
+}
 
 /* Phase 2: Stanza Position Indicator */
 .stanza-indicator {
@@ -237,6 +241,26 @@ button:active {
     flex-direction: column;
     gap: 6px;
     font-size: 0.8em;
+}
+.stanza-toggles {
+    display: flex;
+    gap: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+    margin-bottom: 4px;
+}
+.stanza-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.stanza-toggle input[type="checkbox"] {
+    accent-color: rgb(145, 56, 47);
+}
+.stanza-toggle label {
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #555;
 }
 .stanza-line {
     display: flex;
