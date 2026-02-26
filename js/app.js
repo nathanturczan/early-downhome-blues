@@ -31,6 +31,46 @@ const inflectToggle = document.getElementById('inflectToggle');
 const latchToggle = document.getElementById('latchToggle');
 const latchLabel = document.querySelector('label[for="latchToggle"]');
 const notationContainer = document.getElementById('notation');
+const stanzaIndicator = document.getElementById('stanzaIndicator');
+
+// Update stanza position indicator
+function updateStanzaIndicator() {
+    if (!PHASE_2_ENABLED || !stanzaIndicator) return;
+
+    const position = getPosition();
+
+    // Update stanza number
+    const stanzaNum = document.getElementById('stanzaNumber');
+    if (stanzaNum) stanzaNum.textContent = position.stanza;
+
+    // Update step counter
+    const stepEl = document.getElementById('phraseStep');
+    const stepsEl = document.getElementById('phraseSteps');
+    if (stepEl) stepEl.textContent = position.stepInPhrase;
+    if (stepsEl) stepsEl.textContent = position.stepsPerPhrase;
+
+    // Update line highlighting
+    stanzaIndicator.querySelectorAll('.stanza-line').forEach(line => {
+        const lineNum = parseInt(line.dataset.line);
+        line.classList.toggle('active', lineNum === position.line);
+    });
+
+    // Update phrase boxes
+    const phraseOrder = ['a', 'b', 'c', 'd', 'e', 'f'];
+    const currentIndex = phraseOrder.indexOf(position.phrase);
+
+    stanzaIndicator.querySelectorAll('.phrase-box').forEach(box => {
+        const phrase = box.dataset.phrase;
+        const phraseIndex = phraseOrder.indexOf(phrase);
+
+        box.classList.remove('active', 'completed');
+        if (phrase === position.phrase) {
+            box.classList.add('active');
+        } else if (phraseIndex < currentIndex) {
+            box.classList.add('completed');
+        }
+    });
+}
 
 // Update audio toggle button visual state
 function updateAudioToggleUI() {
@@ -122,6 +162,7 @@ function updateDisplay() {
     }
 
     renderNotation(notationContainer, currentNote, handleNoteClick);
+    updateStanzaIndicator();
 }
 
 // Handle ensemble room updates (for member mode)

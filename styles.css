@@ -225,6 +225,70 @@ button:active {
     background: rgb(145, 56, 47);
     color: white;
 }
+
+/* Phase 2: Stanza Position Indicator */
+.stanza-indicator {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 6px;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.8em;
+}
+.stanza-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.stanza-line.active {
+    opacity: 1;
+}
+.line-label {
+    font-weight: 600;
+    min-width: 50px;
+    color: #666;
+}
+.line-harmony {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    color: #888;
+    min-width: 30px;
+}
+.phrase-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: rgba(145, 56, 47, 0.1);
+    color: #666;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.phrase-box.active {
+    background: rgb(145, 56, 47);
+    color: white;
+    transform: scale(1.1);
+}
+.phrase-box.completed {
+    background: rgba(145, 56, 47, 0.3);
+    color: #444;
+}
+.stanza-progress {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    color: #888;
+    font-size: 0.9em;
+}
+
 .description-wrapper {
     flex: 1;
     display: flex;
