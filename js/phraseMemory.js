@@ -3,12 +3,18 @@
 // Phase 2: Melodic memory for phrase repetition
 // Stores Line 1 melody for replay in Line 2
 
+// Module instance check - log URL to detect duplicate imports
+console.log('📦 phraseMemory.js loaded from:', import.meta.url);
+
 /**
  * In downhome blues, Line 2 (phrases c+d) more or less repeats Line 1 (phrases a+b)
  * even as harmony moves to IV underneath.
  *
  * MM-S-03: "Singers prefer repeating phrase a melody against subdominant support"
  */
+
+// Freeze timestamps for debugging
+let freezeTimestamps = { 'a': null, 'b': null };
 
 // Storage for phrase melodies (frozen snapshots)
 let phraseNotes = {
@@ -45,6 +51,7 @@ export function recordNote(phrase, note) {
 export function freezePhrase(phrase) {
   if (phrase === 'a' || phrase === 'b') {
     frozenPhrases[phrase] = [...phraseNotes[phrase]]; // Deep copy
+    freezeTimestamps[phrase] = Date.now();
     console.log(`🧊 Froze phrase ${phrase}: ${frozenPhrases[phrase].join(' → ')}`);
   }
 }
@@ -132,7 +139,7 @@ export function clearPhrase(phrase) {
 }
 
 /**
- * Get debug info
+ * Get debug info (counts per phrase)
  */
 export function getDebugInfo() {
   return {
@@ -143,4 +150,40 @@ export function getDebugInfo() {
     e: phraseNotes['e'].length,
     f: phraseNotes['f'].length
   };
+}
+
+/**
+ * Get full debug stats for testing
+ */
+export function getDebugStats() {
+  return {
+    phraseCounts: getDebugInfo(),
+    frozenA: frozenPhrases['a'] ? [...frozenPhrases['a']] : null,
+    frozenB: frozenPhrases['b'] ? [...frozenPhrases['b']] : null,
+    freezeTimestamps: { ...freezeTimestamps }
+  };
+}
+
+/**
+ * Get deep copy snapshot of all phrase notes
+ */
+export function getPhraseNotesSnapshot() {
+  return {
+    a: [...phraseNotes['a']],
+    b: [...phraseNotes['b']],
+    c: [...phraseNotes['c']],
+    d: [...phraseNotes['d']],
+    e: [...phraseNotes['e']],
+    f: [...phraseNotes['f']],
+    frozenA: frozenPhrases['a'] ? [...frozenPhrases['a']] : null,
+    frozenB: frozenPhrases['b'] ? [...frozenPhrases['b']] : null
+  };
+}
+
+/**
+ * Reset all phrase memory (alias for clearPhrases, for test API consistency)
+ */
+export function resetPhraseMemory() {
+  clearPhrases();
+  freezeTimestamps = { 'a': null, 'b': null };
 }

@@ -11,6 +11,7 @@ import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
 import { selectWeightedNote, getRestartNote, recordNote, freezePhrase, setPhrasing } from './rules/weightedSelection.js';
 import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits, setPosition } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
+import './browserTest.js'; // Load browser test harness
 
 // Phase 2 feature flag - set to true to enable stanza tracking
 const PHASE_2_ENABLED = true;

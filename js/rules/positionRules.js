@@ -70,11 +70,85 @@ function isEComplex(note) {
   return note.startsWith('ee') || note.startsWith("e'") || note === "e''";
 }
 
+// === IB Contour Configuration ===
+// Inverted-bowl contour: rise in first half of stanza, fall in second half
+const IB_CROSSOVER = 0.45; // Progress point where contour switches from rising to falling
+const IB_UP_MULT_RISING = 1.15;   // Boost upward motion in rising half
+const IB_DOWN_MULT_RISING = 0.95; // Slight penalty for downward in rising half
+const IB_UP_MULT_FALLING = 0.95;  // Slight penalty for upward in falling half
+const IB_DOWN_MULT_FALLING = 1.15; // Boost downward motion in falling half
+
+/**
+ * Calculate overall progress through stanza (0 to 1)
+ */
+function getStanzaProgress(position) {
+  const phraseIndex = position.phraseIndex || 0;
+  const step = position.stepInPhrase || 0;
+  const stepsPerPhrase = position.stepsPerPhrase || 8;
+  const totalSteps = 6 * stepsPerPhrase; // 6 phrases per stanza
+  const currentStep = phraseIndex * stepsPerPhrase + step;
+  return currentStep / totalSteps;
+}
+
+/**
+ * Check if we're in the cadence window (last 2 notes of b/d/f)
+ */
+function isInCadenceWindow(position) {
+  const phrase = position.phrase;
+  if (phrase !== 'b' && phrase !== 'd' && phrase !== 'f') return false;
+  const stepsRemaining = position.stepsPerPhrase - position.stepInPhrase;
+  return stepsRemaining <= 2;
+}
+
+/**
+ * Check if we're in phrase-start lift window (first 2 notes of a/b/e)
+ */
+function isInPhraseStartLiftWindow(position) {
+  const phrase = position.phrase;
+  if (phrase === 'c' || phrase === 'd' || phrase === 'f') return false; // repeated phrases
+  return position.stepInPhrase <= 1;
+}
+
 /**
  * Phase 2 position-aware rules
  * Each rule takes (edge, ctx, position) and returns a weight multiplier
  */
 export const phase2Rules = {
+  /**
+   * IB-CONTOUR: Inverted-bowl macro contour across the stanza
+   * Early stanza: prefer upward/flat motion
+   * Late stanza: prefer downward/flat motion
+   *
+   * Gated: only when phrasing ON, not during repetition/cadence/phrase-start-lift
+   */
+  'IB-CONTOUR': (edge, ctx, position) => {
+    // Skip if phrasing is disabled
+    if (!position.phrasingEnabled) return 1.0;
+
+    // Skip during repetition playback (c/d/f bypass generator anyway, but be explicit)
+    if (position.isRepeating) return 1.0;
+
+    // Skip in cadence window (let cadence rules dominate)
+    if (isInCadenceWindow(position)) return 1.0;
+
+    // Skip in phrase-start lift window (let lift rule dominate)
+    if (isInPhraseStartLiftWindow(position)) return 1.0;
+
+    const progress = getStanzaProgress(position);
+    const isRisingHalf = progress < IB_CROSSOVER;
+
+    if (edge.direction > 0) {
+      // Upward motion
+      return isRisingHalf ? IB_UP_MULT_RISING : IB_UP_MULT_FALLING;
+    } else if (edge.direction < 0) {
+      // Downward motion
+      return isRisingHalf ? IB_DOWN_MULT_RISING : IB_DOWN_MULT_FALLING;
+    }
+
+    // Same note - no change
+    return 1.0;
+  },
+
   /**
    * PHRASE-START-LIFT: Strong upward bias for first 2 notes of phrase
    * Creates the "rise" in IB contour before falling to cadence
