@@ -69,10 +69,10 @@ function updateStanzaIndicator() {
     const stanzaNum = document.getElementById('stanzaNumber');
     if (stanzaNum) stanzaNum.textContent = position.stanza;
 
-    // Update step counter
+    // Update step counter (display 1-indexed)
     const stepEl = document.getElementById('phraseStep');
     const stepsEl = document.getElementById('phraseSteps');
-    if (stepEl) stepEl.textContent = position.stepInPhrase;
+    if (stepEl) stepEl.textContent = position.stepInPhrase + 1;
     if (stepsEl) stepsEl.textContent = position.stepsPerPhrase;
 
     // Update line highlighting
