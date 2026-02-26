@@ -5,6 +5,14 @@
 
 import { frequencies, adjacency } from '../network.js';
 
+// Sabotage flag for testing
+let cadenceDisabled = false;
+
+export function setCadenceDisabled(v) {
+  cadenceDisabled = !!v;
+  console.log(`🧨 Cadence ${cadenceDisabled ? 'DISABLED' : 'enabled'}`);
+}
+
 /**
  * Convert frequency to pitch class (0-11)
  */
@@ -238,6 +246,9 @@ export const phase2Rules = {
    * Gated by phrasingEnabled (passed via position.phrasingEnabled)
    */
   'MM-C-01': (edge, ctx, position) => {
+    // Sabotage: skip cadence bias if disabled
+    if (cadenceDisabled) return 1.0;
+
     // Skip if phrasing is disabled
     if (!position.phrasingEnabled) return 1.0;
 

@@ -8,6 +8,14 @@ import { random } from './random.js';
 // Debug mode - set to true for verbose repetition logging
 const DEBUG = false;
 
+// Sabotage flag for testing
+let repetitionDisabled = false;
+
+export function setRepetitionDisabled(v) {
+  repetitionDisabled = !!v;
+  console.log(`🧨 Repetition ${repetitionDisabled ? 'DISABLED' : 'enabled'}`);
+}
+
 // Module instance check - log URL to detect duplicate imports (debug only)
 if (DEBUG) console.log('📦 phraseMemory.js loaded from:', import.meta.url);
 
@@ -116,6 +124,9 @@ export function shouldRepeat(phrase) {
  * @returns {string|null} Suggested note, or null if no repetition applies
  */
 export function getRepetitionNote(phrase, stepInPhrase, candidates) {
+  // Sabotage: skip repetition if disabled
+  if (repetitionDisabled) return null;
+
   const sourcePhrase = getSourcePhrase(phrase);
   if (!sourcePhrase) return null;
 

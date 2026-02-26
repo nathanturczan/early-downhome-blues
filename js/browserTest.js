@@ -5,7 +5,8 @@
 
 import { adjacency } from './network.js';
 import { selectWeightedNote, getRestartNote, getPhrasingEnabled, setPhrasing } from './rules/weightedSelection.js';
-import { recordNote, freezePhrase, resetPhraseMemory, getDebugStats } from './phraseMemory.js';
+import { recordNote, freezePhrase, resetPhraseMemory, getDebugStats, setRepetitionDisabled } from './phraseMemory.js';
+import { setCadenceDisabled } from './rules/positionRules.js';
 import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, chooseContourType, PHRASE_SEQUENCE } from './stanza.js';
 import { frequencies } from './network.js';
 
@@ -291,5 +292,13 @@ export function runBrowserTest(numStanzas = 10, seed = null) {
 if (typeof window !== 'undefined') {
   window.runBrowserTest = runBrowserTest;
   window.getDebugStats = getDebugStats;
+
+  // Sabotage hooks for testing
+  window.sabotage = {
+    rep(v = true) { setRepetitionDisabled(v); },
+    cad(v = true) { setCadenceDisabled(v); }
+  };
+
   console.log('🧪 Browser test ready: call window.runBrowserTest(20) or runBrowserTest(20, seed) in console');
+  console.log('🧨 sabotage hooks ready:', window.sabotage);
 }
