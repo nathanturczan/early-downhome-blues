@@ -309,12 +309,14 @@ button:active {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
+    padding: 4px 8px;
     height: 28px;
     border-radius: 4px;
     background: rgba(145, 56, 47, 0.1);
     color: #666;
     font-weight: 500;
+    font-size: 0.85em;
+    white-space: nowrap;
     transition: all 0.2s;
 }
 .phrase-box.active {
