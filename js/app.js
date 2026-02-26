@@ -29,6 +29,10 @@ let fullHistory = [];
 let stepsInPhrase = 0; // Phase 1.5: Track steps in current phrase (fallback when Phase 2 disabled)
 // Track position of last played note (for stanza indicator sync)
 let lastPlayedPosition = null;
+// Track if the last note ended a phrase (for UI feedback)
+// Initialize as true so first button shows "Start Phrase"
+let phraseJustEnded = true;
+let isVeryFirstNote = true;
 
 // DOM elements
 const currentNoteEl = document.getElementById('currentNote');
@@ -154,6 +158,10 @@ async function handleNoteClick(lily) {
         await initAudio();
         updateAudioToggleUI();
     }
+
+    // Reset phrase indicators
+    phraseJustEnded = false;
+    isVeryFirstNote = false;
 
     currentNote = lily;
 
@@ -301,10 +309,14 @@ function updateDisplay() {
             const phraseLabel = phraseChar ? (group.entries.length >= 3 ? `Phrase ${phraseChar}` : phraseChar) : '';
             const labelHtml = phraseLabel ? `<span class="phrase-label">${phraseLabel}</span>` : '';
             const noLabelClass = phraseLabel ? '' : ' no-label';
+            // Mark completed phrases (not the current one, or current if phrase just ended)
+            const isLastGroup = gi === groups.length - 1;
+            const isCompleted = !isLastGroup || (isLastGroup && phraseJustEnded);
+            const completedClass = isCompleted ? ' completed' : '';
 
             const groupArrow = gi < groups.length - 1 ? '<span class="phrase-group-arrow">→</span>' : '';
 
-            return `<span class="phrase-group${noLabelClass}">${labelHtml}<span class="phrase-notes-row">${notesHtml}</span></span>${groupArrow}`;
+            return `<span class="phrase-group${noLabelClass}${completedClass}">${labelHtml}<span class="phrase-notes-row">${notesHtml}</span></span>${groupArrow}`;
         }).join('');
 
         historyEl.innerHTML = `<span class="history-inner with-phrases">${groupsHtml}</span>`;
@@ -337,11 +349,35 @@ function updateDisplay() {
     if (possible.length === 0) {
         pathsNotesEl.innerHTML = '<span class="sink-message">End of phrase</span>';
         nextBtn.textContent = 'New Phrase';
+        nextBtn.classList.add('phrase-end');
+    } else if (isVeryFirstNote) {
+        // Very first note - show "Start Phrase"
+        pathsNotesEl.innerHTML = possible.map(note =>
+            `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
+        ).join('');
+        nextBtn.textContent = 'Start Phrase';
+        nextBtn.classList.add('phrase-end');
+
+        pathsNotesEl.querySelectorAll('.path-note').forEach(el => {
+            el.addEventListener('click', () => handleNoteClick(el.dataset.note));
+        });
+    } else if (phraseJustEnded) {
+        // Phrase just ended via closure - next click starts new phrase
+        pathsNotesEl.innerHTML = possible.map(note =>
+            `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
+        ).join('');
+        nextBtn.textContent = 'Next Phrase';
+        nextBtn.classList.add('phrase-end');
+
+        pathsNotesEl.querySelectorAll('.path-note').forEach(el => {
+            el.addEventListener('click', () => handleNoteClick(el.dataset.note));
+        });
     } else {
         pathsNotesEl.innerHTML = possible.map(note =>
             `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
         ).join('');
         nextBtn.textContent = 'Next';
+        nextBtn.classList.remove('phrase-end');
 
         pathsNotesEl.querySelectorAll('.path-note').forEach(el => {
             el.addEventListener('click', () => handleNoteClick(el.dataset.note));
@@ -395,6 +431,10 @@ async function nextNote() {
         updateAudioToggleUI();
     }
 
+    // Reset phrase end indicator (user is proceeding to next note)
+    phraseJustEnded = false;
+    isVeryFirstNote = false;
+
     const possible = adjacency[currentNote] || [];
 
     if (PHASE_2_ENABLED) {
@@ -407,6 +447,7 @@ async function nextNote() {
                 freezePhrase(position.phrase);
             }
             // Advance to next phrase
+            phraseJustEnded = true;
             const stanzaEnded = advancePhrase();
             const newPosition = getPosition();
 
@@ -455,6 +496,7 @@ async function nextNote() {
                 if (position.phrase === 'a' || position.phrase === 'b') {
                     freezePhrase(position.phrase);
                 }
+                phraseJustEnded = true;
                 const stanzaEnded = advancePhrase();
                 const newPosition = getPosition();
 

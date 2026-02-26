@@ -224,6 +224,16 @@ button:hover {
 button:active {
     background: rgb(125, 46, 37);
 }
+/* Phrase end indicator - green button */
+button.phrase-end {
+    background: rgb(67, 116, 96);
+}
+button.phrase-end:hover {
+    background: rgb(87, 140, 118);
+}
+button.phrase-end:active {
+    background: rgb(47, 96, 76);
+}
 .history {
     flex-shrink: 0;
     padding: 8px 12px;
@@ -300,6 +310,9 @@ button:active {
     border-radius: 4px;
     padding: 3px 5px 4px;
     min-height: 48px;
+}
+.phrase-group.completed {
+    border-right: 2px solid rgba(67, 116, 96, 0.5);
 }
 .phrase-group.no-label {
     background: transparent;
@@ -1253,7 +1266,7 @@ button:active {
     }
 }
 
-/* Tablet - stack columns */
+/* Tablet - hybrid layout */
 @media (min-width: 601px) and (max-width: 1024px) {
     html, body {
         overflow-x: hidden;
@@ -1270,16 +1283,36 @@ button:active {
         gap: 8px;
         min-width: 0;
     }
+    /* Use CSS Grid for tablet layout */
     .two-column-layout {
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1.5fr;
+        grid-template-rows: auto auto;
+        gap: 12px;
         min-width: 0;
     }
+    /* Left column spans full width for notation and controls */
     .left-column {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
+        grid-column: 1 / -1;
+        grid-row: 1;
+        display: contents;
     }
+    .left-column .notation-container,
+    .left-column .controls {
+        grid-column: 1 / -1;
+    }
+    /* Harmony and MIDI go to left sub-column */
+    .left-column .harmony-section,
+    .left-column .midi-section-inline {
+        grid-column: 1;
+    }
+    /* Right column items go to right sub-column */
     .right-column {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         width: 100%;
         max-width: 100%;
     }
@@ -1339,19 +1372,39 @@ button:active {
         width: 28px;
         height: 28px;
     }
+    /* Mobile: Use display:contents to flatten columns and reorder */
     .two-column-layout {
+        display: flex;
         flex-direction: column;
+        gap: 8px;
         min-width: 0;
     }
     .left-column,
     .right-column {
+        display: contents;
+    }
+    /* Order elements: notation(1), controls(2), history(3), harmony(4), phrasing(5), stanza(6) */
+    .notation-container { order: 1; }
+    .controls { order: 2; }
+    .history { order: 3; }
+    .harmony-section { order: 4; }
+    .midi-section-inline { order: 5; display: none; }  /* Hide MIDI on mobile */
+    .phrasing-toggles { order: 6; }
+    .stanza-indicator { order: 7; }
+    .inline-score { order: 8; }
+
+    .notation-container,
+    .controls,
+    .history,
+    .harmony-section,
+    .midi-section-inline,
+    .phrasing-toggles,
+    .stanza-indicator {
         width: 100%;
         max-width: 100%;
         min-width: 0;
     }
     .notation-container {
-        width: 100%;
-        max-width: 100%;
         overflow-x: auto;
         overflow-y: hidden;
     }
@@ -1381,12 +1434,14 @@ button:active {
         font-size: 0.72em;
     }
     .path-note {
-        padding: 7px 13px;
-        min-height: 38px;
-        font-size: 1.25em;
+        padding: 5px 8px;
+        min-height: 32px;
+        font-size: 1em;
     }
     .paths-notes {
-        min-height: 90px;
+        min-height: 38px;
+        gap: 4px;
+        flex-wrap: nowrap;
     }
     button {
         padding: 11px 18px;
