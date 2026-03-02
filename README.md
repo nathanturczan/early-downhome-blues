@@ -4,7 +4,7 @@ An interactive web app for exploring the pitch network from Jeff Todd Titon's *E
 
 **[Try it live](https://early-downhome-blues.vercel.app/)**
 
-![Note Network](https://github.com/nathanturczan/Blues_Markov/blob/master/note_network.jpeg?raw=true)
+![Note Network](images/note_network.jpeg)
 
 ## About
 
