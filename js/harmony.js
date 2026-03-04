@@ -44,52 +44,58 @@ const inflectionRules = {
         'f':   { seventh: 'F' },
         'ges': { seventh: 'Gb' }
     },
-    // Extended chords - can inflect root, third, fifth, and seventh
+    // Extended chords - inflections that create audible chromatic bends
     'ii': {
-        'd':   { root: 'D' },
-        'f':   { third: 'F' },
-        'ges': { third: 'Gb' },
-        'a':   { fifth: 'A' },
-        'bes': { fifth: 'Bb' },
-        'c':   { seventh: 'C' }
+        // ii = D-F-A-C (D minor 7)
+        'ees': { third: 'Eb' },      // F→Eb (flatten third)
+        'eeh': { third: 'Eqf' },     // F→Eqf
+        'e':   { third: 'E' },       // F→E (flatten third further)
+        'ges': { third: 'Gb' },      // F→Gb (sharpen third)
+        'bes': { fifth: 'Bb' },      // A→Bb (sharpen fifth)
+        'b':   { seventh: 'B' }      // C→B (sharpen seventh)
     },
     'iii': {
-        'e':   { root: 'E' },
-        'ees': { root: 'Eb' },
-        'eeh': { root: 'Eqf' },
-        'g':   { third: 'G' },
-        'ges': { third: 'Gb' },
-        'b':   { fifth: 'B' },
-        'bes': { fifth: 'Bb' },
-        'd':   { seventh: 'D' }
+        // iii = E-G-B-D (E minor 7)
+        'ees': { root: 'Eb' },       // E→Eb (flatten root)
+        'eeh': { root: 'Eqf' },      // E→Eqf
+        'f':   { root: 'F' },        // E→F (sharpen root)
+        'ges': { third: 'Gb' },      // G→Gb (flatten third)
+        'a':   { third: 'A' },       // G→A (sharpen third)
+        'bes': { fifth: 'Bb' },      // B→Bb (flatten fifth)
+        'c':   { fifth: 'C' },       // B→C (sharpen fifth)
+        'ees': { seventh: 'Eb' }     // D→Eb (sharpen seventh)
     },
     'vi': {
-        'a':   { root: 'A' },
-        'bes': { root: 'Bb' },
-        'c':   { third: 'C' },
-        'e':   { fifth: 'E' },
-        'ees': { fifth: 'Eb' },
-        'eeh': { fifth: 'Eqf' },
-        'g':   { seventh: 'G' },
-        'ges': { seventh: 'Gb' }
+        // vi = A-C-E-G (A minor 7)
+        'bes': { root: 'Bb' },       // A→Bb (sharpen root)
+        'b':   { third: 'B' },       // C→B (flatten third)
+        'ees': { fifth: 'Eb' },      // E→Eb (flatten fifth)
+        'eeh': { fifth: 'Eqf' },     // E→Eqf
+        'f':   { fifth: 'F' },       // E→F (sharpen fifth)
+        'ges': { seventh: 'Gb' },    // G→Gb (flatten seventh)
+        'a':   { seventh: 'A' }      // G→A (sharpen seventh)
     },
     'bIII': {
-        'e':   { root: 'E' },
-        'ees': { root: 'Eb' },
-        'eeh': { root: 'Eqf' },
-        'g':   { third: 'G' },
-        'ges': { third: 'Gb' },
-        'b':   { fifth: 'B' },
-        'bes': { fifth: 'Bb' },
-        'd':   { seventh: 'D' }
+        // bIII = Eb-G-Bb-D (Eb major 7)
+        'eeh': { root: 'Eqf' },      // Eb→Eqf (quarter tone up)
+        'e':   { root: 'E' },        // Eb→E (sharpen root)
+        'f':   { root: 'F' },        // Eb→F (sharpen root more)
+        'ges': { third: 'Gb' },      // G→Gb (flatten third)
+        'a':   { third: 'A' },       // G→A (sharpen third)
+        'b':   { fifth: 'B' },       // Bb→B (sharpen fifth)
+        'c':   { fifth: 'C' },       // Bb→C (sharpen fifth more)
+        'ees': { seventh: 'Eb' }     // D→Eb (sharpen seventh)
     },
     'bVII': {
-        'b':   { root: 'B' },
-        'bes': { root: 'Bb' },
-        'd':   { third: 'D' },
-        'f':   { fifth: 'F' },
-        'ges': { fifth: 'Gb' },
-        'a':   { seventh: 'A' }
+        // bVII = Bb-D-F-Ab (Bb dominant 7)
+        'b':   { root: 'B' },        // Bb→B (sharpen root)
+        'c':   { root: 'C' },        // Bb→C (sharpen root more)
+        'ees': { third: 'Eb' },      // D→Eb (sharpen third)
+        'e':   { third: 'E' },       // D→E (sharpen third more)
+        'ges': { fifth: 'Gb' },      // F→Gb (sharpen fifth)
+        'g':   { fifth: 'G' },       // F→G (sharpen fifth more)
+        'a':   { seventh: 'A' },     // Ab→A (sharpen seventh)
+        'bes': { seventh: 'Bb' }     // Ab→Bb (sharpen seventh more)
     }
 };
 
