@@ -85,7 +85,9 @@ function updateAutoHarmony() {
     if (!autoHarmonyEnabled) return;
     if (!PHASE_2_ENABLED) return;
 
-    const position = getPosition();
+    // Use lastPlayedPosition to get chord for the note actually being played
+    // (not getPosition() which may have advanced to next phrase already)
+    const position = lastPlayedPosition || getPosition();
     const chord = getChordForPosition(position);
     const currentChord = getCurrentChord();
 
