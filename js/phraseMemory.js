@@ -45,12 +45,14 @@ let frozenPhrases = {
   'b': null
 };
 
-// Variation probability when recalling (small ornament chance)
-// f gets lower variation to improve repetition fidelity
+// Variation probability when recalling
+// Per Titon:
+//   - A → C: "slight variation" allowed (harmony changes I → IV)
+//   - B → D → F: "identical or nearly so" (all cadential, all end on I)
 const VARIATION_PROBABILITY = {
-  'c': 0.10,
-  'd': 0.10,
-  'f': 0.05  // Lower variation for f
+  'c': 0.15,  // More freedom - melody adapts to IV harmony
+  'd': 0.02,  // Nearly identical to B
+  'f': 0.02   // Nearly identical to B
 };
 
 /**
