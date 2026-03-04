@@ -241,8 +241,8 @@ export const phase2Rules = {
 
   /**
    * MM-C-01: C/C' are rest points at close of phrases b, d, f
-   * VERY strong bias - applied last, not undone by other rules
-   * Only applies to cadential phrases (b, d, f), last 2 notes
+   * VERY strong bias - guides melody toward C in cadential phrases
+   * Activates after MIN_LENGTH (5 notes) since closure can happen anytime after
    * Gated by phrasingEnabled (passed via position.phrasingEnabled)
    */
   'MM-C-01': (edge, ctx, position) => {
@@ -256,22 +256,29 @@ export const phase2Rules = {
     const phrase = position.phrase;
     if (phrase !== 'b' && phrase !== 'd' && phrase !== 'f') return 1.0;
 
-    const stepsRemaining = position.stepsPerPhrase - position.stepInPhrase;
+    const step = position.stepInPhrase;
+    const MIN_LENGTH = 5; // Closure can happen from step 5 onwards
 
-    // Only apply to last 2 notes
-    if (stepsRemaining > 2) return 1.0;
+    // Activate after MIN_LENGTH - closure could happen on any of these notes
+    if (step < MIN_LENGTH - 1) return 1.0;
 
     let weight = 1.0;
 
-    // Direct C/C' bias
+    // Calculate urgency: higher as we go deeper into closure territory
+    // Step 4 = low urgency, step 8+ = high urgency
+    const urgency = Math.min(1.0, (step - MIN_LENGTH + 2) / 5);
+
+    // Direct C/C' bias - scales with urgency
     if (isC(edge.to)) {
-      if (stepsRemaining <= 1) weight *= 50.0;       // Final note
-      else if (stepsRemaining <= 2) weight *= 12.0;  // Penultimate
+      // Strong boost to C: 8x at step 4, up to 25x at step 8+
+      weight *= 8 + (urgency * 17);
     }
 
-    // Boost notes that can reach C (approach tones) - critical for reachability
+    // Boost notes that can reach C (approach tones)
+    // Critical for reachability - ensures melody has path to C
     if (!isC(edge.to) && canNoteReachC(edge.to)) {
-      weight *= 6.0;  // Strong boost to ensure C becomes reachable
+      // Moderate boost: 3x at step 4, up to 6x at step 8+
+      weight *= 3 + (urgency * 3);
     }
 
     return weight;

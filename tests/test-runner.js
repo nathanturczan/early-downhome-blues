@@ -1,13 +1,13 @@
 // test-runner.js - Node.js test runner for closure system
 // Run with: node test-runner.js [numStanzas] [seed]
 
-import { adjacency } from './js/network.js';
-import { selectWeightedNote, getRestartNote, setPhrasing } from './js/rules/weightedSelection.js';
-import { evaluateClosure, buildClosureContext, MIN_LENGTH } from './js/rules/closure.js';
-import { recordNote, freezePhrase, resetPhraseMemory } from './js/phraseMemory.js';
-import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, chooseContourType, getChordForPosition, PHRASE_SEQUENCE } from './js/stanza.js';
-import { frequencies } from './js/network.js';
-import { setSeed, clearSeed, generateSeed } from './js/random.js';
+import { adjacency } from '../js/network.js';
+import { selectWeightedNote, getRestartNote, setPhrasing } from '../js/rules/weightedSelection.js';
+import { evaluateClosure, buildClosureContext, MIN_LENGTH } from '../js/rules/closure.js';
+import { recordNote, freezePhrase, resetPhraseMemory } from '../js/phraseMemory.js';
+import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, chooseContourType, getChordForPosition, PHRASE_SEQUENCE } from '../js/stanza.js';
+import { frequencies } from '../js/network.js';
+import { setSeed, clearSeed, generateSeed } from '../js/random.js';
 
 function noteToMidi(note) {
   const freq = frequencies[note];
@@ -27,6 +27,8 @@ function runTest(numStanzas = 200, seed = null) {
   console.log(`\n🧪 Node Test: ${numStanzas} stanzas, seed: ${usedSeed}\n`);
 
   const results = {
+    repetitionAttempts: { c: 0, d: 0, f: 0 },
+    repetitionHits: { c: 0, d: 0, f: 0 },
     cadenceAttempts: { b: 0, d: 0, f: 0 },
     cadenceHits: { b: 0, d: 0, f: 0 },
     phraseNoteCounts: { a: [], b: [], c: [], d: [], e: [], f: [] },
@@ -97,6 +99,14 @@ function runTest(numStanzas = 200, seed = null) {
         const previousNote = currentNote;
         currentNote = result.note;
 
+        // Track repetition using the flag from selectWeightedNote
+        if (['c', 'd', 'f'].includes(position.phrase)) {
+          results.repetitionAttempts[position.phrase]++;
+          if (result.fromRepetition) {
+            results.repetitionHits[position.phrase]++;
+          }
+        }
+
         history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
         recordNote(position.phrase, currentNote);
 
@@ -145,7 +155,19 @@ function runTest(numStanzas = 200, seed = null) {
   }
 
   // Report
-  console.log('CADENCES (phrase ending on C):');
+  console.log('REPETITION (notes from source phrase):');
+  let totalRepAttempts = 0, totalRepHits = 0;
+  for (const p of ['c', 'd', 'f']) {
+    const attempts = results.repetitionAttempts[p];
+    const hits = results.repetitionHits[p];
+    totalRepAttempts += attempts;
+    totalRepHits += hits;
+    const pct = attempts > 0 ? Math.round(100 * hits / attempts) : 0;
+    console.log(`  ${p}: ${hits}/${attempts} (${pct}%)`);
+  }
+  console.log(`  total: ${totalRepHits}/${totalRepAttempts} (${Math.round(100 * totalRepHits / totalRepAttempts)}%)`);
+
+  console.log('\nCADENCES (phrase ending on C):');
   let totalAttempts = 0, totalHits = 0;
   for (const p of ['b', 'd', 'f']) {
     const attempts = results.cadenceAttempts[p];
