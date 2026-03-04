@@ -299,10 +299,16 @@ export function getRestartNote(position = null) {
 
     // For repeated phrases: start at the same note as the source phrase
     // This ensures the repetition path can follow the original
+    // Exception: phrase c can occasionally start on F (subdominant character)
     if (shouldRepeat(phrase)) {
       const sourcePhrase = phrase === 'c' ? 'a' : 'b'; // c copies a, d/f copy b
       const sourceMelody = getFrozenPhrase(sourcePhrase);
       if (sourceMelody && sourceMelody.length > 0) {
+        // Phrase c: 20% chance to start on F instead of repeating phrase a's start
+        // This allows subdominant coloring while maintaining repetition most of the time
+        if (phrase === 'c' && random() < 0.20) {
+          return "f'";
+        }
         return sourceMelody[0]; // Start at same note as source
       }
     }

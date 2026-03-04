@@ -305,6 +305,8 @@ export const phase2Rules = {
 
   /**
    * MM-S-02: F near start of phrase c (subdominant context)
+   * Titon: "F, the fourth, can be sung easily near the start of phrase c"
+   * Boosted from 1.5 to 2.5 for stronger subdominant character
    */
   'MM-S-02': (edge, ctx, position) => {
     if (position.phrase !== 'c') return 1.0;
@@ -312,7 +314,7 @@ export const phase2Rules = {
 
     // Early in phrase c: boost F
     if (isF(edge.to)) {
-      return 1.5;
+      return 2.5;
     }
     return 1.0;
   },

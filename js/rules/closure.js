@@ -118,6 +118,13 @@ const PITCH_WEIGHTS = {
  * Get pitch weight based on note and phrase role
  */
 function getPitchWeight(note, phrase) {
+  // Special case: F gets extra weight in phrase c (subdominant context)
+  // Titon: "F... can be sung easily near the start of phrase c"
+  // Allowing F as a valid ending note for phrase c
+  if (phrase === 'c' && isF(note)) {
+    return 5; // Strong closure on F for subdominant phrase
+  }
+
   // Determine phrase role
   let role;
   if (phrase === 'b' || phrase === 'd' || phrase === 'f') {
