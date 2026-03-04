@@ -43,6 +43,53 @@ const inflectionRules = {
         'bes': { third: 'Bb' },
         'f':   { seventh: 'F' },
         'ges': { seventh: 'Gb' }
+    },
+    // Extended chords - can inflect root, third, fifth, and seventh
+    'ii': {
+        'd':   { root: 'D' },
+        'f':   { third: 'F' },
+        'ges': { third: 'Gb' },
+        'a':   { fifth: 'A' },
+        'bes': { fifth: 'Bb' },
+        'c':   { seventh: 'C' }
+    },
+    'iii': {
+        'e':   { root: 'E' },
+        'ees': { root: 'Eb' },
+        'eeh': { root: 'Eqf' },
+        'g':   { third: 'G' },
+        'ges': { third: 'Gb' },
+        'b':   { fifth: 'B' },
+        'bes': { fifth: 'Bb' },
+        'd':   { seventh: 'D' }
+    },
+    'vi': {
+        'a':   { root: 'A' },
+        'bes': { root: 'Bb' },
+        'c':   { third: 'C' },
+        'e':   { fifth: 'E' },
+        'ees': { fifth: 'Eb' },
+        'eeh': { fifth: 'Eqf' },
+        'g':   { seventh: 'G' },
+        'ges': { seventh: 'Gb' }
+    },
+    'bIII': {
+        'e':   { root: 'E' },
+        'ees': { root: 'Eb' },
+        'eeh': { root: 'Eqf' },
+        'g':   { third: 'G' },
+        'ges': { third: 'Gb' },
+        'b':   { fifth: 'B' },
+        'bes': { fifth: 'Bb' },
+        'd':   { seventh: 'D' }
+    },
+    'bVII': {
+        'b':   { root: 'B' },
+        'bes': { root: 'Bb' },
+        'd':   { third: 'D' },
+        'f':   { fifth: 'F' },
+        'ges': { fifth: 'Gb' },
+        'a':   { seventh: 'A' }
     }
 };
 
