@@ -84,6 +84,29 @@ export async function initMidi() {
     }
 }
 
+// Abbreviate long MIDI port names to fit in dropdown
+function abbreviatePortName(name, maxLen = 18) {
+    if (!name || name.length <= maxLen) return name;
+    // Common abbreviations
+    const abbrevs = [
+        [/Virtual\s*/gi, 'V'],
+        [/Network\s*/gi, 'Net '],
+        [/Session\s*/gi, 'Sess '],
+        [/Bluetooth\s*/gi, 'BT '],
+        [/MIDI\s*/gi, ''],
+        [/Port\s*/gi, 'P'],
+        [/Output\s*/gi, 'Out '],
+        [/Input\s*/gi, 'In '],
+    ];
+    let short = name;
+    for (const [pattern, replacement] of abbrevs) {
+        short = short.replace(pattern, replacement);
+        if (short.length <= maxLen) return short;
+    }
+    // Still too long - truncate with ellipsis
+    return short.slice(0, maxLen - 1) + '…';
+}
+
 function updateAllPortSelects() {
     document.querySelectorAll('.midi-port').forEach(select => {
         const currentValue = select.value;
@@ -91,7 +114,8 @@ function updateAllPortSelects() {
         midiOutputDevices.forEach(output => {
             const option = document.createElement('option');
             option.value = output.id;
-            option.textContent = output.name;
+            option.textContent = abbreviatePortName(output.name);
+            option.title = output.name; // Full name on hover
             select.appendChild(option);
         });
         if (currentValue && [...select.options].some(o => o.value === currentValue)) {
@@ -170,7 +194,8 @@ function addMidiRow() {
     midiOutputDevices.forEach(output => {
         const option = document.createElement('option');
         option.value = output.id;
-        option.textContent = output.name;
+        option.textContent = abbreviatePortName(output.name);
+        option.title = output.name; // Full name on hover
         portSelect.appendChild(option);
     });
     // Copy port from last row

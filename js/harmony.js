@@ -7,9 +7,17 @@
 
 // Default voicings: pitch class + octave for each degree
 const defaultVoicings = {
-    I:  { root: { pc: 'C', oct: 2 }, fifth: { pc: 'G', oct: 3 }, third: { pc: 'E', oct: 4 }, seventh: { pc: 'Bb', oct: 4 } },
-    IV: { root: { pc: 'F', oct: 2 }, fifth: { pc: 'C', oct: 3 }, third: { pc: 'A', oct: 4 }, seventh: { pc: 'Eb', oct: 4 } },
-    V:  { root: { pc: 'G', oct: 2 }, fifth: { pc: 'D', oct: 3 }, third: { pc: 'B', oct: 4 }, seventh: { pc: 'F', oct: 4 } }
+    // Primary blues chords
+    I:    { root: { pc: 'C', oct: 2 }, fifth: { pc: 'G', oct: 3 }, third: { pc: 'E', oct: 4 }, seventh: { pc: 'Bb', oct: 4 } },
+    IV:   { root: { pc: 'F', oct: 2 }, fifth: { pc: 'C', oct: 3 }, third: { pc: 'A', oct: 4 }, seventh: { pc: 'Eb', oct: 4 } },
+    V:    { root: { pc: 'G', oct: 2 }, fifth: { pc: 'D', oct: 3 }, third: { pc: 'B', oct: 4 }, seventh: { pc: 'F', oct: 4 } },
+    // Extended chords (shown when "More" is checked)
+    // Minor chords use lowercase numerals
+    ii:   { root: { pc: 'D', oct: 2 }, fifth: { pc: 'A', oct: 3 }, third: { pc: 'F', oct: 4 }, seventh: { pc: 'C', oct: 4 } },
+    bIII: { root: { pc: 'Eb', oct: 2 }, fifth: { pc: 'Bb', oct: 3 }, third: { pc: 'G', oct: 4 }, seventh: { pc: 'D', oct: 4 } },
+    iii:  { root: { pc: 'E', oct: 2 }, fifth: { pc: 'B', oct: 3 }, third: { pc: 'G', oct: 4 }, seventh: { pc: 'D', oct: 4 } },
+    vi:   { root: { pc: 'A', oct: 2 }, fifth: { pc: 'E', oct: 3 }, third: { pc: 'C', oct: 4 }, seventh: { pc: 'G', oct: 4 } },
+    bVII: { root: { pc: 'Bb', oct: 2 }, fifth: { pc: 'F', oct: 3 }, third: { pc: 'D', oct: 4 }, seventh: { pc: 'Ab', oct: 4 } }
 };
 
 // Inflection rules: melody pattern → which degree gets which pitch class
@@ -40,7 +48,7 @@ const inflectionRules = {
 
 // Pitch class to semitone (C = 0)
 const pcToSemitone = {
-    'C': 0, 'D': 2, 'Eb': 3, 'Eqf': 3.5, 'E': 4, 'F': 5,
+    'C': 0, 'Db': 1, 'D': 2, 'Eb': 3, 'Eqf': 3.5, 'E': 4, 'F': 5,
     'Gb': 6, 'G': 7, 'Ab': 8, 'A': 9, 'Bb': 10, 'B': 11
 };
 

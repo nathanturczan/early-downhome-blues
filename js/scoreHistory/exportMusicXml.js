@@ -113,6 +113,7 @@ function createNoteElement(lilyNote, measurePosition) {
 
 /**
  * Export history data to MusicXML format
+ * Each phrase becomes its own measure with appropriate time signature
  * @param {Array} historyData - Array of {note, position, stanza}
  * @returns {string} MusicXML source code
  */
@@ -122,16 +123,6 @@ export function exportToMusicXml(historyData) {
     }
 
     const phrases = groupByPhrase(historyData);
-
-    // Flatten all notes
-    const allNotes = [];
-    phrases.forEach(phrase => {
-        phrase.notes.forEach(note => allNotes.push(note));
-    });
-
-    // Calculate number of measures (4 notes per measure for simplicity)
-    const notesPerMeasure = 4;
-    const numMeasures = Math.ceil(allNotes.length / notesPerMeasure);
 
     let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
@@ -154,47 +145,55 @@ export function exportToMusicXml(historyData) {
   <part id="P1">
 `;
 
-    // Generate measures
-    let noteIndex = 0;
-    for (let m = 1; m <= numMeasures; m++) {
-        xml += `    <measure number="${m}">\n`;
+    // Generate one measure per phrase
+    let measureNum = 0;
+    let lastBeats = null;
 
-        // First measure gets attributes
-        if (m === 1) {
-            xml += `      <attributes>
-        <divisions>1</divisions>
-        <key>
-          <fifths>0</fifths>
-        </key>
-        <time>
-          <beats>4</beats>
-          <beat-type>4</beat-type>
-        </time>
-        <clef>
-          <sign>G</sign>
-          <line>2</line>
-        </clef>
-      </attributes>\n`;
+    phrases.forEach((phrase, phraseIdx) => {
+        if (phrase.notes.length === 0) return;
+
+        measureNum++;
+        const beats = phrase.notes.length;
+
+        xml += `    <measure number="${measureNum}">\n`;
+
+        // Add attributes when time signature changes or on first measure
+        if (measureNum === 1 || beats !== lastBeats) {
+            xml += `      <attributes>\n`;
+            if (measureNum === 1) {
+                xml += `        <divisions>1</divisions>\n`;
+                xml += `        <key>\n`;
+                xml += `          <fifths>0</fifths>\n`;
+                xml += `        </key>\n`;
+                xml += `        <clef>\n`;
+                xml += `          <sign>G</sign>\n`;
+                xml += `          <line>2</line>\n`;
+                xml += `        </clef>\n`;
+            }
+            xml += `        <time>\n`;
+            xml += `          <beats>${beats}</beats>\n`;
+            xml += `          <beat-type>4</beat-type>\n`;
+            xml += `        </time>\n`;
+            xml += `      </attributes>\n`;
+            lastBeats = beats;
         }
 
-        // Add notes for this measure
-        for (let i = 0; i < notesPerMeasure && noteIndex < allNotes.length; i++) {
-            xml += createNoteElement(allNotes[noteIndex], i);
-            noteIndex++;
+        // Add phrase label as rehearsal mark
+        if (phrase.label) {
+            xml += `      <direction placement="above">\n`;
+            xml += `        <direction-type>\n`;
+            xml += `          <rehearsal>${phrase.label}</rehearsal>\n`;
+            xml += `        </direction-type>\n`;
+            xml += `      </direction>\n`;
         }
 
-        // Pad with rests if needed (last measure)
-        const notesInMeasure = Math.min(notesPerMeasure, allNotes.length - (m - 1) * notesPerMeasure);
-        for (let i = notesInMeasure; i < notesPerMeasure && m === numMeasures; i++) {
-            xml += `        <note>
-          <rest/>
-          <duration>1</duration>
-          <type>quarter</type>
-        </note>\n`;
-        }
+        // Add notes for this phrase
+        phrase.notes.forEach((note, i) => {
+            xml += createNoteElement(note, i);
+        });
 
         xml += `    </measure>\n`;
-    }
+    });
 
     xml += `  </part>
 </score-partwise>

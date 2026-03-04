@@ -272,6 +272,7 @@ button.phrase-end:active {
     font-family: 'Times New Roman', serif;
     font-size: 0.9em;
     line-height: 1.4;
+    min-height: 2.5em; /* Prevent height change when first note added */
     overflow: hidden;
     white-space: nowrap;
     direction: rtl;
@@ -379,100 +380,153 @@ button.phrase-end:active {
     background: white;
     color: #333;
 }
-.stanza-indicator {
-    position: relative;
+
+/* Stanza Tree Container */
+.stanza-tree-container {
     flex-shrink: 0;
-    padding: 16px 12px 10px;
+    min-height: 150px;
+    width: 100%;
     background: rgba(0,0,0,0.03);
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 6px;
     margin-top: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 0.8em;
-}
-.stanza-box-label {
-    position: absolute;
-    top: -8px;
-    left: 10px;
-    background: rgb(247, 239, 215);
-    padding: 0 6px;
-    font-size: 0.65em;
-    color: #888;
-    text-transform: uppercase;
-}
-.stanza-line {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    opacity: 0.5;
-    transition: opacity 0.2s;
-}
-.stanza-line.active {
-    opacity: 1;
-}
-.line-label {
-    font-weight: 600;
-    min-width: 50px;
-    color: #666;
-}
-.line-harmony {
-    font-family: 'Times New Roman', serif;
-    font-style: italic;
-    color: #888;
-    min-width: 30px;
-}
-.phrase-box {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 4px 8px;
-    height: 28px;
-    border-radius: 4px;
-    background: rgba(145, 56, 47, 0.1);
-    color: #666;
-    font-weight: 500;
-    font-size: 0.85em;
-    white-space: nowrap;
-    transition: all 0.2s;
-}
-.phrase-box.active {
-    background: rgb(145, 56, 47);
-    color: white;
-    transform: scale(1.1);
-}
-.phrase-box.completed {
-    background: rgba(145, 56, 47, 0.3);
-    color: #444;
-}
-.stanza-progress {
-    display: flex;
-    justify-content: center;
-    padding-top: 8px;
-    border-top: 1px solid rgba(0,0,0,0.1);
-}
-
-/* Phrase progress bar - shows progression toward closure */
-.phrase-progress-bar {
-    width: 100%;
-    height: 6px;
-    background: rgba(0,0,0,0.08);
-    border-radius: 3px;
     overflow: hidden;
 }
 
-.phrase-progress-fill {
+/* D3 Tree Styles */
+.stanza-tree {
+    display: block;
+    width: 100%;
     height: 100%;
-    width: 0%;
-    background: rgba(145, 56, 47, 0.3);
-    border-radius: 3px;
-    transition: width 0.15s ease-out, background 0.3s ease;
 }
 
-/* After MIN_LENGTH (closure eligible) - subtle color shift */
-.phrase-progress-fill.eligible {
-    background: rgba(145, 56, 47, 0.6);
+.tree-link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 1.5;
+    transition: stroke 0.2s, stroke-width 0.2s;
+}
+.tree-link.active {
+    stroke: rgb(145, 56, 47);
+    stroke-width: 2;
+}
+.tree-link.complete {
+    stroke: rgba(145, 56, 47, 0.5);
+}
+
+.tree-node circle {
+    fill: #ddd;
+    stroke: #999;
+    stroke-width: 1.5;
+    transition: fill 0.2s, stroke 0.2s;
+}
+.tree-node.active circle {
+    fill: rgb(145, 56, 47);
+    stroke: rgb(125, 46, 37);
+}
+.tree-node.complete circle {
+    fill: rgba(145, 56, 47, 0.6);
+    stroke: rgba(145, 56, 47, 0.8);
+}
+.tree-node.pending circle {
+    fill: #eee;
+    stroke: #bbb;
+}
+
+.tree-node text {
+    font-size: 10px;
+    fill: #666;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.tree-node.active text {
+    fill: rgb(145, 56, 47);
+    font-weight: 600;
+}
+.tree-node.complete text {
+    fill: rgba(145, 56, 47, 0.8);
+}
+
+.tree-node tspan.contour-label {
+    font-size: 0.85em;
+    fill: rgb(145, 56, 47);
+    font-weight: 600;
+}
+
+/* Tree Tooltip - Light Mode */
+.tree-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: rgb(250, 248, 244);
+    color: #333;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 0.8em;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+    pointer-events: none;
+    max-width: 220px;
+}
+.tree-tooltip.hidden {
+    display: none;
+}
+.tooltip-title {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+.tooltip-header {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.tooltip-label {
+    font-size: 0.85em;
+    color: #666;
+}
+.tooltip-type {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: rgb(145, 56, 47);
+    font-family: 'Times New Roman', Times, Georgia, serif;
+}
+.tooltip-case {
+    font-size: 0.9em;
+    color: rgb(145, 56, 47);
+    font-style: italic;
+    font-family: 'Times New Roman', Times, Georgia, serif;
+}
+.tooltip-desc {
+    font-size: 0.85em;
+    color: #555;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+.tooltip-shlf {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    font-size: 0.85em;
+    background: rgba(0,0,0,0.04);
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+}
+.tooltip-shlf span {
+    text-align: center;
+}
+.tooltip-contour-shape {
+    display: block;
+    margin: 8px auto;
+    background: rgba(0,0,0,0.04);
+    border-radius: 4px;
+}
+.tooltip-notes {
+    font-size: 0.75em;
+    color: #888;
+    text-align: right;
 }
 
 
@@ -636,6 +690,18 @@ button.phrase-end:active {
     border-color: rgb(87, 140, 118);
 }
 
+/* Extended chords - hidden by default */
+.chord-btn.chord-extended {
+    display: none;
+}
+.harmony-buttons.show-extended .chord-btn.chord-extended {
+    display: block;
+}
+/* Wrap buttons to two rows when extended chords are shown */
+.harmony-buttons.show-extended {
+    flex-wrap: wrap;
+}
+
 /* Inline MIDI Section */
 .midi-section-inline {
     background: rgb(54, 51, 50);
@@ -670,7 +736,7 @@ button.phrase-end:active {
     display: flex;
     gap: 8px;
     align-items: flex-end;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 .midi-section-inline .midi-select {
     display: flex;
@@ -1269,16 +1335,17 @@ button.phrase-end:active {
 /* Tablet - hybrid layout */
 @media (min-width: 601px) and (max-width: 1024px) {
     html, body {
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: hidden;
+        height: 100vh;
+        height: 100dvh;
     }
     body {
         min-height: 100vh;
-        height: auto;
+        min-height: 100dvh;
     }
     .main-content {
-        overflow-x: hidden;
-        flex: none;
+        overflow: hidden;
+        flex: 1;
         padding: 8px 15px;
         gap: 8px;
         min-width: 0;
@@ -1356,8 +1423,9 @@ button.phrase-end:active {
     .phrasing-toggles {
         /* No grid positioning needed - flex handles it */
     }
-    .stanza-indicator {
+    .stanza-tree-container {
         margin-top: 0;
+        min-height: 100px;
     }
     .inline-score {
         display: none;
@@ -1373,18 +1441,19 @@ button.phrase-end:active {
 /* Mobile responsive styles */
 @media (max-width: 600px) {
     html, body {
-        overflow-x: hidden;
-        overflow-y: auto;
+        overflow: hidden;
+        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height for mobile */
     }
     body {
         min-height: 100vh;
-        height: auto;
+        min-height: 100dvh;
     }
     .main-content {
-        overflow-x: hidden;
-        flex: none;
-        padding: 8px 12px;
-        gap: 8px;
+        overflow: hidden;
+        flex: 1;
+        padding: 4px 8px;
+        gap: 4px;
         min-width: 0;
     }
     .header {
@@ -1420,15 +1489,15 @@ button.phrase-end:active {
     .right-column {
         display: contents;
     }
-    /* Order elements: notation(1), controls(2), history(3), harmony(4), phrasing(5), stanza(6) */
+    /* Order elements: notation(1), controls(2), harmony(3), phrasing(4), stanza(5), history(bottom) */
     .notation-container { order: 1; }
     .controls { order: 2; }
-    .history { order: 3; }
-    .harmony-section { order: 4; }
-    .midi-section-inline { order: 5; display: none; }  /* Hide MIDI on mobile */
-    .phrasing-toggles { order: 6; }
-    .stanza-indicator { order: 7; }
-    .inline-score { order: 8; }
+    .harmony-section { order: 3; }
+    .midi-section-inline { order: 4; display: none; }  /* Hide MIDI on mobile */
+    .phrasing-toggles { order: 5; }
+    .stanza-indicator { order: 6; }
+    .inline-score { order: 7; }
+    .history { order: 100; }  /* History at very bottom */
 
     .notation-container,
     .controls,
@@ -1442,13 +1511,15 @@ button.phrase-end:active {
         min-width: 0;
     }
     .notation-container {
-        overflow-x: hidden;
-        overflow-y: hidden;
+        overflow: hidden;
+        margin-bottom: 0;
+        padding-bottom: 0;
     }
     #notation {
-        transform: scale(0.85);
+        transform: scale(0.75);
         transform-origin: top left;
-        width: 118%;  /* Compensate for scale to fill container */
+        width: 133%;  /* Compensate for scale to fill container */
+        margin-bottom: -40px; /* Reduce bottom space */
     }
     #notation svg {
         max-width: 100%;
@@ -1505,39 +1576,20 @@ button.phrase-end:active {
     .mobile-score-btn {
         display: block;  /* Show score button on mobile */
     }
-    /* Smaller stanza box for mobile */
-    .stanza-indicator {
-        padding: 10px 8px 6px;
-        gap: 3px;
+    /* Smaller stanza tree for mobile */
+    .stanza-tree-container {
+        min-height: 90px;
         margin-top: 4px;
-        font-size: 0.7em;
+        order: 50; /* Before history */
     }
-    .stanza-box-label {
-        top: -6px;
-        font-size: 0.6em;
+    .tree-node text {
+        font-size: 8px;
     }
-    .stanza-line {
-        gap: 5px;
+    .tree-node tspan.contour-label {
+        font-size: 0.85em;
     }
-    .line-label {
-        min-width: 35px;
-        font-size: 0.9em;
-    }
-    .line-harmony {
-        min-width: 22px;
-        font-size: 0.9em;
-    }
-    .phrase-box {
-        padding: 2px 5px;
-        height: 20px;
-        font-size: 0.75em;
-        border-radius: 3px;
-    }
-    .stanza-progress {
-        padding-top: 4px;
-    }
-    .phrase-progress-bar {
-        height: 4px;
+    .tree-node circle {
+        r: 3;
     }
     /* Hide MIDI footer on mobile */
     .midi-footer {

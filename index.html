@@ -9,6 +9,11 @@
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', 'G-0BFTP87KL1');
+
+        // Custom event tracking helper
+        window.trackEvent = function(eventName, params) {
+            gtag('event', eventName, params || {});
+        };
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Early Downhome Blues - Melody Generator</title>
@@ -18,6 +23,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://unpkg.com/tone@14"></script>
     <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -117,12 +123,21 @@
                                 <input type="checkbox" id="latchToggle" disabled>
                                 <label for="latchToggle" class="disabled">Latch</label>
                             </div>
+                            <div class="harmony-toggle">
+                                <input type="checkbox" id="moreToggle">
+                                <label for="moreToggle">More</label>
+                            </div>
                         </div>
                     </div>
                     <div class="harmony-buttons">
                         <button class="chord-btn" data-chord="I">I</button>
+                        <button class="chord-btn chord-extended" data-chord="ii">ii</button>
+                        <button class="chord-btn chord-extended" data-chord="bIII">♭III</button>
+                        <button class="chord-btn chord-extended" data-chord="iii">iii</button>
                         <button class="chord-btn" data-chord="IV">IV</button>
                         <button class="chord-btn" data-chord="V">V</button>
+                        <button class="chord-btn chord-extended" data-chord="vi">vi</button>
+                        <button class="chord-btn chord-extended" data-chord="bVII">♭VII</button>
                     </div>
                 </div>
 
@@ -197,39 +212,14 @@
                     </div>
                 </div>
 
-                <!-- Stanza Position Indicator -->
-                <div class="stanza-indicator" id="stanzaIndicator">
-                    <span class="stanza-box-label">Stanza <span id="stanzaNumber">1</span></span>
-                    <div class="stanza-line" data-line="1">
-                        <span class="line-label">Line 1</span>
-                        <span class="line-harmony">I</span>
-                        <span class="phrase-box" data-phrase="a">phrase a</span>
-                        <span class="phrase-box" data-phrase="b">phrase b</span>
-                    </div>
-                    <div class="stanza-line" data-line="2">
-                        <span class="line-label">Line 2</span>
-                        <span class="line-harmony">IV-I</span>
-                        <span class="phrase-box" data-phrase="c">phrase c</span>
-                        <span class="phrase-box" data-phrase="d">phrase d</span>
-                    </div>
-                    <div class="stanza-line" data-line="3">
-                        <span class="line-label">Line 3</span>
-                        <span class="line-harmony">V-IV-I</span>
-                        <span class="phrase-box" data-phrase="e">phrase e</span>
-                        <span class="phrase-box" data-phrase="f">phrase f</span>
-                    </div>
-                    <div class="stanza-progress">
-                        <div class="phrase-progress-bar" id="phraseProgressBar">
-                            <div class="phrase-progress-fill" id="phraseProgressFill"></div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Stanza Tree Visualization -->
+                <div class="stanza-tree-container" id="stanzaIndicator"></div>
 
                 <!-- History -->
                 <div class="history">
                     <div class="history-header">
                         <h3>History</h3>
-                        <button id="mobile-score-btn" class="mobile-score-btn" type="button">View Score</button>
+                        <button id="mobile-score-btn" class="mobile-score-btn" type="button">Score</button>
                     </div>
                     <div class="history-notes" id="history"></div>
                 </div>

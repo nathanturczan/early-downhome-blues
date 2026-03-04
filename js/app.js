@@ -1,5 +1,12 @@
 // Main application logic
 import { adjacency, frequencies, displayNames } from './network.js';
+
+// Analytics helper - safely tracks events if gtag is available
+const track = (eventName, params = {}) => {
+    if (typeof window.trackEvent === 'function') {
+        window.trackEvent(eventName, params);
+    }
+};
 import { initMidi, sendMidiNote, sendHarmonyMidi } from './midi.js';
 import { initAudio, getAudioState, toggleMute, playNote } from './audio.js';
 import {
@@ -14,6 +21,8 @@ import { evaluateClosure, buildClosureContext } from './rules/closure.js';
 import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase, getChordForPosition, decideSplits, setPosition } from './stanza.js';
 import { clearPhrases } from './phraseMemory.js';
 import { initScoreHistory } from './scoreHistory/index.js';
+import { analyzePhrase, analyzeLine, analyzeStanza } from './contourAnalysis.js';
+import { initTree, renderTree, buildTreeData } from './stanzaTree.js';
 import './browserTest.js'; // Load browser test harness
 
 // Phase 2 feature flag - set to true to enable stanza tracking
@@ -34,6 +43,11 @@ let lastPlayedPosition = null;
 let phraseJustEnded = true;
 let isVeryFirstNote = true;
 
+// Contour analysis state
+let phraseContours = {};      // { 0: ContourData, 1: ContourData, ... }
+let lineContours = {};        // { 1: ContourData, 2: ContourData, 3: ContourData }
+let phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+
 // DOM elements
 const currentNoteEl = document.getElementById('currentNote');
 const noteInfoEl = document.getElementById('noteInfo');
@@ -44,6 +58,8 @@ const audioToggleBtn = document.getElementById('audio-toggle');
 const inflectToggle = document.getElementById('inflectToggle');
 const latchToggle = document.getElementById('latchToggle');
 const latchLabel = document.querySelector('label[for="latchToggle"]');
+const moreToggle = document.getElementById('moreToggle');
+const harmonyButtonsContainer = document.querySelector('.harmony-buttons');
 const notationContainer = document.getElementById('notation');
 const stanzaIndicator = document.getElementById('stanzaIndicator');
 const phrasingToggle = document.getElementById('phrasingToggle');
@@ -81,7 +97,7 @@ function updateAutoHarmony() {
     }
 }
 
-// Update stanza position indicator
+// Update stanza position indicator using D3 tree
 function updateStanzaIndicator() {
     if (!PHASE_2_ENABLED || !stanzaIndicator) return;
 
@@ -89,43 +105,12 @@ function updateStanzaIndicator() {
     // Fall back to getPosition() for initial state
     const position = lastPlayedPosition || getPosition();
 
-    // Update stanza number
-    const stanzaNum = document.getElementById('stanzaNumber');
-    if (stanzaNum) stanzaNum.textContent = position.stanza;
+    // Compute stanza contour from all notes played so far
+    const stanzaContour = analyzeStanza(phraseNoteBuffers);
 
-    // Update progress bar (visual, no numbers)
-    const progressFill = document.getElementById('phraseProgressFill');
-    if (progressFill) {
-        const noteCount = position.stepInPhrase + 1;
-        const maxLength = 12; // MAX_LENGTH from closure.js
-        const minLength = 5;  // MIN_LENGTH from closure.js
-        const progress = Math.min(noteCount / maxLength, 1.0) * 100;
-        progressFill.style.width = `${progress}%`;
-        // Add 'eligible' class when closure can fire
-        progressFill.classList.toggle('eligible', noteCount >= minLength);
-    }
-
-    // Update line highlighting
-    stanzaIndicator.querySelectorAll('.stanza-line').forEach(line => {
-        const lineNum = parseInt(line.dataset.line);
-        line.classList.toggle('active', lineNum === position.line);
-    });
-
-    // Update phrase boxes
-    const phraseOrder = ['a', 'b', 'c', 'd', 'e', 'f'];
-    const currentIndex = phraseOrder.indexOf(position.phrase);
-
-    stanzaIndicator.querySelectorAll('.phrase-box').forEach(box => {
-        const phrase = box.dataset.phrase;
-        const phraseIndex = phraseOrder.indexOf(phrase);
-
-        box.classList.remove('active', 'completed');
-        if (phrase === position.phrase) {
-            box.classList.add('active');
-        } else if (phraseIndex < currentIndex) {
-            box.classList.add('completed');
-        }
-    });
+    // Build and render tree
+    const treeData = buildTreeData(position.stanza, position, phraseContours, lineContours, stanzaContour);
+    renderTree(treeData);
 }
 
 // Update audio toggle button visual state
@@ -168,6 +153,8 @@ async function handleNoteClick(lily) {
     // Phase 2: Record note and advance position
     if (PHASE_2_ENABLED) {
         const position = getPosition();
+        // Buffer note for contour analysis
+        phraseNoteBuffers[position.phraseIndex].push(currentNote);
         // Also store in full history for score rendering
         fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza });
         // Store note with position snapshot for history rewind (include fullHistory index for rollback)
@@ -186,6 +173,9 @@ async function handleNoteClick(lily) {
 
     playNote(currentNote);
     sendMidiNote(currentNote);
+
+    // Track note selection
+    track('note_selected', { note: currentNote, method: 'click' });
 
     // Apply inflection if enabled and harmony is playing
     if (isHarmonyPlaying()) {
@@ -363,15 +353,9 @@ function updateDisplay() {
         });
     } else if (phraseJustEnded) {
         // Phrase just ended via closure - next click starts new phrase
-        pathsNotesEl.innerHTML = possible.map(note =>
-            `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
-        ).join('');
+        pathsNotesEl.innerHTML = '<span class="sink-message">Phrase ended</span>';
         nextBtn.textContent = 'Next Phrase';
         nextBtn.classList.add('phrase-end');
-
-        pathsNotesEl.querySelectorAll('.path-note').forEach(el => {
-            el.addEventListener('click', () => handleNoteClick(el.dataset.note));
-        });
     } else {
         pathsNotesEl.innerHTML = possible.map(note =>
             `<span class="path-note" data-note="${note}">${displayNames[note]}</span>`
@@ -431,7 +415,8 @@ async function nextNote() {
         updateAudioToggleUI();
     }
 
-    // Reset phrase end indicator (user is proceeding to next note)
+    // Check if we're starting a new phrase (after closure ended previous one)
+    const wasStartingNewPhrase = phraseJustEnded;
     phraseJustEnded = false;
     isVeryFirstNote = false;
 
@@ -441,11 +426,39 @@ async function nextNote() {
         // Phase 2: Full stanza tracking
         const position = getPosition();
 
-        if (possible.length === 0) {
+        if (wasStartingNewPhrase && possible.length > 0) {
+            // Starting a new phrase after closure ended the previous one
+            currentNote = getRestartNote(position);
+            phraseNoteBuffers[position.phraseIndex].push(currentNote);
+            history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
+            fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza });
+            lastPlayedPosition = { ...position };
+            recordNote(position.phrase, currentNote);
+            console.log(`📍 Starting phrase ${position.phrase} (after closure)`);
+
+            const maxHistory = getMaxHistoryLength();
+            if (history.length > maxHistory) history = history.slice(-maxHistory);
+        } else if (possible.length === 0) {
             // Sink note (C) - freeze phrase for repetition before advancing
             if (position.phrase === 'a' || position.phrase === 'b') {
                 freezePhrase(position.phrase);
             }
+
+            // Analyze completed phrase contour
+            const completedIdx = position.phraseIndex;
+            if (phraseNoteBuffers[completedIdx].length > 0) {
+                phraseContours[completedIdx] = analyzePhrase(phraseNoteBuffers[completedIdx]);
+            }
+
+            // Analyze line contour after b, d, f
+            if (completedIdx === 1 || completedIdx === 3 || completedIdx === 5) {
+                const lineNum = Math.floor(completedIdx / 2) + 1;
+                lineContours[lineNum] = analyzeLine(
+                    phraseNoteBuffers[completedIdx - 1],
+                    phraseNoteBuffers[completedIdx]
+                );
+            }
+
             // Advance to next phrase
             phraseJustEnded = true;
             const stanzaEnded = advancePhrase();
@@ -457,6 +470,8 @@ async function nextNote() {
             }
 
             currentNote = getRestartNote(newPosition);
+            // Buffer first note of new phrase
+            phraseNoteBuffers[newPosition.phraseIndex].push(currentNote);
             // Store with new position for history rewind
             history.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase } });
             // Also store in full history for score rendering
@@ -466,15 +481,33 @@ async function nextNote() {
             console.log(`📍 Phrase ${position.phrase} ended (sink) → starting phrase ${newPosition.phrase}`);
 
             if (stanzaEnded) {
+                // Analyze complete stanza contour before clearing
+                const stanzaContour = analyzeStanza(
+                    [...phraseNoteBuffers[0], ...phraseNoteBuffers[1]],
+                    [...phraseNoteBuffers[2], ...phraseNoteBuffers[3]],
+                    [...phraseNoteBuffers[4], ...phraseNoteBuffers[5]]
+                );
+                console.log('📊 Stanza contour:', stanzaContour);
+
                 clearPhrases(); // Clear melodic memory for new stanza
+                // Reset contour buffers for new stanza (delay to allow display update)
+                setTimeout(() => {
+                    phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+                    phraseContours = {};
+                    lineContours = {};
+                }, 100);
                 console.log('🎼 New stanza started');
+                track('stanza_completed', { stanza_number: position.stanza });
             }
+            track('phrase_completed', { phrase: position.phrase, method: 'sink' });
         } else {
             // Weighted selection with position awareness
             // Extract just notes for the selection algorithm
             const historyNotes = history.map(h => h.note);
             const result = selectWeightedNote(currentNote, historyNotes, possible, 0, position);
             currentNote = result.note;
+            // Buffer note for contour analysis
+            phraseNoteBuffers[position.phraseIndex].push(currentNote);
             // Store with position for history rewind
             history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
             // Also store in full history for score rendering
@@ -492,6 +525,21 @@ async function nextNote() {
             advanceStep();
 
             if (closureResult.shouldEnd) {
+                // Analyze completed phrase contour
+                const completedIdx = position.phraseIndex;
+                if (phraseNoteBuffers[completedIdx].length > 0) {
+                    phraseContours[completedIdx] = analyzePhrase(phraseNoteBuffers[completedIdx]);
+                }
+
+                // Analyze line contour after b, d, f
+                if (completedIdx === 1 || completedIdx === 3 || completedIdx === 5) {
+                    const lineNum = Math.floor(completedIdx / 2) + 1;
+                    lineContours[lineNum] = analyzeLine(
+                        phraseNoteBuffers[completedIdx - 1],
+                        phraseNoteBuffers[completedIdx]
+                    );
+                }
+
                 // Freeze phrase for repetition before advancing
                 if (position.phrase === 'a' || position.phrase === 'b') {
                     freezePhrase(position.phrase);
@@ -500,16 +548,32 @@ async function nextNote() {
                 const stanzaEnded = advancePhrase();
                 const newPosition = getPosition();
 
-                // Decide splits for phrases e and f
+                // Decide splits for phrases e and f (will be applied on next click)
                 if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
                     decideSplits(newPosition.phrase);
                 }
 
-                console.log(`📍 Phrase ${position.phrase} ended (closure p=${closureResult.probability.toFixed(2)}) → starting phrase ${newPosition.phrase}`);
+                console.log(`📍 Phrase ${position.phrase} ended (closure p=${closureResult.probability.toFixed(2)}) → next phrase will be ${newPosition.phrase}`);
+                track('phrase_completed', { phrase: position.phrase, method: 'closure' });
 
                 if (stanzaEnded) {
+                    // Analyze complete stanza contour before clearing
+                    const stanzaContour = analyzeStanza(
+                        [...phraseNoteBuffers[0], ...phraseNoteBuffers[1]],
+                        [...phraseNoteBuffers[2], ...phraseNoteBuffers[3]],
+                        [...phraseNoteBuffers[4], ...phraseNoteBuffers[5]]
+                    );
+                    console.log('📊 Stanza contour:', stanzaContour);
+
                     clearPhrases();
+                    // Reset contour buffers for new stanza (delay to allow display update)
+                    setTimeout(() => {
+                        phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+                        phraseContours = {};
+                        lineContours = {};
+                    }, 100);
                     console.log('🎼 New stanza started');
+                    track('stanza_completed', { stanza_number: position.stanza });
                 }
             }
 
@@ -545,6 +609,9 @@ async function nextNote() {
     playNote(currentNote);
     sendMidiNote(currentNote);
 
+    // Track melody generation
+    track('melody_generated', { note: currentNote });
+
     // Apply inflection if enabled and harmony is playing
     if (isHarmonyPlaying()) {
         inflectHarmony(currentNote, inflectToggle.checked, latchToggle.checked);
@@ -567,6 +634,7 @@ function init() {
 
     infoBtn.addEventListener('click', () => {
         infoModal.classList.remove('hidden');
+        track('info_modal_opened');
     });
     modalClose.addEventListener('click', () => {
         infoModal.classList.add('hidden');
@@ -610,6 +678,7 @@ function init() {
     document.querySelectorAll('.inline-export-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const format = btn.dataset.format;
+            track('score_exported', { format: format });
             if (format === 'lilypond') {
                 scoreHistoryInstance.exportLilypond();
             } else if (format === 'musicxml') {
@@ -619,6 +688,9 @@ function init() {
             }
         });
     });
+
+    // Initialize stanza tree visualization
+    initTree('stanzaIndicator');
 
     // MIDI
     initMidi();
@@ -633,12 +705,14 @@ function init() {
 
     // Audio toggle
     audioToggleBtn.addEventListener('click', async () => {
-        const { isInitialized } = getAudioState();
+        const { isInitialized, isMuted } = getAudioState();
 
         if (!isInitialized) {
             await initAudio();
+            track('audio_enabled');
         } else {
             toggleMute();
+            track('audio_toggled', { muted: !isMuted });
         }
         updateAudioToggleUI();
     });
@@ -656,15 +730,22 @@ function init() {
         }
     });
 
+    // More toggle - show/hide extended chords
+    if (moreToggle && harmonyButtonsContainer) {
+        moreToggle.addEventListener('change', (e) => {
+            harmonyButtonsContainer.classList.toggle('show-extended', e.target.checked);
+        });
+    }
+
     // Phrasing toggle
     const autoHarmonyLabel = document.querySelector('label[for="autoHarmonyToggle"]');
     if (phrasingToggle) {
         phrasingToggle.addEventListener('change', (e) => {
             setPhrasing(e.target.checked);
-            // Hide/show stanza structure UI (but keep toggles visible)
-            stanzaIndicator.querySelectorAll('.stanza-line, .stanza-progress').forEach(el => {
-                el.style.display = e.target.checked ? '' : 'none';
-            });
+            // Hide/show stanza tree visualization
+            if (stanzaIndicator) {
+                stanzaIndicator.style.display = e.target.checked ? '' : 'none';
+            }
             // Enable/disable auto-harmony (requires phrasing)
             if (autoHarmonyToggle) {
                 autoHarmonyToggle.disabled = !e.target.checked;
@@ -725,9 +806,11 @@ function init() {
             if (chord === currentChord && isPlaying) {
                 // Clicking active chord toggles it off
                 toggleHarmony();
+                track('chord_toggled', { chord: chord, action: 'off' });
             } else {
                 // Set and play the new chord
                 setHarmonyChord(chord, true);
+                track('chord_toggled', { chord: chord, action: 'on' });
 
                 // Apply inflection if enabled
                 if (inflectToggle.checked) {
@@ -752,8 +835,11 @@ function init() {
         });
     }
 
-    // Resize handler
-    window.addEventListener('resize', () => renderNotation(notationContainer, currentNote, handleNoteClick));
+    // Resize handler - re-render notation and tree
+    window.addEventListener('resize', () => {
+        renderNotation(notationContainer, currentNote, handleNoteClick);
+        updateStanzaIndicator();
+    });
 
     // Initial render
     updateDisplay();

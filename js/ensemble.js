@@ -1,5 +1,12 @@
 // Ensemble module - Firebase auth and room management
 
+// Analytics helper
+const track = (eventName, params = {}) => {
+    if (typeof window.trackEvent === 'function') {
+        window.trackEvent(eventName, params);
+    }
+};
+
 let currentUser = null;
 let activeRoom = null;
 let isHost = false;
@@ -110,6 +117,7 @@ async function signIn() {
     const { signInWithPopup } = window.firebaseFunctions;
     try {
         await signInWithPopup(window.firebaseAuth, window.firebaseGoogleProvider);
+        track('user_signed_in', { method: 'google' });
     } catch (err) {
         console.error('Sign in error:', err);
         alert('Sign in failed. Please try again.');
@@ -188,6 +196,7 @@ async function handleCreateRoom() {
         newEnsembleName.value = '';
         await loadUserRooms();
         await joinRoom(docRef.id, true);
+        track('ensemble_created', { room_id: docRef.id });
     } catch (err) {
         console.error('Error creating room:', err);
         alert('Failed to create ensemble. Please try again.');
@@ -251,6 +260,7 @@ async function joinRoom(roomId, asHost) {
         joinRoomId.value = '';
 
         console.log(`[Ensemble] Joined room ${roomId} as ${isHost ? 'host' : 'member'}`);
+        track('ensemble_joined', { room_id: roomId, role: isHost ? 'host' : 'member' });
     } catch (err) {
         console.error('Error joining room:', err);
         alert('Failed to join room. Please check the room ID.');
@@ -273,6 +283,7 @@ function handleLeaveRoom() {
     }
 
     console.log('[Ensemble] Left room');
+    track('ensemble_left');
 }
 
 // Export function to update room state (for host)
