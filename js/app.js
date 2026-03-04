@@ -428,8 +428,9 @@ async function nextNote() {
         // Phase 2: Full stanza tracking
         const position = getPosition();
 
-        if (wasStartingNewPhrase && possible.length > 0) {
+        if (wasStartingNewPhrase) {
             // Starting a new phrase after closure ended the previous one
+            // Get a fresh restart note regardless of previous note's neighbors
             currentNote = getRestartNote(position);
             phraseNoteBuffers[position.phraseIndex].push(currentNote);
             history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase } });
