@@ -58,6 +58,24 @@ function isF(note) {
   return pc === 5; // F = pitch class 5
 }
 
+/**
+ * Check if a note is microtonal (quarter-tones)
+ * These should not be cadence points per Titon's "tonic triad" rule
+ */
+function isMicrotonal(note) {
+  // LilyPond: eeh = E quarter-flat, other quarter-tones would have 'h' suffix
+  return note.includes('eeh') || note.includes('eh');
+}
+
+/**
+ * Check if note is in E complex but NOT natural E
+ * Eb, Eqf are not valid tonic triad members
+ */
+function isEComplexNotNatural(note) {
+  // ees = Eb, eeh = E quarter-flat
+  return note.startsWith('ees') || note.startsWith('eeh');
+}
+
 // === Weight Tables ===
 
 /**
@@ -113,6 +131,15 @@ function getPitchWeight(note, phrase) {
   }
 
   const weights = PITCH_WEIGHTS[role];
+
+  // In cadential phrases, heavily penalize non-tonic-triad notes
+  // Titon: "tonic triad closes each line" = C, E natural, G only
+  if (role === 'cadential') {
+    // Microtonal notes (quarter-tones) should not be cadence points
+    if (isMicrotonal(note)) return 0.05;
+    // E complex notes that aren't natural E (Eb, Eqf) aren't tonic triad
+    if (isEComplexNotNatural(note)) return 0.1;
+  }
 
   if (isC(note)) return weights.C;
   if (isG(note)) return weights.G;
