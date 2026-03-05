@@ -1497,11 +1497,13 @@ button.phrase-end:active {
         grid-column: 1;
         grid-row: 3;
         align-self: start;
+        min-width: 0;
     }
     .midi-section-inline {
         grid-column: 1;
         grid-row: 4;
         align-self: start;
+        min-width: 0;
     }
     /* Right sub-column: Use flex to stack without grid row alignment issues */
     .right-column {
@@ -1511,6 +1513,7 @@ button.phrase-end:active {
         grid-column: 2;
         grid-row: 3 / span 3;
         align-self: start;
+        min-width: 0;
     }
     .history {
         max-height: 120px;
