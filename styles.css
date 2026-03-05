@@ -1227,6 +1227,21 @@ button.phrase-end:active {
 .modal-close:hover {
     color: rgb(145, 56, 47);
 }
+.modal-attribution {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #ddd;
+    text-align: center;
+    font-size: 0.9em;
+    color: #666;
+}
+.modal-attribution a {
+    color: rgb(145, 56, 47);
+    text-decoration: none;
+}
+.modal-attribution a:hover {
+    text-decoration: underline;
+}
 
 /* Score Modal */
 .score-modal-content {
