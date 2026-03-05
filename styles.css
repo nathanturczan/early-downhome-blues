@@ -863,7 +863,7 @@ button.phrase-end:active {
 .attribution {
     position: fixed;
     bottom: 8px;
-    right: 12px;
+    left: 12px;
     font-size: 0.7em;
     color: rgba(100, 80, 60, 0.6);
     z-index: 10;

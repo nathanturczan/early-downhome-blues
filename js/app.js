@@ -1122,10 +1122,30 @@ function init() {
             return;
         }
 
-        // Escape = Clear score
+        // Escape = Close modals first, otherwise clear score
         if (e.code === 'Escape') {
             e.preventDefault();
             if (shouldBlurTarget) e.target.blur();
+
+            // Check for open modals and close them
+            const infoModal = document.getElementById('info-modal');
+            const scoreModal = document.getElementById('score-modal');
+            const ensembleModal = document.getElementById('ensemble-modal');
+
+            if (infoModal && !infoModal.classList.contains('hidden')) {
+                infoModal.classList.add('hidden');
+                return;
+            }
+            if (scoreModal && !scoreModal.classList.contains('hidden')) {
+                scoreModal.classList.add('hidden');
+                return;
+            }
+            if (ensembleModal && !ensembleModal.classList.contains('hidden')) {
+                ensembleModal.classList.add('hidden');
+                return;
+            }
+
+            // No modals open, clear score
             clearScore();
             return;
         }
