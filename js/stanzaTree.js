@@ -19,11 +19,13 @@ const LINE_LABELS = ['line 1', 'line 2', 'line 3'];
 
 /**
  * Toggle expand/collapse state for a stanza
+ * Only one stanza can be expanded at a time
  */
 export function toggleStanzaExpanded(stanzaNumber) {
     if (expandedStanzas.has(stanzaNumber)) {
         expandedStanzas.delete(stanzaNumber);
     } else {
+        expandedStanzas.clear(); // Collapse all others
         expandedStanzas.add(stanzaNumber);
     }
 }
