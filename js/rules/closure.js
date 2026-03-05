@@ -200,6 +200,34 @@ function getContourMult(progress, contourType) {
 }
 
 /**
+ * Phrase-type length modifier
+ * Rising phrases (a, c, e) tend to be shorter - quicker opening gestures
+ * Cadential phrases (b, d, f) tend to be longer - more notes to wind down to C
+ */
+function getPhraseLengthMult(noteCount, phrase) {
+  // Rising phrases: boost closure probability (end sooner)
+  if (phrase === 'a' || phrase === 'c') {
+    // At note 5-6: 1.3x closure boost (encourage shorter phrases)
+    // At note 7+: 1.0x (normal)
+    if (noteCount <= 6) return 1.3;
+    return 1.0;
+  }
+
+  // Cadential phrases: suppress closure probability early (end later)
+  if (phrase === 'b' || phrase === 'd' || phrase === 'f') {
+    // At note 5-6: 0.6x closure (suppress early ending)
+    // At note 7-8: 0.85x (mild suppression)
+    // At note 9+: 1.0x (normal)
+    if (noteCount <= 6) return 0.6;
+    if (noteCount <= 8) return 0.85;
+    return 1.0;
+  }
+
+  // Phrase e (dominant): neutral
+  return 1.0;
+}
+
+/**
  * Harmony multiplier: chord tones slightly more likely to end phrase
  * Subtle effect (1.0-1.25 range)
  */
@@ -274,12 +302,13 @@ export function evaluateClosure(note, context) {
   const progress = noteCount / MAX_LENGTH;
   const contourMult = getContourMult(progress, contourType);
   const harmonyMult = getHarmonyMult(note, chord);
+  const phraseLengthMult = getPhraseLengthMult(noteCount, phrase);
 
   // Length pressure: slight boost as we approach MAX_LENGTH
   // Encourages ending rather than meandering
   const lengthPressure = 1.0 + ((noteCount - MIN_LENGTH) / (MAX_LENGTH - MIN_LENGTH)) * 0.2;
 
-  const weight = pitchWeight * directionMult * contourMult * harmonyMult * lengthPressure;
+  const weight = pitchWeight * directionMult * contourMult * harmonyMult * phraseLengthMult * lengthPressure;
 
   // Calculate probability: weight / (weight + K)
   const probability = weight / (weight + CONTINUATION_K);
