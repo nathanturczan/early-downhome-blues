@@ -1227,10 +1227,12 @@ button.phrase-end:active {
 .modal-close:hover {
     color: rgb(145, 56, 47);
 }
-.modal-attribution {
-    margin-top: 20px;
-    padding-top: 15px;
+.modal-divider {
+    margin: 20px 0 15px;
+    border: none;
     border-top: 1px solid #ddd;
+}
+.modal-attribution {
     text-align: center;
     font-size: 0.9em;
     color: #666;
