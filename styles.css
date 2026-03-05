@@ -760,6 +760,7 @@ button.phrase-end:active {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    overflow-x: hidden;
 }
 .midi-section-inline .midi-header {
     display: flex;
@@ -787,11 +788,13 @@ button.phrase-end:active {
     gap: 8px;
     align-items: flex-end;
     flex-wrap: nowrap;
+    max-width: 100%;
 }
 .midi-section-inline .midi-select {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 .midi-section-inline .midi-select label {
     font-size: 0.6em;
@@ -806,6 +809,8 @@ button.phrase-end:active {
     border-radius: 4px;
     font-size: 0.8em;
     cursor: pointer;
+    max-width: 100%;
+    text-overflow: ellipsis;
 }
 .midi-section-inline .midi-select select:focus {
     outline: none;
@@ -815,7 +820,7 @@ button.phrase-end:active {
     min-width: 80px;
 }
 .midi-section-inline .midi-port {
-    min-width: 120px;
+    min-width: 0;
     flex: 1;
 }
 .midi-section-inline .midi-channel {
