@@ -22,7 +22,7 @@ import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase
 import { clearPhrases } from './phraseMemory.js';
 import { initScoreHistory } from './scoreHistory/index.js';
 import { analyzePhrase, analyzeLine, analyzeStanza } from './contourAnalysis.js';
-import { initTree, renderTree, buildTreeData } from './stanzaTree.js';
+import { initTree, renderTree, buildTreeData, setTreeUpdateCallback } from './stanzaTree.js';
 import './browserTest.js'; // Load browser test harness
 
 // Phase 2 feature flag - set to true to enable stanza tracking
@@ -47,6 +47,9 @@ let isVeryFirstNote = true;
 let phraseContours = {};      // { 0: ContourData, 1: ContourData, ... }
 let lineContours = {};        // { 1: ContourData, 2: ContourData, 3: ContourData }
 let phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+
+// Completed stanzas history for tree visualization
+let completedStanzas = [];    // Array of { stanzaNumber, phraseContours, lineContours, stanzaContour }
 
 // DOM elements
 const currentNoteEl = document.getElementById('currentNote');
@@ -110,8 +113,8 @@ function updateStanzaIndicator() {
     // Compute stanza contour from all notes played so far
     const stanzaContour = analyzeStanza(phraseNoteBuffers);
 
-    // Build and render tree
-    const treeData = buildTreeData(position.stanza, position, phraseContours, lineContours, stanzaContour);
+    // Build and render tree with history of completed stanzas
+    const treeData = buildTreeData(position.stanza, position, phraseContours, lineContours, stanzaContour, completedStanzas);
     renderTree(treeData);
 }
 
@@ -492,6 +495,14 @@ async function nextNote() {
                 );
                 console.log('📊 Stanza contour:', stanzaContour);
 
+                // Save completed stanza data for tree visualization
+                completedStanzas.push({
+                    stanzaNumber: position.stanza,
+                    phraseContours: { ...phraseContours },
+                    lineContours: { ...lineContours },
+                    stanzaContour: stanzaContour
+                });
+
                 clearPhrases(); // Clear melodic memory for new stanza
                 // Reset contour buffers for new stanza (delay to allow display update)
                 setTimeout(() => {
@@ -567,6 +578,14 @@ async function nextNote() {
                         [...phraseNoteBuffers[4], ...phraseNoteBuffers[5]]
                     );
                     console.log('📊 Stanza contour:', stanzaContour);
+
+                    // Save completed stanza data for tree visualization
+                    completedStanzas.push({
+                        stanzaNumber: position.stanza,
+                        phraseContours: { ...phraseContours },
+                        lineContours: { ...lineContours },
+                        stanzaContour: stanzaContour
+                    });
 
                     clearPhrases();
                     // Reset contour buffers for new stanza (delay to allow display update)
@@ -694,6 +713,7 @@ function init() {
 
     // Initialize stanza tree visualization
     initTree('stanzaIndicator');
+    setTreeUpdateCallback(updateStanzaIndicator);
 
     // MIDI
     initMidi();

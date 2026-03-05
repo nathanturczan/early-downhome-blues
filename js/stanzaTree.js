@@ -10,9 +10,23 @@ import { displayNames, frequencies } from './network.js';
 let treeContainer = null;
 let tooltipEl = null;
 
+// Expand/collapse state for completed stanzas (by stanza number)
+let expandedStanzas = new Set();
+
 // Node labels
 const PHRASE_LABELS = ['phrase a', 'phrase b', 'phrase c', 'phrase d', 'phrase e', 'phrase f'];
 const LINE_LABELS = ['line 1', 'line 2', 'line 3'];
+
+/**
+ * Toggle expand/collapse state for a stanza
+ */
+export function toggleStanzaExpanded(stanzaNumber) {
+    if (expandedStanzas.has(stanzaNumber)) {
+        expandedStanzas.delete(stanzaNumber);
+    } else {
+        expandedStanzas.add(stanzaNumber);
+    }
+}
 
 /**
  * Initialize the tree visualization
@@ -33,24 +47,25 @@ export function initTree(containerId) {
 
 /**
  * Build tree data structure for D3 visualization
- * Structure: S (Stanza) → Z → Line 1/2/3 → [phrase a/b], [phrase c/d], [phrase e/f]
+ * Structure: S (Song) → [completed stanzas (collapsed)] + [current stanza (expanded)]
  *
  * @param {number} stanzaNumber - Current stanza number
  * @param {Object} position - Current position from getPosition()
  * @param {Object} phraseContours - { 0: ContourData, 1: ContourData, ... }
  * @param {Object} lineContours - { 1: ContourData, 2: ContourData, 3: ContourData }
  * @param {Object} stanzaContour - Contour data for the entire stanza
+ * @param {Array} completedStanzas - Array of { stanzaNumber, phraseContours, lineContours, stanzaContour }
  * @returns {Object} D3 hierarchy-compatible tree data
  */
-export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineContours = {}, stanzaContour = null) {
+export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineContours = {}, stanzaContour = null, completedStanzas = []) {
     const currentPhraseIndex = position?.phraseIndex ?? 0;
     const currentLine = position?.line ?? 1;
 
-    // Build phrase nodes
-    const buildPhraseNode = (phraseIndex, label) => {
-        const contour = phraseContours[phraseIndex];
-        const isActive = phraseIndex === currentPhraseIndex;
-        const isComplete = phraseIndex < currentPhraseIndex;
+    // Build phrase nodes for a stanza
+    const buildPhraseNode = (phraseIndex, label, contours, isCurrentStanza) => {
+        const contour = contours[phraseIndex];
+        const isActive = isCurrentStanza && phraseIndex === currentPhraseIndex;
+        const isComplete = isCurrentStanza ? phraseIndex < currentPhraseIndex : true;
 
         return {
             name: label,
@@ -61,11 +76,11 @@ export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineC
         };
     };
 
-    // Build line nodes
-    const buildLineNode = (lineNum, phraseIndices, phraseLabels) => {
-        const lineContour = lineContours[lineNum];
-        const isActive = currentLine === lineNum;
-        const isComplete = currentLine > lineNum;
+    // Build line nodes for a stanza
+    const buildLineNode = (lineNum, phraseIndices, phraseLabels, pContours, lContours, isCurrentStanza) => {
+        const lineContour = lContours[lineNum];
+        const isActive = isCurrentStanza && currentLine === lineNum;
+        const isComplete = isCurrentStanza ? currentLine > lineNum : true;
 
         return {
             name: LINE_LABELS[lineNum - 1],
@@ -73,30 +88,88 @@ export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineC
             lineNum: lineNum,
             state: isActive ? 'active' : isComplete ? 'complete' : 'pending',
             contour: lineContour || null,
-            children: phraseIndices.map((idx, i) => buildPhraseNode(idx, phraseLabels[i]))
+            children: phraseIndices.map((idx, i) => buildPhraseNode(idx, phraseLabels[i], pContours, isCurrentStanza))
         };
     };
+
+    // Build expanded stanza node (with lines and phrases)
+    const buildExpandedStanzaNode = (num, pContours, lContours, sContour, isCurrentStanza) => {
+        return {
+            name: `stanza ${num}`,
+            nodeType: 'zone',
+            stanzaNumber: num,
+            state: isCurrentStanza ? 'active' : 'complete',
+            contour: sContour,
+            collapsed: false,
+            children: [
+                buildLineNode(1, [0, 1], [PHRASE_LABELS[0], PHRASE_LABELS[1]], pContours, lContours, isCurrentStanza),
+                buildLineNode(2, [2, 3], [PHRASE_LABELS[2], PHRASE_LABELS[3]], pContours, lContours, isCurrentStanza),
+                buildLineNode(3, [4, 5], [PHRASE_LABELS[4], PHRASE_LABELS[5]], pContours, lContours, isCurrentStanza)
+            ]
+        };
+    };
+
+    // Build collapsed stanza node (just the stanza, no children)
+    const buildCollapsedStanzaNode = (num, sContour) => {
+        return {
+            name: `stanza ${num}`,
+            nodeType: 'zone',
+            stanzaNumber: num,
+            state: 'complete',
+            contour: sContour,
+            collapsed: true
+            // No children when collapsed
+        };
+    };
+
+    // Build stanza children array
+    const stanzaChildren = [];
+
+    // Add completed stanzas (collapsed by default, expanded if in expandedStanzas set)
+    for (const completed of completedStanzas) {
+        if (expandedStanzas.has(completed.stanzaNumber)) {
+            stanzaChildren.push(buildExpandedStanzaNode(
+                completed.stanzaNumber,
+                completed.phraseContours,
+                completed.lineContours,
+                completed.stanzaContour,
+                false // not current
+            ));
+        } else {
+            stanzaChildren.push(buildCollapsedStanzaNode(
+                completed.stanzaNumber,
+                completed.stanzaContour
+            ));
+        }
+    }
+
+    // Add current stanza (always expanded)
+    stanzaChildren.push(buildExpandedStanzaNode(
+        stanzaNumber,
+        phraseContours,
+        lineContours,
+        stanzaContour,
+        true // is current
+    ));
 
     // Build the full tree
     return {
         name: 'song S',
-        nodeType: 'stanza',
+        nodeType: 'song',
         state: 'active',
-        contour: stanzaContour,  // Stanza-level contour for tooltip
-        children: [
-            {
-                name: `stanza ${stanzaNumber}`,
-                nodeType: 'zone',
-                state: 'active',
-                contour: stanzaContour,  // Same contour for zone node
-                children: [
-                    buildLineNode(1, [0, 1], [PHRASE_LABELS[0], PHRASE_LABELS[1]]),
-                    buildLineNode(2, [2, 3], [PHRASE_LABELS[2], PHRASE_LABELS[3]]),
-                    buildLineNode(3, [4, 5], [PHRASE_LABELS[4], PHRASE_LABELS[5]])
-                ]
-            }
-        ]
+        contour: null,
+        children: stanzaChildren
     };
+}
+
+// Callback for re-rendering after expand/collapse
+let onTreeUpdate = null;
+
+/**
+ * Set callback for tree updates (called after expand/collapse)
+ */
+export function setTreeUpdateCallback(callback) {
+    onTreeUpdate = callback;
 }
 
 /**
@@ -222,6 +295,33 @@ export function renderTree(treeData) {
     }).on('mouseleave', () => {
         hideTooltip();
     });
+
+    // Click interactions for expand/collapse on completed stanzas
+    nodes.on('click', (event, d) => {
+        // Only allow toggle on zone nodes (stanzas) that are complete (not current)
+        if (d.data.nodeType === 'zone' && d.data.state === 'complete') {
+            toggleStanzaExpanded(d.data.stanzaNumber);
+            if (onTreeUpdate) {
+                onTreeUpdate();
+            }
+        }
+    });
+
+    // Add visual indicator for collapsed nodes
+    nodes.filter(d => d.data.collapsed === true)
+        .append('text')
+        .attr('class', 'collapse-indicator')
+        .attr('dx', -3)
+        .attr('dy', 4)
+        .attr('text-anchor', 'middle')
+        .attr('fill', 'rgb(145, 56, 47)')
+        .attr('font-size', '10px')
+        .attr('font-weight', 'bold')
+        .text('+');
+
+    // Style clickable nodes
+    nodes.filter(d => d.data.nodeType === 'zone' && d.data.state === 'complete')
+        .style('cursor', 'pointer');
 }
 
 /**
