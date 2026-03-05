@@ -1197,6 +1197,17 @@ function init() {
             return;
         }
 
+        // L = Toggle latch (only when inflect is enabled)
+        if (e.code === 'KeyL' && !e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            if (shouldBlurTarget) e.target.blur();
+            if (latchToggle && !latchToggle.disabled) {
+                latchToggle.checked = !latchToggle.checked;
+                latchToggle.dispatchEvent(new Event('change'));
+            }
+            return;
+        }
+
         // Number keys = Chords
         // Map key to chord name
         // Extended chords (ii, iii, bIII, vi, bVII) require More checkbox
