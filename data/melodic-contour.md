@@ -14,7 +14,15 @@ In the stanza unit, the predominant contour is general case I, a falling contour
 
 Melodic contour of the line unit is similar to stanzaic contour; that is, it is described by general case I and specific case IB.
 
-In the phrase unit, melodic contour shifts depending on the phrase. In phrase a, the first part of line 1, a rising contour is almost as frequent as a falling one. In phrase c, the first part of line 2, the same rising contour is significant.
+In the phrase unit, melodic contour shifts depending on the phrase:
+
+- **Phrase a** (first part of line 1): A rising contour is almost as frequent as a falling one.
+- **Phrase c** (first part of line 2): The same rising contour is significant.
+- **Phrases b and d** (second parts of lines 1 and 2): A falling, often *directly* falling, contour predominates.
+
+It becomes clear from Figure 71 that the predominant stanzaic contour (IB) is not able to do justice to the balanced yet non-symmetrical tension which this succession of phrase contours yields.
+
+> **Note:** Phrases e and f can be thought of as one combined unit. Titon did not determine separate contours for them because "this kind of phrase division in line 3 is not always accomplished." This suggests line 3 functions more as a unified gesture than lines 1 and 2.
 
 ## Definition
 
