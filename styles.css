@@ -722,7 +722,7 @@ button.phrase-end:active {
     flex: 1 1 0;
     min-width: 0;
     padding: clamp(8px, 2vw, 15px) clamp(4px, 2vw, 20px);
-    font-size: clamp(0.9em, 2vw, 1.2em);
+    font-size: 0.85em;
     font-weight: bold;
     background: rgba(255,255,255,0.1);
     color: #aaa;
