@@ -85,7 +85,7 @@ export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineC
         contour: stanzaContour,  // Stanza-level contour for tooltip
         children: [
             {
-                name: 'stanza Z',
+                name: `stanza ${stanzaNumber}`,
                 nodeType: 'zone',
                 state: 'active',
                 contour: stanzaContour,  // Same contour for zone node
