@@ -847,6 +847,24 @@ button.phrase-end:active {
     margin-bottom: 0;
 }
 
+/* Attribution */
+.attribution {
+    position: fixed;
+    bottom: 8px;
+    right: 12px;
+    font-size: 0.7em;
+    color: rgba(100, 80, 60, 0.6);
+    z-index: 10;
+}
+.attribution a {
+    color: rgba(100, 80, 60, 0.8);
+    text-decoration: none;
+}
+.attribution a:hover {
+    color: rgb(145, 56, 47);
+    text-decoration: underline;
+}
+
 /* MIDI Footer */
 .midi-footer {
     position: fixed;

@@ -1020,6 +1020,17 @@ function init() {
             return;
         }
 
+        // P = Toggle phrasing
+        if (e.code === 'KeyP' && !e.metaKey && !e.ctrlKey) {
+            e.preventDefault();
+            if (shouldBlurTarget) e.target.blur();
+            if (phrasingToggle) {
+                phrasingToggle.checked = !phrasingToggle.checked;
+                phrasingToggle.dispatchEvent(new Event('change'));
+            }
+            return;
+        }
+
         // I = Toggle inflection
         if (e.code === 'KeyI' && !e.metaKey && !e.ctrlKey) {
             e.preventDefault();

@@ -51,6 +51,7 @@ This tool lets you walk through Titon's pitch transition network, which maps how
 |-----|--------|
 | **M** | Toggle audio mute |
 | **I** | Toggle inflection |
+| **P** | Toggle phrasing |
 | **Cmd/Ctrl+M** | Toggle extended chords |
 
 ## Quarter-tone Support
