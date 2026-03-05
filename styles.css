@@ -100,7 +100,6 @@ h1 {
     max-width: 100%;
     width: 100%;
     position: relative;
-    margin-top: 8px;
 }
 #notation {
     width: 100%;
@@ -582,7 +581,6 @@ button.phrase-end:active {
     max-width: 100%;
     min-width: 0;
     display: flex;
-    margin-top: 8px;
     flex-direction: column;
 }
 /* Score container - vertically scrollable */
