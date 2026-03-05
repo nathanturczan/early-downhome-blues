@@ -64,13 +64,20 @@ Alan Kagan has suggested the following scheme to describe contour. If we conside
 
 Number of occurrences:
 
-| | IA | IB | IC | ID<sub>a</sub> | ID<sub>b</sub> | IIA | IIB | IIC | IID<sub>a</sub> | IID<sub>b</sub> | IIIA | IIIB | IIIC | IIID<sub>a</sub> | IIID<sub>b</sub> |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Phrase a | 10 | 9 | 2 | 1 | 1 | 9 | 3 | 0 | 1 | 0 | 1 | 2 | 1 | 0 | 0 |
-| Phrase b | 18 | 9 | 4 | 2 | 0 | 1 | 0 | 0 | 1 | 0 | 0 | 3 | 0 | 0 | 0 |
-| Line 1 | 8 | 17 | 3 | 3 | 0 | 0 | 3 | 0 | 0 | 0 | 0 | 3 | 0 | 0 | 1 |
-| Phrase c | 12 | 9 | 0 | 0 | 0 | 8 | 2 | 2 | 0 | 0 | 1 | 5 | 1 | 0 | 0 |
-| Phrase d | 20 | 13 | 2 | 3 | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
-| Line 2 | 7 | 23 | 3 | 2 | 1 | 0 | 2 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 |
-| Line 3 | 6 | 19 | 2 | 3 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 7 | 0 | 0 | 0 |
-| Whole stanza | 3 | 17 | 3 | 4 | 2 | 0 | 2 | 0 | 3 | 0 | 0 | 2 | 0 | 1 | 0 |
+| Contour | Phrase a | Phrase b | Line 1 | Phrase c | Phrase d | Line 2 | Line 3 | Stanza |
+|---------|----------|----------|--------|----------|----------|--------|--------|--------|
+| IA | 10 | 18 | 8 | 12 | 20 | 7 | 6 | 3 |
+| IB | 9 | 9 | 17 | 9 | 13 | 23 | 19 | 17 |
+| IC | 2 | 4 | 3 | 0 | 2 | 3 | 2 | 3 |
+| ID<sub>a</sub> | 1 | 2 | 3 | 0 | 3 | 2 | 3 | 4 |
+| ID<sub>b</sub> | 1 | 0 | 0 | 0 | 0 | 1 | 0 | 2 |
+| IIA | 9 | 1 | 0 | 8 | 0 | 0 | 0 | 0 |
+| IIB | 3 | 0 | 3 | 2 | 1 | 2 | 0 | 2 |
+| IIC | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 0 |
+| IID<sub>a</sub> | 1 | 1 | 0 | 0 | 0 | 0 | 2 | 3 |
+| IID<sub>b</sub> | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |
+| IIIA | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
+| IIIB | 2 | 3 | 3 | 5 | 0 | 2 | 7 | 2 |
+| IIIC | 1 | 0 | 0 | 1 | 0 | 0 | 0 | 0 |
+| IIID<sub>a</sub> | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
+| IIID<sub>b</sub> | 0 | 0 | 1 | 0 | 0 | 0 | 0 | 0 |
