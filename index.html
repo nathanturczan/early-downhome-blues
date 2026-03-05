@@ -91,11 +91,9 @@
         <div class="two-column-layout">
             <!-- Left Column: Notation + Controls -->
             <div class="left-column">
-                <div class="labeled-box">
+                <div class="notation-container">
                     <span class="box-label">Melodic Motion</span>
-                    <div class="notation-container">
-                        <div id="notation"></div>
-                    </div>
+                    <div id="notation"></div>
                 </div>
 
                 <div class="controls">
@@ -235,10 +233,9 @@
                 </div>
 
                 <!-- Inline Score -->
-                <div class="labeled-box labeled-box-score">
+                <div class="inline-score">
                     <span class="box-label">Score</span>
-                    <div class="inline-score">
-                        <div class="inline-score-container" id="inline-score-canvas"></div>
+                    <div class="inline-score-container" id="inline-score-canvas"></div>
                     <div class="inline-score-toolbar">
                         <div class="score-controls">
                             <button class="score-ctrl-btn" id="undoNoteBtn" title="Undo last note (Backspace)">Undo</button>
@@ -249,7 +246,6 @@
                             <button class="inline-export-btn" data-format="lilypond">LilyPond</button>
                             <button class="inline-export-btn" data-format="musicxml">MusicXML</button>
                             <button class="inline-export-btn" data-format="pdf">PDF</button>
-                        </div>
                         </div>
                     </div>
                 </div>
