@@ -985,9 +985,15 @@ function init() {
     // Phrasing toggle
     const autoHarmonyLabel = document.querySelector('label[for="autoHarmonyToggle"]');
     if (phrasingToggle) {
-        // Initialize tree visibility based on phrasing state
-        if (stanzaIndicator && !phrasingToggle.checked) {
-            stanzaIndicator.style.display = 'none';
+        // Initialize tree visibility and auto-harmony based on phrasing state
+        if (!phrasingToggle.checked) {
+            if (stanzaIndicator) {
+                stanzaIndicator.style.display = 'none';
+            }
+            if (autoHarmonyToggle) {
+                autoHarmonyToggle.disabled = true;
+                autoHarmonyLabel?.classList.add('disabled');
+            }
         }
         phrasingToggle.addEventListener('change', (e) => {
             setPhrasing(e.target.checked);
