@@ -446,15 +446,6 @@ button.phrase-end:active {
     fill: rgba(145, 56, 47, 0.8);
 }
 
-/* Clickable collapsed stanzas - hover feedback */
-.tree-node.zone.complete:hover circle {
-    stroke: rgb(145, 56, 47);
-    stroke-width: 2;
-}
-.tree-node.zone.complete:hover text {
-    fill: rgb(145, 56, 47);
-}
-
 .tree-node tspan.contour-label {
     font-size: 0.85em;
     fill: rgb(145, 56, 47);

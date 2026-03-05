@@ -22,7 +22,7 @@ import { getPosition, advanceStep, advancePhrase, resetStanza, setStepsPerPhrase
 import { clearPhrases } from './phraseMemory.js';
 import { initScoreHistory } from './scoreHistory/index.js';
 import { analyzePhrase, analyzeLine, analyzeStanza } from './contourAnalysis.js';
-import { initTree, renderTree, buildTreeData, setTreeUpdateCallback } from './stanzaTree.js';
+import { initTree, renderTree, buildTreeData } from './stanzaTree.js';
 import './browserTest.js'; // Load browser test harness
 
 // Phase 2 feature flag - set to true to enable stanza tracking
@@ -713,7 +713,6 @@ function init() {
 
     // Initialize stanza tree visualization
     initTree('stanzaIndicator');
-    setTreeUpdateCallback(updateStanzaIndicator);
 
     // MIDI
     initMidi();

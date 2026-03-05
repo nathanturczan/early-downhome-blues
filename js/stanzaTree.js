@@ -10,25 +10,9 @@ import { displayNames, frequencies } from './network.js';
 let treeContainer = null;
 let tooltipEl = null;
 
-// Expand/collapse state for completed stanzas (by stanza number)
-let expandedStanzas = new Set();
-
 // Node labels
 const PHRASE_LABELS = ['phrase a', 'phrase b', 'phrase c', 'phrase d', 'phrase e', 'phrase f'];
 const LINE_LABELS = ['line 1', 'line 2', 'line 3'];
-
-/**
- * Toggle expand/collapse state for a stanza
- * Only one stanza can be expanded at a time
- */
-export function toggleStanzaExpanded(stanzaNumber) {
-    if (expandedStanzas.has(stanzaNumber)) {
-        expandedStanzas.delete(stanzaNumber);
-    } else {
-        expandedStanzas.clear(); // Collapse all others
-        expandedStanzas.add(stanzaNumber);
-    }
-}
 
 /**
  * Initialize the tree visualization
@@ -127,22 +111,12 @@ export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineC
     // Build stanza children array
     const stanzaChildren = [];
 
-    // Add completed stanzas (collapsed by default, expanded if in expandedStanzas set)
+    // Add completed stanzas (always collapsed, hoverable for tooltip)
     for (const completed of completedStanzas) {
-        if (expandedStanzas.has(completed.stanzaNumber)) {
-            stanzaChildren.push(buildExpandedStanzaNode(
-                completed.stanzaNumber,
-                completed.phraseContours,
-                completed.lineContours,
-                completed.stanzaContour,
-                false // not current
-            ));
-        } else {
-            stanzaChildren.push(buildCollapsedStanzaNode(
-                completed.stanzaNumber,
-                completed.stanzaContour
-            ));
-        }
+        stanzaChildren.push(buildCollapsedStanzaNode(
+            completed.stanzaNumber,
+            completed.stanzaContour
+        ));
     }
 
     // Add current stanza (always expanded)
@@ -162,16 +136,6 @@ export function buildTreeData(stanzaNumber, position, phraseContours = {}, lineC
         contour: null,
         children: stanzaChildren
     };
-}
-
-// Callback for re-rendering after expand/collapse
-let onTreeUpdate = null;
-
-/**
- * Set callback for tree updates (called after expand/collapse)
- */
-export function setTreeUpdateCallback(callback) {
-    onTreeUpdate = callback;
 }
 
 /**
@@ -289,7 +253,7 @@ export function renderTree(treeData) {
             .style('pointer-events', 'none'); // Don't block hover events
     });
 
-    // Hover interactions
+    // Hover interactions - show tooltip for nodes with contour data
     nodes.on('mouseenter', (event, d) => {
         if (d.data.contour) {
             showTooltip(event, d.data);
@@ -297,33 +261,6 @@ export function renderTree(treeData) {
     }).on('mouseleave', () => {
         hideTooltip();
     });
-
-    // Click interactions for expand/collapse on completed stanzas
-    nodes.on('click', (event, d) => {
-        // Only allow toggle on zone nodes (stanzas) that are complete (not current)
-        if (d.data.nodeType === 'zone' && d.data.state === 'complete') {
-            toggleStanzaExpanded(d.data.stanzaNumber);
-            if (onTreeUpdate) {
-                onTreeUpdate();
-            }
-        }
-    });
-
-    // Add visual indicator for collapsed nodes
-    nodes.filter(d => d.data.collapsed === true)
-        .append('text')
-        .attr('class', 'collapse-indicator')
-        .attr('dx', -3)
-        .attr('dy', 4)
-        .attr('text-anchor', 'middle')
-        .attr('fill', 'rgb(145, 56, 47)')
-        .attr('font-size', '10px')
-        .attr('font-weight', 'bold')
-        .text('+');
-
-    // Style clickable nodes
-    nodes.filter(d => d.data.nodeType === 'zone' && d.data.state === 'complete')
-        .style('cursor', 'pointer');
 }
 
 /**
