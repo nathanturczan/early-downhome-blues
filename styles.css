@@ -99,6 +99,7 @@ h1 {
     border: 1px solid #ddd;
     max-width: 100%;
     width: 100%;
+    position: relative;
 }
 #notation {
     width: 100%;
@@ -142,6 +143,17 @@ h1 {
     font-size: 0.65em;
     color: #888;
     text-transform: uppercase;
+}
+.box-label {
+    position: absolute;
+    top: -8px;
+    left: 10px;
+    background: rgb(247, 239, 215);
+    padding: 0 6px;
+    font-size: 0.65em;
+    color: #888;
+    text-transform: uppercase;
+    z-index: 1;
 }
 .note-display {
     display: flex;
