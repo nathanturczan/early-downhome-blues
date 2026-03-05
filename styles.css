@@ -714,17 +714,14 @@ button.phrase-end:active {
 }
 .harmony-buttons {
     display: flex;
-    gap: clamp(2px, 1vw, 8px);
+    gap: 8px;
     justify-content: center;
-    flex-wrap: nowrap;
 }
 .chord-btn {
-    flex: 1 1 0;
-    min-width: 0;
-    padding: clamp(8px, 2vw, 15px) clamp(4px, 2vw, 20px);
+    flex: 1;
+    padding: 15px 20px;
     font-size: 0.85em;
     font-weight: bold;
-    text-align: center;
     background: rgba(255,255,255,0.1);
     color: #aaa;
     border: 1px solid rgba(255,255,255,0.2);
@@ -750,9 +747,9 @@ button.phrase-end:active {
 .harmony-buttons.show-extended .chord-btn.chord-extended {
     display: block;
 }
-/* Never wrap - all buttons in one row */
+/* Wrap buttons to two rows when extended chords are shown */
 .harmony-buttons.show-extended {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
 }
 
 /* Inline MIDI Section */
