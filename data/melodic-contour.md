@@ -22,6 +22,10 @@ In the phrase unit, melodic contour shifts depending on the phrase:
 
 It becomes clear from Figure 71 that the predominant stanzaic contour (IB) is not able to do justice to the balanced yet non-symmetrical tension which this succession of phrase contours yields.
 
+### Observed A/B Similarity
+
+There is an interesting relation between the halves of lines 1 and 2. Many times, when the contour of phrase A is taken from the first full measure, it is a falling one; the phrase B following is virtually identical, except that whereas phrase B falls to the keynote, phrase A does not regularly do so (Figure 74). Another example is shown in Figure 75, in which the pickup measure leads into the directly falling melody in which phrase B imitates phrase A.
+
 > **Note:** Phrases e and f can be thought of as one combined unit. Titon did not determine separate contours for them because "this kind of phrase division in line 3 is not always accomplished." This suggests line 3 functions more as a unified gesture than lines 1 and 2.
 
 ## Definition
