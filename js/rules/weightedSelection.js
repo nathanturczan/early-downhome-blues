@@ -318,6 +318,20 @@ export function getRestartNote(position = null) {
       // Start from G to enable G→C' upward motion
       return "g'";
     }
+    // Phrase b: varies by blues family (see blues-families.md)
+    // Family 1 & 2: E' complex, Family 2: C', Family 4: G
+    if (phrase === 'b') {
+      const roll = random();
+      if (roll < 0.40) {
+        return "g'";      // Family 4 style
+      } else if (roll < 0.70) {
+        return "c''";     // Family 2 style
+      } else {
+        // E' complex (Family 1 & 2 style)
+        const eComplex = ["e''", "ees''", "eeh''"];
+        return eComplex[Math.floor(random() * eComplex.length)];
+      }
+    }
     // Phrase e (dominant): often starts from G or around Bb complex
     if (phrase === 'e') {
       return random() < 0.6 ? "g'" : "a'";
