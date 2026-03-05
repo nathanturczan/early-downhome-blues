@@ -55,7 +55,6 @@ body {
 .header-text {
     flex: 1 1 0;  /* grow, shrink, basis=0 */
     min-width: 0;
-    max-width: calc(100% - 220px);  /* Leave room for icon + buttons */
     overflow: hidden;
 }
 h1 {
@@ -1063,8 +1062,8 @@ button.phrase-end:active {
     opacity: 1;
 }
 .audio-toggle {
-    width: 32px;
-    height: 32px;
+    width: clamp(50px, 14vw, 80px);
+    height: clamp(50px, 14vw, 80px);
 }
 .audio-icon {
     width: 100%;
@@ -1130,8 +1129,8 @@ button.phrase-end:active {
     color: rgb(145, 56, 47);
     opacity: 0.6;
     transition: opacity 0.2s;
-    width: 32px;
-    height: 32px;
+    width: clamp(50px, 14vw, 80px);
+    height: clamp(50px, 14vw, 80px);
     flex-shrink: 0;
 }
 .info-btn:hover {
@@ -1442,19 +1441,6 @@ button.phrase-end:active {
     .subtitle {
         font-size: 1em;
     }
-    .header-icon {
-        height: 60px;
-        width: 60px;
-    }
-    .audio-icon {
-        height: 40px;
-    }
-    .ensemble-btn,
-    .score-btn,
-    .info-btn {
-        width: 36px;
-        height: 36px;
-    }
     .left-column {
         width: 500px;
         max-width: 45%;
@@ -1593,23 +1579,11 @@ button.phrase-end:active {
         padding: 8px 12px;
         gap: 8px;
     }
-    .header-icon {
-        height: 50px;
-        width: 50px;
-    }
     h1 {
         font-size: 9vw;
     }
     .subtitle {
         font-size: 3vw;
-    }
-    .audio-icon {
-        height: 40px;
-    }
-    .info-btn,
-    .score-btn {
-        width: 28px;
-        height: 28px;
     }
     /* Mobile: Use display:contents to flatten columns and reorder */
     .two-column-layout {
