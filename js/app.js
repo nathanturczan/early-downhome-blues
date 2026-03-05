@@ -984,6 +984,7 @@ function init() {
 
     // Phrasing toggle
     const autoHarmonyLabel = document.querySelector('label[for="autoHarmonyToggle"]');
+    const harmonyModeLabel = document.querySelector('label[for="harmonyModeSelect"]');
     if (phrasingToggle) {
         // Initialize tree visibility and auto-harmony based on phrasing state
         if (!phrasingToggle.checked) {
@@ -993,6 +994,10 @@ function init() {
             if (autoHarmonyToggle) {
                 autoHarmonyToggle.disabled = true;
                 autoHarmonyLabel?.classList.add('disabled');
+            }
+            if (harmonyModeSelect) {
+                harmonyModeSelect.disabled = true;
+                harmonyModeLabel?.classList.add('disabled');
             }
         }
         phrasingToggle.addEventListener('change', (e) => {
@@ -1009,7 +1014,7 @@ function init() {
                     });
                 }
             }
-            // Enable/disable auto-harmony (requires phrasing)
+            // Enable/disable auto-harmony and mode (requires phrasing)
             if (autoHarmonyToggle) {
                 autoHarmonyToggle.disabled = !e.target.checked;
                 autoHarmonyLabel?.classList.toggle('disabled', !e.target.checked);
@@ -1019,6 +1024,10 @@ function init() {
                     autoHarmonyEnabled = false;
                     console.log('🎹 Auto-harmony OFF (phrasing disabled)');
                 }
+            }
+            if (harmonyModeSelect) {
+                harmonyModeSelect.disabled = !e.target.checked;
+                harmonyModeLabel?.classList.toggle('disabled', !e.target.checked);
             }
             // Re-render score to show phrase or chord spans
             if (scoreHistoryInstance) {
