@@ -99,6 +99,14 @@ h1 {
     border: 1px solid #ddd;
     max-width: 100%;
     width: 100%;
+    padding-top: 4px;
+}
+.notation-label {
+    display: block;
+    font-size: 0.7em;
+    color: #888;
+    text-transform: uppercase;
+    padding: 4px 10px 0;
 }
 #notation {
     width: 100%;
@@ -570,6 +578,14 @@ button.phrase-end:active {
     min-width: 0;
     display: flex;
     flex-direction: column;
+}
+.score-label {
+    display: block;
+    font-size: 0.7em;
+    color: #888;
+    text-transform: uppercase;
+    padding: 8px 10px 0;
+    flex-shrink: 0;
 }
 /* Score container - vertically scrollable */
 .inline-score-container,
