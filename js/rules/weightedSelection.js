@@ -103,10 +103,10 @@ function buildContext(currentNote, history, position = null) {
  */
 const phase1Rules = {
   // MM-GP-01: Downward motion more frequent/gradual
-  // Further reduced to prevent "stuck low" - now 1.1/1.0
+  // Titon: "Melodic motion is more frequent and more gradual in the downward direction"
   'MM-GP-01': (edge, _ctx) => {
-    if (edge.direction < 0) return 1.10;  // descending (was 1.4)
-    if (edge.direction > 0) return 1.00;  // ascending (was 0.9) - neutral now
+    if (edge.direction < 0) return 1.25;  // descending - favored
+    if (edge.direction > 0) return 0.85;  // ascending - less common
     return 1.0;                            // same note
   },
 
