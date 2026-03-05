@@ -176,9 +176,11 @@ function addMidiRow() {
     const container = document.getElementById('midiOutputs');
     const lastRow = midiRows[midiRows.length - 1];
 
-    // Determine next type - alternate between melody and drone
+    // Determine next type - cycle through melody, drone, root
     let nextType = 'drone';
-    if (lastRow?.type === 'drone') nextType = 'melody';
+    if (lastRow?.type === 'melody') nextType = 'drone';
+    else if (lastRow?.type === 'drone') nextType = 'root';
+    else if (lastRow?.type === 'root') nextType = 'melody';
 
     // Determine next channel (increment from last)
     const nextChannel = Math.min((lastRow?.channel ?? -1) + 1, 15);
@@ -196,6 +198,7 @@ function addMidiRow() {
             <select class="midi-type">
                 <option value="melody"${nextType === 'melody' ? ' selected' : ''}>Melody</option>
                 <option value="drone"${nextType === 'drone' ? ' selected' : ''}>Drone</option>
+                <option value="root"${nextType === 'root' ? ' selected' : ''}>Chord Root</option>
             </select>
         </div>
         <div class="midi-select">
@@ -336,22 +339,26 @@ export function sendHarmonyMidi(notes, isOn) {
     console.log(`[MIDI] sendHarmonyMidi: ${notes.join(', ')} isOn=${isOn}`);
 
     midiRows.forEach((row, index) => {
-        if (row.type !== 'drone') return;
+        // Handle drone (full chord) and root (just root note) types
+        if (row.type !== 'drone' && row.type !== 'root') return;
 
         const output = getOutputDevice(row.portId);
         if (!output) {
-            console.log(`[MIDI] No output device for drone row ${index}`);
+            console.log(`[MIDI] No output device for ${row.type} row ${index}`);
             return;
         }
 
         const baseChannel = row.channel;
 
+        // For root type, only send the first note (chord root)
+        const notesToSend = row.type === 'root' ? [notes[0]] : notes;
+
         if (row.mpe) {
             // MPE mode: each note on its own channel with independent pitch bend
-            sendHarmonyMPE(output, row, index, notes, isOn, baseChannel);
+            sendHarmonyMPE(output, row, index, notesToSend, isOn, baseChannel);
         } else {
             // Standard mode: all notes on same channel, no quarter-tone support
-            sendHarmonyStandard(output, row, index, notes, isOn, baseChannel);
+            sendHarmonyStandard(output, row, index, notesToSend, isOn, baseChannel);
         }
     });
 }

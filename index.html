@@ -60,11 +60,13 @@
             </h1>
             <p class="subtitle">Walking the Blues Scale</p>
         </div>
+        <!-- Ensemble mode disabled for now
         <button id="ensemble-btn" class="ensemble-btn" type="button" aria-label="Ensemble Mode">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                 <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" fill="none" stroke="currentColor" stroke-width="1.5"/>
             </svg>
         </button>
+        -->
         <button id="info-btn" class="info-btn" type="button" aria-label="Information">
             <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
                 <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
@@ -154,6 +156,7 @@
                                 <select class="midi-type">
                                     <option value="melody" selected>Melody</option>
                                     <option value="drone">Drone</option>
+                                    <option value="root">Chord Root</option>
                                 </select>
                             </div>
                             <div class="midi-select">
@@ -325,23 +328,7 @@
         <div class="modal-content">
             <button class="modal-close" aria-label="Close">&times;</button>
             <h2>About This App</h2>
-            <p>This interactive tool generates melodies using the <strong>pitch transition network</strong> from Jeff Todd Titon's influential book <em>Early Downhome Blues: A Musical and Cultural Analysis</em> (Figure 64), combined with weighted selection rules that follow traditional blues phrasing and contour.</p>
-
-            <h3>The Network</h3>
-            <p>Titon analyzed early blues recordings and mapped how melodies move between notes. This network captures those patterns, including:</p>
-            <ul>
-                <li><strong>Quarter-tones</strong> &mdash; The "blue third" (E quarter-flat) sits between E&#9837; and E</li>
-                <li><strong>Sink note</strong> &mdash; C4 is the only resolution point with no outgoing paths</li>
-                <li><strong>Hub note</strong> &mdash; G4 connects to the most destinations (6 notes)</li>
-            </ul>
-
-            <h3>Melody Generation</h3>
-            <p>Note selection uses weighted rules based on Titon's analysis:</p>
-            <ul>
-                <li><strong>Phrase structure</strong> &mdash; 12-bar blues form (phrases a-f) with natural rise-and-fall contours</li>
-                <li><strong>Graded closure</strong> &mdash; Phrases end probabilistically based on melodic context</li>
-                <li><strong>Auto Harmony</strong> &mdash; Chord changes follow the standard I-IV-V blues progression</li>
-            </ul>
+            <p>This interactive tool generates melodies using the <strong>pitch transition network</strong> from Jeff Todd Titon's <em>Early Downhome Blues: A Musical and Cultural Analysis</em> (Figure 64), combined with weighted selection rules that follow traditional blues phrasing and contour.</p>
 
             <h3>How to Use</h3>
             <ul>
@@ -349,9 +336,22 @@
                 <li><strong>Click notes</strong> on the staff or in Paths to choose specific notes</li>
                 <li><strong>History</strong> &mdash; Click any past note to rewind to that point</li>
                 <li><strong>Score</strong> &mdash; View your melody as notation; export to LilyPond, MusicXML, or PDF</li>
-                <li><strong>I / IV / V</strong> &mdash; Play chord drones; "Inflect" bends pitches with the melody</li>
+                <li><strong>Chords</strong> &mdash; Play chord drones; "Inflect" bends pitches with the melody</li>
                 <li><strong>MIDI</strong> &mdash; Send notes to external instruments (&plusmn;4 semitones pitch bend for quarter-tones)</li>
             </ul>
+
+            <h3>Keyboard Shortcuts</h3>
+            <table class="shortcuts-table">
+                <tr><td><strong>Space</strong></td><td>Next note</td></tr>
+                <tr><td><strong>Shift+Space</strong></td><td>Kill melody note</td></tr>
+                <tr><td><strong>Backspace</strong></td><td>Undo last note</td></tr>
+                <tr><td><strong>Escape</strong></td><td>Clear score</td></tr>
+                <tr><td><strong>1-7</strong></td><td>Play chord (I, ii, iii, IV, V, vi, &#9837;VII)</td></tr>
+                <tr><td><strong>Cmd/Ctrl+3</strong></td><td>&#9837;III chord</td></tr>
+                <tr><td><strong>M</strong></td><td>Toggle audio</td></tr>
+                <tr><td><strong>I</strong></td><td>Toggle inflection</td></tr>
+                <tr><td><strong>Cmd/Ctrl+M</strong></td><td>Toggle extended chords</td></tr>
+            </table>
 
             <h3>Reference</h3>
             <p>Titon, Jeff Todd. <em>Early Downhome Blues: A Musical and Cultural Analysis</em>. 2nd ed., University of North Carolina Press, 1994.</p>

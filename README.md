@@ -21,7 +21,37 @@ This tool lets you walk through Titon's pitch transition network, which maps how
 - **Pluck synth**: Guitar-like sound using Karplus-Strong synthesis
 - **Inflecting drone**: Toggle drone notes (root, 3rd, 5th, 7th) that bend to match the melody's microtonal inflections
 - **MIDI output**: Send notes to external instruments with pitch bend for quarter-tones (set pitch bend range to ±4 semitones)
-- **History**: Track your path through the network
+- **Score view**: See your melody as notation; export to LilyPond, MusicXML, or PDF
+- **Keyboard controls**: Play entirely from the keyboard (see below)
+
+## Keyboard Shortcuts
+
+### Melody
+| Key | Action |
+|-----|--------|
+| **Space** | Next note |
+| **Shift+Space** | Kill/silence melody note |
+| **Backspace** | Undo last note |
+| **Escape** | Clear score |
+
+### Chords
+| Key | Action |
+|-----|--------|
+| **1** | I chord |
+| **2** | ii chord |
+| **3** | iii chord |
+| **Cmd/Ctrl+3** | ♭III chord |
+| **4** | IV chord |
+| **5** | V chord |
+| **6** | vi chord |
+| **7** | ♭VII chord |
+
+### Toggles
+| Key | Action |
+|-----|--------|
+| **M** | Toggle audio mute |
+| **I** | Toggle inflection |
+| **Cmd/Ctrl+M** | Toggle extended chords |
 
 ## Quarter-tone Support
 
