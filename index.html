@@ -145,7 +145,7 @@
                 <div class="midi-section-inline">
                     <div class="midi-header">
                         <span class="midi-label">MIDI Output</span>
-                        <span class="midi-hint-inline">*±2 semitones for quarter-tones</span>
+                        <span class="midi-hint-inline">*±4 semitones for quarter-tones</span>
                     </div>
                     <div class="midi-outputs" id="midiOutputs">
                         <div class="midi-row" data-row-id="0">
@@ -183,6 +183,10 @@
                                     <option value="15">16</option>
                                 </select>
                             </div>
+                            <label class="midi-mpe-label">
+                                <input type="checkbox" class="midi-mpe">
+                                MPE
+                            </label>
                             <button class="midi-remove-btn hidden" title="Remove">&times;</button>
                         </div>
                     </div>
@@ -227,11 +231,17 @@
                 <!-- Inline Score -->
                 <div class="inline-score">
                     <div class="inline-score-container" id="inline-score-canvas"></div>
-                    <div class="inline-export-toolbar">
-                        <span class="export-label">Export:</span>
-                        <button class="inline-export-btn" data-format="lilypond">LilyPond</button>
-                        <button class="inline-export-btn" data-format="musicxml">MusicXML</button>
-                        <button class="inline-export-btn" data-format="pdf">PDF</button>
+                    <div class="inline-score-toolbar">
+                        <div class="score-controls">
+                            <button class="score-ctrl-btn" id="undoNoteBtn" title="Undo last note (Backspace)">Undo</button>
+                            <button class="score-ctrl-btn" id="clearScoreBtn" title="Clear score (Esc)">Clear</button>
+                        </div>
+                        <div class="inline-export-toolbar">
+                            <span class="export-label">Export:</span>
+                            <button class="inline-export-btn" data-format="lilypond">LilyPond</button>
+                            <button class="inline-export-btn" data-format="musicxml">MusicXML</button>
+                            <button class="inline-export-btn" data-format="pdf">PDF</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -340,7 +350,7 @@
                 <li><strong>History</strong> &mdash; Click any past note to rewind to that point</li>
                 <li><strong>Score</strong> &mdash; View your melody as notation; export to LilyPond, MusicXML, or PDF</li>
                 <li><strong>I / IV / V</strong> &mdash; Play chord drones; "Inflect" bends pitches with the melody</li>
-                <li><strong>MIDI</strong> &mdash; Send notes to external instruments (&plusmn;2 semitones pitch bend for quarter-tones)</li>
+                <li><strong>MIDI</strong> &mdash; Send notes to external instruments (&plusmn;4 semitones pitch bend for quarter-tones)</li>
             </ul>
 
             <h3>Reference</h3>

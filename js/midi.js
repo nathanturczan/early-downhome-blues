@@ -1,7 +1,8 @@
 // MIDI module - Melody and Harmony outputs
-// Simplified from per-degree drone to single chord output
+// Supports MPE mode for independent pitch bend per note
 
 // MIDI note mappings with pitch bend for quarter-tones
+// Bend value 1024 = 50 cents with ±4 semitone range
 export const midiNotes = {
     "c'": { note: 60, bend: 0 }, "d'": { note: 62, bend: 0 },
     "ees'": { note: 63, bend: 0 }, "eeh'": { note: 63, bend: 1024 },
@@ -13,7 +14,7 @@ export const midiNotes = {
     "eeh''": { note: 75, bend: 1024 }, "e''": { note: 76, bend: 0 }
 };
 
-// Note name to MIDI conversion
+// Note name to MIDI conversion (handles harmony note format like 'Eqf3', 'Bb4')
 const noteRegex = /^([A-G])([b#qf]*)(\d)$/;
 
 function noteStringToMidiNumber(noteStr) {
@@ -26,10 +27,10 @@ function noteStringToMidiNumber(noteStr) {
     const letterSemitones = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
     let semitone = letterSemitones[letter];
 
-    // Apply accidentals (quarter-tones handled via pitch bend separately)
+    // Apply accidentals (quarter-tones need pitch bend, use flat as base)
     if (accidental === 'b') semitone -= 1;
     else if (accidental === '#') semitone += 1;
-    // qf not adjusted here - needs pitch bend
+    else if (accidental === 'qf') semitone -= 1; // Use flat as base for quarter-flat
 
     return (octave + 1) * 12 + semitone;
 }
@@ -38,9 +39,14 @@ function hasQuarterTone(noteStr) {
     return noteStr.includes('qf');
 }
 
+// Get pitch bend value for a note (0 for normal, 1024 for quarter-flat)
+function getPitchBend(noteStr) {
+    return hasQuarterTone(noteStr) ? 1024 : 0;
+}
+
 let midiAccess = null;
 let midiOutputDevices = [];
-let midiRows = []; // Array of { type, portId, channel, lastNote/lastNotes }
+let midiRows = []; // Array of { type, portId, channel, mpe, lastNote/lastNotes, mpeChannelMap }
 let rowIdCounter = 1;
 
 export async function initMidi() {
@@ -63,13 +69,16 @@ export async function initMidi() {
         // Initialize first row
         const firstRow = document.querySelector('.midi-row');
         if (firstRow) {
+            const mpeCheckbox = firstRow.querySelector('.midi-mpe');
             midiRows.push({
                 rowId: 0,
                 type: 'melody',
                 portId: '',
                 channel: 0,
+                mpe: mpeCheckbox?.checked || false,
                 lastNote: null,
-                lastNotes: null // For drone chords
+                lastNotes: null,
+                mpeVoices: {} // For MPE: tracks { channel: { noteNum, bend } }
             });
             setupRowListeners(firstRow, 0);
         }
@@ -128,7 +137,16 @@ function setupRowListeners(rowEl, rowIndex) {
     const typeSelect = rowEl.querySelector('.midi-type');
     const portSelect = rowEl.querySelector('.midi-port');
     const channelSelect = rowEl.querySelector('.midi-channel');
+    const channelContainer = channelSelect?.closest('.midi-select');
+    const mpeCheckbox = rowEl.querySelector('.midi-mpe');
     const removeBtn = rowEl.querySelector('.midi-remove-btn');
+
+    // Helper to update channel selector visibility based on MPE state
+    const updateChannelVisibility = (mpeEnabled) => {
+        if (channelContainer) {
+            channelContainer.style.display = mpeEnabled ? 'none' : '';
+        }
+    };
 
     typeSelect.addEventListener('change', (e) => {
         midiRows[rowIndex].type = e.target.value;
@@ -139,6 +157,16 @@ function setupRowListeners(rowEl, rowIndex) {
     channelSelect.addEventListener('change', (e) => {
         midiRows[rowIndex].channel = parseInt(e.target.value);
     });
+    if (mpeCheckbox) {
+        // Set initial visibility
+        updateChannelVisibility(mpeCheckbox.checked);
+
+        mpeCheckbox.addEventListener('change', (e) => {
+            midiRows[rowIndex].mpe = e.target.checked;
+            updateChannelVisibility(e.target.checked);
+            console.log(`[MIDI] Row ${rowIndex} MPE: ${e.target.checked}`);
+        });
+    }
     removeBtn.addEventListener('click', () => {
         removeMidiRow(rowEl, rowIndex);
     });
@@ -184,6 +212,10 @@ function addMidiRow() {
                 ).join('')}
             </select>
         </div>
+        <label class="midi-mpe-label">
+            <input type="checkbox" class="midi-mpe">
+            MPE
+        </label>
         <button class="midi-remove-btn" title="Remove">&times;</button>
     `;
 
@@ -208,8 +240,10 @@ function addMidiRow() {
         type: nextType,
         portId: lastRow?.portId || '',
         channel: nextChannel,
+        mpe: false,
         lastNote: null,
-        lastNotes: null
+        lastNotes: null,
+        mpeVoices: {}
     });
 
     setupRowListeners(rowEl, rowIndex);
@@ -242,7 +276,7 @@ function getOutputDevice(portId) {
     return midiOutputDevices.find(o => o.id === portId) || null;
 }
 
-export function sendMidiNote(lilyNote, duration = 0.5) {
+export function sendMidiNote(lilyNote) {
     const midiInfo = midiNotes[lilyNote];
     if (!midiInfo) return;
 
@@ -257,6 +291,9 @@ export function sendMidiNote(lilyNote, duration = 0.5) {
         const noteNum = midiInfo.note;
         const bendValue = 8192 + midiInfo.bend;
 
+        // In MPE mode, we still use the base channel for melody (single note at a time)
+        // MPE is more useful for drone where we need independent bends per chord note
+
         // Note off for previous note
         if (row.lastNote !== null) {
             output.send([0x80 | channel, row.lastNote, 0]);
@@ -267,19 +304,32 @@ export function sendMidiNote(lilyNote, duration = 0.5) {
         output.send([0x90 | channel, noteNum, 100]);
         midiRows[index].lastNote = noteNum;
 
-        // Schedule note off
-        setTimeout(() => {
-            if (midiRows[index]?.lastNote === noteNum) {
-                output.send([0x80 | channel, noteNum, 0]);
-                midiRows[index].lastNote = null;
-            }
-        }, duration * 1000);
+        // Note stays on (latched) until next note or killMelodyNote() is called
+    });
+}
+
+/**
+ * Kill the current melody note on all melody outputs
+ */
+export function killMelodyNote() {
+    midiRows.forEach((row, index) => {
+        if (row.type !== 'melody') return;
+
+        const output = getOutputDevice(row.portId);
+        if (!output) return;
+
+        const channel = row.channel;
+
+        if (row.lastNote !== null) {
+            output.send([0x80 | channel, row.lastNote, 0]);
+            midiRows[index].lastNote = null;
+        }
     });
 }
 
 /**
  * Send harmony MIDI - full chord to drone outputs
- * @param {string[]} notes - Array of note strings like ['C2', 'G3', 'E4', 'Bb4']
+ * @param {string[]} notes - Array of note strings like ['C2', 'G3', 'Eqf4', 'Bb4']
  * @param {boolean} isOn - true to start chord, false to stop
  */
 export function sendHarmonyMidi(notes, isOn) {
@@ -294,33 +344,106 @@ export function sendHarmonyMidi(notes, isOn) {
             return;
         }
 
-        const channel = row.channel;
+        const baseChannel = row.channel;
 
-        // Turn off previous notes
-        if (row.lastNotes && row.lastNotes.length > 0) {
-            row.lastNotes.forEach(n => {
-                output.send([0x80 | channel, n, 0]);
-            });
-        }
-
-        if (isOn) {
-            // Convert note strings to MIDI numbers
-            const midiNoteNumbers = notes.map(noteStr => noteStringToMidiNumber(noteStr));
-
-            // Reset pitch bend (no quarter-tones in chord voicings currently)
-            output.send([0xE0 | channel, 0x00, 0x40]); // Center pitch bend
-
-            // Send all notes
-            midiNoteNumbers.forEach(n => {
-                output.send([0x90 | channel, n, 80]);
-            });
-
-            midiRows[index].lastNotes = midiNoteNumbers;
-            console.log(`[MIDI] Sent chord: ${midiNoteNumbers.join(', ')} on ch${channel + 1}`);
+        if (row.mpe) {
+            // MPE mode: each note on its own channel with independent pitch bend
+            sendHarmonyMPE(output, row, index, notes, isOn, baseChannel);
         } else {
-            midiRows[index].lastNotes = null;
+            // Standard mode: all notes on same channel, no quarter-tone support
+            sendHarmonyStandard(output, row, index, notes, isOn, baseChannel);
         }
     });
+}
+
+/**
+ * Standard (non-MPE) harmony output - all notes on one channel
+ */
+function sendHarmonyStandard(output, row, index, notes, isOn, channel) {
+    // Turn off previous notes
+    if (row.lastNotes && row.lastNotes.length > 0) {
+        row.lastNotes.forEach(n => {
+            output.send([0x80 | channel, n, 0]);
+        });
+    }
+
+    if (isOn) {
+        // Convert note strings to MIDI numbers
+        const midiNoteNumbers = notes.map(noteStr => noteStringToMidiNumber(noteStr));
+
+        // Reset pitch bend (quarter-tones not supported in standard mode)
+        output.send([0xE0 | channel, 0x00, 0x40]); // Center pitch bend
+
+        // Send all notes
+        midiNoteNumbers.forEach(n => {
+            output.send([0x90 | channel, n, 80]);
+        });
+
+        midiRows[index].lastNotes = midiNoteNumbers;
+        console.log(`[MIDI] Sent chord: ${midiNoteNumbers.join(', ')} on ch${channel + 1}`);
+    } else {
+        midiRows[index].lastNotes = null;
+    }
+}
+
+/**
+ * MPE harmony output - proper MPE spec with tied notes
+ * Channel 1 = Master (not used for notes)
+ * Channels 2-16 = Member channels (one note per channel, independent pitch bend)
+ * One MPE-enabled synth receives all notes and handles per-note pitch bend internally
+ *
+ * Tied notes: only re-attack if the note changes. If same note, just update pitch bend.
+ */
+function sendHarmonyMPE(output, row, index, notes, isOn, baseChannel) {
+    // mpeVoices tracks: { channel: { noteNum, bend } }
+    const prevVoices = row.mpeVoices || {};
+
+    if (isOn) {
+        const newVoices = {};
+
+        notes.forEach((noteStr, noteIndex) => {
+            // MPE member channels start at 2 (channel 1 is master)
+            const channel = 1 + noteIndex; // channels 1,2,3,4 = MIDI ch 2,3,4,5
+            const noteNum = noteStringToMidiNumber(noteStr);
+            const bend = getPitchBend(noteStr);
+            const bendValue = 8192 + bend;
+
+            const prev = prevVoices[channel];
+
+            if (prev && prev.noteNum === noteNum) {
+                // Same note - just update pitch bend if changed
+                if (prev.bend !== bend) {
+                    output.send([0xE0 | channel, bendValue & 0x7F, (bendValue >> 7) & 0x7F]);
+                    if (bend > 0) {
+                        console.log(`[MIDI MPE] Bend update: ch${channel + 1} -> ${bend}`);
+                    }
+                }
+                // Note stays on (tied)
+            } else {
+                // Different note - note off old, note on new
+                if (prev) {
+                    output.send([0x80 | channel, prev.noteNum, 0]);
+                }
+                // Send pitch bend then note on
+                output.send([0xE0 | channel, bendValue & 0x7F, (bendValue >> 7) & 0x7F]);
+                output.send([0x90 | channel, noteNum, 80]);
+
+                if (bend > 0) {
+                    console.log(`[MIDI MPE] ${noteStr} -> MIDI ${noteNum} on ch${channel + 1} with bend ${bend}`);
+                }
+            }
+
+            newVoices[channel] = { noteNum, bend };
+        });
+
+        midiRows[index].mpeVoices = newVoices;
+    } else {
+        // Turn off all notes
+        Object.entries(prevVoices).forEach(([channel, voice]) => {
+            output.send([0x80 | parseInt(channel), voice.noteNum, 0]);
+        });
+        midiRows[index].mpeVoices = {};
+    }
 }
 
 // For backwards compatibility

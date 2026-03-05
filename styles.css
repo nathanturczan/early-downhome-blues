@@ -618,6 +618,44 @@ button.phrase-end:active {
     color: white;
 }
 
+/* Score toolbar (contains controls + export) */
+.inline-score-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(247, 239, 215, 0.95);
+    border-top: 1px solid #ddd;
+    gap: 12px;
+}
+
+.inline-score-toolbar .inline-export-toolbar {
+    padding: 0;
+    border-top: none;
+    background: none;
+}
+
+.score-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.score-ctrl-btn {
+    padding: 6px 12px;
+    font-size: 0.75em;
+    background: rgba(120, 100, 80, 0.1);
+    color: rgb(120, 100, 80);
+    border: 1px solid rgba(120, 100, 80, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.score-ctrl-btn:hover {
+    background: rgb(120, 100, 80);
+    color: white;
+}
+
 /* Harmony Section in left column */
 .harmony-section {
     flex-shrink: 0;
@@ -900,6 +938,24 @@ button.phrase-end:active {
 }
 .midi-remove-btn.hidden {
     display: none;
+}
+.midi-mpe-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75em;
+    color: #888;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+.midi-mpe-label:hover {
+    color: #ddd;
+}
+.midi-mpe-label.hidden {
+    display: none;
+}
+.midi-mpe {
+    cursor: pointer;
 }
 .midi-hint {
     font-size: 0.55em;

@@ -20,7 +20,7 @@ This tool lets you walk through Titon's pitch transition network, which maps how
 - **Paths display**: See all possible next notes from your current position
 - **Pluck synth**: Guitar-like sound using Karplus-Strong synthesis
 - **Inflecting drone**: Toggle drone notes (root, 3rd, 5th, 7th) that bend to match the melody's microtonal inflections
-- **MIDI output**: Send notes to external instruments with pitch bend for quarter-tones (set pitch bend range to ±2 semitones)
+- **MIDI output**: Send notes to external instruments with pitch bend for quarter-tones (set pitch bend range to ±4 semitones)
 - **History**: Track your path through the network
 
 ## Quarter-tone Support

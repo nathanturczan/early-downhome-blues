@@ -62,25 +62,31 @@ export function initScoreHistory(modalElement, inlineCanvas = null) {
     return {
         /**
          * Render score with given history data
-         * @param {Array} historyData - Array of {note, position, stanza}
-         * @param {boolean} modalOnly - If true, only render to modal canvas
+         * @param {Array} historyData - Array of {note, position, stanza, chord}
+         * @param {Object} options - Render options
+         * @param {boolean} options.modalOnly - If true, only render to modal canvas
+         * @param {boolean} options.showPhrases - If true, show phrase spans; if false, show chord spans
          */
-        render(historyData, modalOnly = false) {
+        render(historyData, options = {}) {
+            const { modalOnly = false, showPhrases = true } = options;
             currentHistoryData = historyData || [];
             if (!modalOnly && inlineCanvas) {
-                renderScore(inlineCanvas, currentHistoryData);
+                renderScore(inlineCanvas, currentHistoryData, { showPhrases });
             }
-            renderScore(modalCanvas, currentHistoryData);
+            renderScore(modalCanvas, currentHistoryData, { showPhrases });
         },
 
         /**
          * Render only to inline canvas (for live updates)
-         * @param {Array} historyData - Array of {note, position, stanza}
+         * @param {Array} historyData - Array of {note, position, stanza, chord}
+         * @param {Object} options - Render options
+         * @param {boolean} options.showPhrases - If true, show phrase spans; if false, show chord spans
          */
-        renderInline(historyData) {
+        renderInline(historyData, options = {}) {
+            const { showPhrases = true } = options;
             currentHistoryData = historyData || [];
             if (inlineCanvas) {
-                renderScore(inlineCanvas, currentHistoryData);
+                renderScore(inlineCanvas, currentHistoryData, { showPhrases });
             }
         },
 
