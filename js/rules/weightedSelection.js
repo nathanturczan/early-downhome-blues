@@ -16,7 +16,7 @@ const DEBUG = false;
 
 // === Phrasing Toggle ===
 // When OFF: skip repetition, cadence bias, phrase-start lift
-let phrasingEnabled = true;
+let phrasingEnabled = false;
 
 export function setPhrasing(enabled) {
   phrasingEnabled = enabled;

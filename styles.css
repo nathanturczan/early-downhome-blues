@@ -971,12 +971,16 @@ button.phrase-end:active {
 .midi-remove-btn.hidden {
     display: none;
 }
-.midi-mpe-label {
+.midi-mpe-wrapper {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 4px;
-    font-size: 0.75em;
+    gap: 2px;
+}
+.midi-mpe-label {
+    font-size: 0.65em;
     color: #888;
+    text-transform: uppercase;
     cursor: pointer;
     margin-bottom: 4px;
 }

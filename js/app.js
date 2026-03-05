@@ -985,6 +985,10 @@ function init() {
     // Phrasing toggle
     const autoHarmonyLabel = document.querySelector('label[for="autoHarmonyToggle"]');
     if (phrasingToggle) {
+        // Initialize tree visibility based on phrasing state
+        if (stanzaIndicator && !phrasingToggle.checked) {
+            stanzaIndicator.style.display = 'none';
+        }
         phrasingToggle.addEventListener('change', (e) => {
             setPhrasing(e.target.checked);
             // Hide/show stanza tree visualization
@@ -1175,16 +1179,18 @@ function init() {
 
         // Number keys = Chords
         // Map key to chord name
+        // Extended chords (ii, iii, bIII, vi, bVII) require More checkbox
         let chord = null;
+        const moreEnabled = moreToggle && moreToggle.checked;
         switch (e.code) {
             case 'Digit1':
                 chord = 'I';
                 break;
             case 'Digit2':
-                chord = 'ii';
+                if (moreEnabled) chord = 'ii';
                 break;
             case 'Digit3':
-                chord = (e.metaKey || e.ctrlKey) ? 'bIII' : 'iii';
+                if (moreEnabled) chord = (e.metaKey || e.ctrlKey) ? 'bIII' : 'iii';
                 break;
             case 'Digit4':
                 chord = 'IV';
@@ -1193,10 +1199,10 @@ function init() {
                 chord = 'V';
                 break;
             case 'Digit6':
-                chord = 'vi';
+                if (moreEnabled) chord = 'vi';
                 break;
             case 'Digit7':
-                chord = 'bVII';
+                if (moreEnabled) chord = 'bVII';
                 break;
         }
 
