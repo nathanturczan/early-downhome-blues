@@ -12,7 +12,7 @@ import { initAudio, getAudioState, toggleMute, playNote } from './audio.js';
 import {
     initHarmony, setHarmonyChord, toggleHarmony, inflectHarmony,
     resetInflection, setHarmonyChangeCallback, isHarmonyPlaying, getCurrentChord,
-    setHarmonyMode, HARMONY_MODES
+    setHarmonyMode, HARMONY_MODES, setLoadingStatusCallback, getLoadingStatus
 } from './harmony.js';
 import { renderNotation } from './notation.js';
 import { initEnsemble, updateRoomState, getEnsembleState } from './ensemble.js';
@@ -68,9 +68,26 @@ const stanzaIndicator = document.getElementById('stanzaIndicator');
 const phrasingToggle = document.getElementById('phrasingToggle');
 const autoHarmonyToggle = document.getElementById('autoHarmonyToggle');
 const harmonyModeSelect = document.getElementById('harmonyModeSelect');
+const harmonyLoadStatus = document.getElementById('harmonyLoadStatus');
 
 // Auto-harmony state
 let autoHarmonyEnabled = false;
+
+// Initialize harmony loading immediately with status callback
+function updateHarmonyLoadingStatus(status) {
+    if (!harmonyLoadStatus) return;
+    if (status.loaded) {
+        harmonyLoadStatus.textContent = '✓';
+        harmonyLoadStatus.className = 'harmony-load-status loaded';
+    } else {
+        harmonyLoadStatus.textContent = `[${status.progress}%]`;
+        harmonyLoadStatus.className = 'harmony-load-status loading';
+    }
+}
+
+// Start loading cello samples immediately
+setLoadingStatusCallback(updateHarmonyLoadingStatus);
+initHarmony();
 
 // Get max history length based on screen width
 function getMaxHistoryLength() {
@@ -217,16 +234,18 @@ async function handleHistoryClick(index) {
         fullHistory = fullHistory.slice(0, entry.fullHistoryIndex + 1);
     }
 
-    // Restore position and stanza if available
-    if (PHASE_2_ENABLED && entry.position) {
-        setPosition(entry.position.phraseIndex, entry.position.stepInPhrase, entry.stanza);
-        lastPlayedPosition = {
-            phraseIndex: entry.position.phraseIndex,
-            stepInPhrase: entry.position.stepInPhrase,
-            stanza: entry.stanza,
-            phrase: ['a', 'b', 'c', 'd', 'e', 'f'][entry.position.phraseIndex]
-        };
-        console.log(`⏪ Rewound to stanza ${entry.stanza}, phrase ${getPosition().phrase}, step ${entry.position.stepInPhrase}`);
+    // Rebuild stanza state from truncated history (handles position, contours, completed stanzas)
+    if (PHASE_2_ENABLED) {
+        rebuildStanzaStateFromHistory();
+        if (entry.position) {
+            lastPlayedPosition = {
+                phraseIndex: entry.position.phraseIndex,
+                stepInPhrase: entry.position.stepInPhrase,
+                stanza: entry.stanza,
+                phrase: ['a', 'b', 'c', 'd', 'e', 'f'][entry.position.phraseIndex]
+            };
+            console.log(`⏪ Rewound to stanza ${entry.stanza}, phrase ${getPosition().phrase}, step ${entry.position.stepInPhrase}`);
+        }
     }
 
     playNote(currentNote);
@@ -388,6 +407,113 @@ function updateDisplay() {
 }
 
 /**
+ * Rebuild stanza state (phraseNoteBuffers, phraseContours, lineContours, completedStanzas)
+ * from fullHistory. Used when undoing or rewinding history.
+ */
+function rebuildStanzaStateFromHistory() {
+    // Reset all stanza state
+    phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+    phraseContours = {};
+    lineContours = {};
+    completedStanzas = [];
+
+    if (fullHistory.length === 0) {
+        // No history - reset to beginning
+        resetStanza();
+        return;
+    }
+
+    // Group notes by stanza and phrase
+    let currentStanzaNum = 1;
+    let stanzaNotes = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+
+    for (const entry of fullHistory) {
+        if (!entry.position) continue;
+
+        const { phraseIndex } = entry.position;
+        const entryStanza = entry.stanza || 1;
+
+        // If we've moved to a new stanza, save the completed one
+        if (entryStanza > currentStanzaNum) {
+            // Analyze and save completed stanza
+            const stanzaPhraseContours = {};
+            const stanzaLineContours = {};
+
+            // Analyze each phrase
+            for (let i = 0; i < 6; i++) {
+                if (stanzaNotes[i].length > 0) {
+                    stanzaPhraseContours[i] = analyzePhrase(stanzaNotes[i]);
+                }
+            }
+
+            // Analyze lines (pairs of phrases)
+            for (let lineNum = 1; lineNum <= 3; lineNum++) {
+                const idx1 = (lineNum - 1) * 2;
+                const idx2 = idx1 + 1;
+                if (stanzaNotes[idx1].length > 0 && stanzaNotes[idx2].length > 0) {
+                    stanzaLineContours[lineNum] = analyzeLine(stanzaNotes[idx1], stanzaNotes[idx2]);
+                }
+            }
+
+            // Analyze full stanza contour
+            const stanzaContour = analyzeStanza(stanzaNotes);
+
+            completedStanzas.push({
+                stanzaNumber: currentStanzaNum,
+                phraseContours: stanzaPhraseContours,
+                lineContours: stanzaLineContours,
+                stanzaContour
+            });
+
+            // Reset for new stanza
+            stanzaNotes = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+            currentStanzaNum = entryStanza;
+        }
+
+        // Add note to current stanza's phrase buffer
+        stanzaNotes[phraseIndex].push(entry.note);
+    }
+
+    // Set phraseNoteBuffers to current (incomplete) stanza
+    phraseNoteBuffers = stanzaNotes;
+
+    // Analyze completed phrases in current stanza
+    const lastEntry = fullHistory[fullHistory.length - 1];
+    const currentPhraseIdx = lastEntry.position?.phraseIndex ?? 0;
+
+    for (let i = 0; i < currentPhraseIdx; i++) {
+        if (phraseNoteBuffers[i].length > 0) {
+            phraseContours[i] = analyzePhrase(phraseNoteBuffers[i]);
+        }
+    }
+
+    // Analyze completed lines in current stanza
+    for (let lineNum = 1; lineNum <= 3; lineNum++) {
+        const idx1 = (lineNum - 1) * 2;
+        const idx2 = idx1 + 1;
+        // Line is complete if both phrases are done (current phrase is past idx2)
+        if (currentPhraseIdx > idx2 && phraseNoteBuffers[idx1].length > 0 && phraseNoteBuffers[idx2].length > 0) {
+            lineContours[lineNum] = analyzeLine(phraseNoteBuffers[idx1], phraseNoteBuffers[idx2]);
+        }
+    }
+
+    // Restore stanza position from last entry
+    if (lastEntry.position) {
+        setPosition(lastEntry.position.phraseIndex, lastEntry.position.stepInPhrase, lastEntry.stanza);
+        // Update lastPlayedPosition so updateStanzaIndicator() uses correct position
+        lastPlayedPosition = {
+            phraseIndex: lastEntry.position.phraseIndex,
+            stepInPhrase: lastEntry.position.stepInPhrase,
+            stanza: lastEntry.stanza,
+            phrase: ['a', 'b', 'c', 'd', 'e', 'f'][lastEntry.position.phraseIndex]
+        };
+    } else {
+        resetStanza();
+        lastPlayedPosition = null;
+    }
+}
+
+/**
  * Undo the last note - remove from history and revert to previous note
  */
 function undoLastNote() {
@@ -405,6 +531,9 @@ function undoLastNote() {
         // Keep the initial hidden note
         currentNote = history[0].note;
     }
+
+    // Rebuild stanza state from remaining history
+    rebuildStanzaStateFromHistory();
 
     // Kill any playing melody note
     killMelodyNote();
@@ -429,9 +558,11 @@ function clearScore() {
     phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
     phraseContours = {};
     lineContours = {};
+    completedStanzas = [];
 
     // Reset stanza position
     resetStanza();
+    lastPlayedPosition = null;
 
     // Clear phrase memory
     clearPhrases();

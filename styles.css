@@ -674,6 +674,18 @@ button.phrase-end:active {
     color: #888;
     text-transform: uppercase;
 }
+.harmony-load-status {
+    font-size: 0.9em;
+    color: #666;
+    font-family: monospace;
+    margin-left: 4px;
+}
+.harmony-load-status.loading {
+    color: rgb(145, 56, 47);
+}
+.harmony-load-status.loaded {
+    color: #4a4;
+}
 .harmony-toggles {
     display: flex;
     gap: 12px;
@@ -1491,6 +1503,14 @@ button.phrase-end:active {
         grid-row: 4;
         align-self: start;
     }
+    /* Chord buttons: reduce padding/gap on tablet */
+    .harmony-buttons {
+        gap: 6px;
+    }
+    .chord-btn {
+        padding: 12px 12px;
+        font-size: 1.1em;
+    }
     /* Right sub-column: Use flex to stack without grid row alignment issues */
     .right-column {
         display: flex !important;
@@ -1689,6 +1709,20 @@ button.phrase-end:active {
     }
     .midi-toggle {
         display: none;
+    }
+    /* Chord buttons: shrink padding/gap on narrow screens, never hide */
+    .harmony-buttons {
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+    .chord-btn {
+        padding: 12px 8px;
+        font-size: 1.1em;
+        min-width: 0;
+    }
+    .harmony-buttons.show-extended .chord-btn {
+        padding: 10px 6px;
+        font-size: 1em;
     }
     /* Score modal mobile adjustments */
     .score-modal-content {

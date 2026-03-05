@@ -4,6 +4,7 @@
  * Chord selection → always resets to default voicings
  * Inflection → minimal pitch deviation (closest octave)
  */
+console.log('[Harmony] Module loaded v4 - detune instead of playbackRate');
 
 // Default voicings: pitch class + octave for each degree
 const defaultVoicings = {
@@ -142,12 +143,58 @@ export const HARMONY_MODES = {
   STATIC_I: 'static-i'       // Stay on I chord throughout
 };
 
+// Cello samples from nbrosowsky/tonejs-instruments
+const CELLO_BASE_URL = 'https://nbrosowsky.github.io/tonejs-instruments/samples/cello/';
+
+// Reference pitches for samples (used for pitch calculation)
+const SAMPLE_NOTES = {
+    'C2': 'C2', 'C3': 'C3', 'C4': 'C4', 'C5': 'C5',
+    'E2': 'E2', 'E3': 'E3', 'E4': 'E4',
+    'G2': 'G2', 'G3': 'G3', 'G4': 'G4',
+    'A2': 'A2', 'A3': 'A3', 'A4': 'A4'
+};
+
 // State
-const voices = {}; // { root: { osc, pc, oct }, third: {...}, ... }
+const voices = {}; // { root: { player, pc, oct }, third: {...}, ... }
+const loadedBuffers = {}; // Tone.Buffer for each sample
 let currentChord = 'I';
 let harmonyGain = null;
+let harmonyReverb = null;
 let isHarmonyActive = false;
 let harmonyMode = HARMONY_MODES.FUNCTIONAL;
+let samplesLoaded = false;
+let loadingPromise = null;
+let loadingProgress = 0;
+let totalSamples = 0;
+
+// Loading status callback
+let onLoadingStatusChange = null;
+
+export function setLoadingStatusCallback(callback) {
+    onLoadingStatusChange = callback;
+}
+
+export function getLoadingStatus() {
+    if (samplesLoaded) return { loaded: true, progress: 100 };
+    if (totalSamples === 0) return { loaded: false, progress: 0 };
+    return { loaded: false, progress: Math.round((loadingProgress / totalSamples) * 100) };
+}
+
+// Varied loop parameters per register for organic phasing
+// Loop points are in the MIDDLE of sustain (avoiding attack ~0-0.8s and decay ~2.5s+)
+// Each register has slightly different loop lengths for natural phasing
+const LOOP_PARAMS = {
+    low:  { loopStart: 1.1, loopEnd: 2.2, grainSize: 0.3, overlap: 0.15 },   // bass: 1.1s loop, longer grains
+    mid:  { loopStart: 1.0, loopEnd: 1.95, grainSize: 0.25, overlap: 0.12 }, // mid: 0.95s loop
+    high: { loopStart: 0.95, loopEnd: 1.75, grainSize: 0.2, overlap: 0.1 }   // high: 0.8s loop, tighter
+};
+
+function getLoopParamsForNote(note) {
+    const midi = Tone.Frequency(note).toMidi();
+    if (midi < 48) return LOOP_PARAMS.low;      // Below C3
+    if (midi < 60) return LOOP_PARAMS.mid;      // C3 to B3
+    return LOOP_PARAMS.high;                     // C4 and above
+}
 
 // Callbacks for external systems (MIDI)
 let onHarmonyChange = null;
@@ -171,9 +218,124 @@ export function setHarmonyChangeCallback(callback) {
     onHarmonyChange = callback;
 }
 
+// Convert our pitch class names to Tone.js format
+function toToneNote(pc, oct) {
+    // Tone.js uses 'Bb' format, which should work, but let's be explicit
+    const tonePC = pc === 'Db' ? 'Db' :
+                   pc === 'Eb' ? 'Eb' :
+                   pc === 'Gb' ? 'Gb' :
+                   pc === 'Ab' ? 'Ab' :
+                   pc === 'Bb' ? 'Bb' :
+                   pc === 'Eqf' ? 'Eb' : // Quarter-tone: use Eb as base
+                   pc;
+    return tonePC + oct;
+}
+
+/**
+ * Find the closest sample note for a given target note
+ */
+function findClosestSample(targetNote) {
+    const targetMidi = Tone.Frequency(targetNote).toMidi();
+    let closest = 'C3';
+    let minDist = Infinity;
+
+    for (const sampleNote of Object.keys(SAMPLE_NOTES)) {
+        const sampleMidi = Tone.Frequency(sampleNote).toMidi();
+        const dist = Math.abs(sampleMidi - targetMidi);
+        if (dist < minDist) {
+            minDist = dist;
+            closest = sampleNote;
+        }
+    }
+    const semitoneShift = targetMidi - Tone.Frequency(closest).toMidi();
+    console.log(`[Sample] ${targetNote} (MIDI ${targetMidi}) -> ${closest}, shift: ${semitoneShift}`);
+    return { sampleNote: closest, semitoneShift };
+}
+
+/**
+ * Create a looping GrainPlayer for sustained cello sound
+ * Uses varied loop parameters based on register for organic phasing
+ */
+function createCelloVoice(buffer, semitoneShift = 0, targetNote = 'C3') {
+    const params = getLoopParamsForNote(targetNote);
+
+    // Use detune in cents for pitch shifting (100 cents = 1 semitone)
+    const detuneCents = semitoneShift * 100;
+
+    const player = new Tone.GrainPlayer({
+        url: buffer,
+        loop: true,
+        loopStart: params.loopStart,
+        loopEnd: params.loopEnd,
+        grainSize: params.grainSize,
+        overlap: params.overlap,
+        detune: detuneCents
+    }).connect(harmonyGain);
+
+    player.volume.value = -6;
+    return player;
+}
+
 export function initHarmony() {
-    if (harmonyGain) return;
-    harmonyGain = new Tone.Gain(0.12).toDestination();
+    if (loadingPromise) return loadingPromise;
+
+    // Create reverb for warmth (only once)
+    if (!harmonyReverb) {
+        harmonyReverb = new Tone.Reverb({
+            decay: 3,
+            wet: 0.25
+        }).toDestination();
+        harmonyReverb.generate();
+    }
+
+    if (!harmonyGain) {
+        harmonyGain = new Tone.Gain(0.35).connect(harmonyReverb);
+    }
+
+    // Load all cello sample buffers with progress tracking
+    const sampleNotes = Object.keys(SAMPLE_NOTES);
+    totalSamples = sampleNotes.length;
+    loadingProgress = 0;
+
+    if (onLoadingStatusChange) {
+        onLoadingStatusChange(getLoadingStatus());
+    }
+
+    const bufferPromises = sampleNotes.map(note => {
+        return new Promise((resolve, reject) => {
+            const buffer = new Tone.Buffer(
+                CELLO_BASE_URL + note + '.mp3',
+                () => {
+                    loadedBuffers[note] = buffer;
+                    loadingProgress++;
+                    if (onLoadingStatusChange) {
+                        onLoadingStatusChange(getLoadingStatus());
+                    }
+                    resolve();
+                },
+                reject
+            );
+        });
+    });
+
+    loadingPromise = Promise.all(bufferPromises).then(() => {
+        samplesLoaded = true;
+        console.log('[Harmony] Cello samples loaded. Available:', Object.keys(loadedBuffers).join(', '));
+
+        // Verify Tone.Frequency parsing
+        const testNotes = ['C3', 'E4', 'G3', 'Bb4', 'A4'];
+        testNotes.forEach(n => {
+            console.log(`[Harmony] ${n} = MIDI ${Tone.Frequency(n).toMidi()}`);
+        });
+
+        if (onLoadingStatusChange) {
+            onLoadingStatusChange(getLoadingStatus());
+        }
+    }).catch(err => {
+        console.error('[Harmony] Failed to load samples:', err);
+    });
+
+    return loadingPromise;
 }
 
 export function getCurrentChord() {
@@ -223,29 +385,46 @@ export function setHarmonyChord(chord, startPlaying = true) {
 
         const allDegrees = ['root', 'fifth', 'third', 'seventh'];
 
+        // Stop voices not in the new chord (with natural decay)
         allDegrees.forEach(deg => {
-            const shouldPlay = degreesToPlay.includes(deg);
-            const { pc, oct } = voicing[deg];
-            const freq = getFreq(pc, oct);
+            if (voices[deg] && !degreesToPlay.includes(deg)) {
+                const oldPlayer = voices[deg].player;
+                oldPlayer.loop = false; // Natural decay
+                setTimeout(() => {
+                    oldPlayer.stop();
+                    oldPlayer.dispose();
+                }, 3000);
+                delete voices[deg];
+            }
+        });
 
-            if (shouldPlay) {
-                if (!voices[deg]) {
-                    // Create new oscillator
-                    const osc = new Tone.Oscillator(freq, 'sine').connect(harmonyGain);
-                    osc.volume.value = -12;
-                    osc.start();
-                    osc.volume.rampTo(0, 0.1);
-                    voices[deg] = { osc, pc, oct };
-                } else {
-                    // Reset to default voicing
-                    voices[deg].osc.frequency.rampTo(freq, 0.1);
-                    voices[deg].pc = pc;
-                    voices[deg].oct = oct;
-                }
-            } else {
-                // Silence degrees not in current mode
-                if (voices[deg]) {
-                    voices[deg].osc.volume.rampTo(-Infinity, 0.1);
+        // Play or update notes for degrees we want
+        degreesToPlay.forEach(deg => {
+            const { pc, oct } = voicing[deg];
+            const targetNote = pc + oct;
+
+            // If voice exists with different pitch, fade out old and start new
+            if (voices[deg] && (voices[deg].pc !== pc || voices[deg].oct !== oct)) {
+                const oldPlayer = voices[deg].player;
+                oldPlayer.loop = false; // Natural decay
+                setTimeout(() => {
+                    oldPlayer.stop();
+                    oldPlayer.dispose();
+                }, 3000);
+                delete voices[deg];
+            }
+
+            // Create new voice if needed
+            if (!voices[deg] && samplesLoaded) {
+                const toneTargetNote = toToneNote(pc, oct);
+                const { sampleNote, semitoneShift } = findClosestSample(toneTargetNote);
+                const buffer = loadedBuffers[sampleNote];
+                if (buffer) {
+                    const player = createCelloVoice(buffer, semitoneShift, toneTargetNote);
+                    player.start();
+                    console.log(`[Voice] ${deg}: ${pc}${oct} -> sample ${sampleNote}, shift ${semitoneShift}, rate ${Math.pow(2, semitoneShift/12).toFixed(3)}`);
+                    // Store sample info for inflection calculations
+                    voices[deg] = { player, pc, oct, sampleNote };
                 }
             }
         });
@@ -257,24 +436,28 @@ export function setHarmonyChord(chord, startPlaying = true) {
 }
 
 /**
- * Stop all harmony
+ * Stop all harmony with natural decay
+ * Disables looping and lets samples ring out naturally
  */
 export function stopHarmony() {
     isHarmonyActive = false;
 
+    // Disable looping and let samples decay naturally
     Object.keys(voices).forEach(deg => {
         const voice = voices[deg];
-        if (voice && voice.osc) {
-            voice.osc.volume.rampTo(-Infinity, 0.3);
+        if (voice && voice.player) {
+            // Disable loop to let sample decay
+            voice.player.loop = false;
+            // Schedule disposal after decay time
             setTimeout(() => {
-                voice.osc.stop();
-                voice.osc.dispose();
-            }, 350);
+                if (voice.player) {
+                    voice.player.stop();
+                    voice.player.dispose();
+                }
+            }, 3000); // 3 second decay
         }
+        delete voices[deg];
     });
-
-    // Clear voices
-    Object.keys(voices).forEach(deg => delete voices[deg]);
 
     if (onHarmonyChange) {
         onHarmonyChange(getCurrentVoicingArray(), false);
@@ -295,10 +478,13 @@ export function toggleHarmony() {
 }
 
 /**
- * Apply inflection - minimal pitch deviation from current
+ * Apply inflection - pitch bend via detune on GrainPlayer
  */
 export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
     if (!shouldInflect || !isHarmonyActive) return false;
+    if (!samplesLoaded) return false;
+
+    try {
 
     const rules = inflectionRules[currentChord];
     if (!rules) return false;
@@ -311,10 +497,17 @@ export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
         const voicing = defaultVoicings[currentChord];
 
         ['root', 'fifth', 'third', 'seventh'].forEach(deg => {
-            if (!changes[deg] && voices[deg]) {
+            if (!changes[deg] && voices[deg] && voices[deg].sampleNote) {
                 const def = voicing[deg];
-                const freq = getFreq(def.pc, def.oct);
-                voices[deg].osc.frequency.rampTo(freq, 0.05);
+                const toneTargetNote = toToneNote(def.pc, def.oct);
+
+                // Calculate pitch shift relative to the ACTUAL sample playing
+                const sampleMidi = Tone.Frequency(voices[deg].sampleNote).toMidi();
+                const targetMidi = Tone.Frequency(toneTargetNote).toMidi();
+                const semitones = (targetMidi - sampleMidi);
+                const detuneCents = semitones * 100;
+
+                voices[deg].player.detune = detuneCents;
                 voices[deg].pc = def.pc;
                 voices[deg].oct = def.oct;
             }
@@ -335,13 +528,23 @@ export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
         const targetPC = changes[degree];
         const voice = voices[degree];
 
-        if (voice) {
+        if (voice && voice.player && voice.sampleNote) {
             // Find closest octave to current pitch
-            const currentFreq = voice.osc.frequency.value;
+            const currentFreq = getFreq(voice.pc, voice.oct);
             const closestOct = findClosestOctave(currentFreq, targetPC);
-            const newFreq = getFreq(targetPC, closestOct);
+            const toneTargetNote = toToneNote(targetPC, closestOct);
 
-            voice.osc.frequency.rampTo(newFreq, 0.05);
+            // Calculate pitch shift relative to the ACTUAL sample playing
+            const sampleMidi = Tone.Frequency(voice.sampleNote).toMidi();
+            const targetMidi = Tone.Frequency(toneTargetNote).toMidi();
+            const semitones = targetMidi - sampleMidi;
+
+            // Use detune in cents (100 cents = 1 semitone)
+            const detuneCents = semitones * 100;
+            console.log(`[Inflect] ${degree}: sample ${voice.sampleNote} -> ${toneTargetNote}, detune: ${detuneCents} cents`);
+
+            voice.player.detune = detuneCents;
+
             voice.pc = targetPC;
             voice.oct = closestOct;
             changed = true;
@@ -353,6 +556,11 @@ export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
     }
 
     return changed;
+
+    } catch (err) {
+        console.error('[Harmony] Inflection error:', err);
+        return false;
+    }
 }
 
 /**
@@ -360,21 +568,33 @@ export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
  */
 export function resetInflection() {
     if (!isHarmonyActive) return;
+    if (!samplesLoaded) return;
 
-    const voicing = defaultVoicings[currentChord];
+    try {
+        const voicing = defaultVoicings[currentChord];
 
-    ['root', 'fifth', 'third', 'seventh'].forEach(deg => {
-        if (voices[deg]) {
-            const def = voicing[deg];
-            const freq = getFreq(def.pc, def.oct);
-            voices[deg].osc.frequency.rampTo(freq, 0.1);
-            voices[deg].pc = def.pc;
-            voices[deg].oct = def.oct;
+        ['root', 'fifth', 'third', 'seventh'].forEach(deg => {
+            if (voices[deg] && voices[deg].player && voices[deg].sampleNote) {
+                const def = voicing[deg];
+                const toneTargetNote = toToneNote(def.pc, def.oct);
+
+                // Calculate pitch shift relative to the ACTUAL sample playing
+                const sampleMidi = Tone.Frequency(voices[deg].sampleNote).toMidi();
+                const targetMidi = Tone.Frequency(toneTargetNote).toMidi();
+                const semitones = (targetMidi - sampleMidi);
+                const detuneCents = semitones * 100;
+
+                voices[deg].player.detune = detuneCents;
+                voices[deg].pc = def.pc;
+                voices[deg].oct = def.oct;
+            }
+        });
+
+        if (onHarmonyChange) {
+            onHarmonyChange(getCurrentVoicingArray(), true);
         }
-    });
-
-    if (onHarmonyChange) {
-        onHarmonyChange(getCurrentVoicingArray(), true);
+    } catch (err) {
+        console.error('[Harmony] Reset inflection error:', err);
     }
 }
 

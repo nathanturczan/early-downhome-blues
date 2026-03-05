@@ -253,9 +253,10 @@ export function renderTree(treeData) {
             .style('pointer-events', 'none'); // Don't block hover events
     });
 
-    // Hover interactions - show tooltip for nodes with contour data
+    // Hover interactions - show tooltip for all phrase/line/stanza nodes
     nodes.on('mouseenter', (event, d) => {
-        if (d.data.contour) {
+        // Show tooltip for phrase, line, and zone (stanza) nodes
+        if (d.data.nodeType === 'phrase' || d.data.nodeType === 'line' || d.data.nodeType === 'zone') {
             showTooltip(event, d.data);
         }
     }).on('mouseleave', () => {
@@ -448,10 +449,45 @@ function getContourShapeSVG(shlf, contourType) {
 }
 
 /**
- * Show tooltip with contour details
+ * Show tooltip with contour details or status message
  */
 function showTooltip(event, data) {
-    if (!tooltipEl || !data.contour) return;
+    if (!tooltipEl) return;
+
+    const phraseName = data.name || '';
+    let html = '';
+    const nodeType = data.nodeType || 'phrase';
+    const typeLabel = nodeType === 'zone' ? 'Stanza' : nodeType.charAt(0).toUpperCase() + nodeType.slice(1);
+
+    // Handle pending nodes (not yet started)
+    if (data.state === 'pending') {
+        html = `
+            <div class="tooltip-title">${phraseName}</div>
+            <div class="tooltip-desc" style="font-style: italic; color: #888;">${typeLabel} has not yet started</div>
+        `;
+        tooltipEl.innerHTML = html;
+        tooltipEl.classList.remove('hidden');
+        positionTooltip(event);
+        return;
+    }
+
+    // Handle active nodes (in progress) - show status even if partial contour exists
+    if (data.state === 'active') {
+        html = `
+            <div class="tooltip-title">${phraseName}</div>
+            <div class="tooltip-desc" style="font-style: italic; color: #888;">${typeLabel} is still in progress...</div>
+        `;
+        tooltipEl.innerHTML = html;
+        tooltipEl.classList.remove('hidden');
+        positionTooltip(event);
+        return;
+    }
+
+    // Complete nodes - show full contour analysis
+    if (!data.contour) {
+        // Complete but no contour data (shouldn't happen)
+        return;
+    }
 
     const contour = data.contour;
     const shlf = contour.shlf;
@@ -470,9 +506,7 @@ function showTooltip(event, data) {
         return Math.round(pitch);
     };
 
-    const phraseName = data.name || '';
-
-    let html = `
+    html = `
         <div class="tooltip-title">${phraseName}</div>
         <div class="tooltip-header">
             <span class="tooltip-label">Contour Type:</span>
@@ -502,8 +536,13 @@ function showTooltip(event, data) {
 
     tooltipEl.innerHTML = html;
     tooltipEl.classList.remove('hidden');
+    positionTooltip(event);
+}
 
-    // Position tooltip - check if near right edge
+/**
+ * Position tooltip near cursor, avoiding edge overflow
+ */
+function positionTooltip(event) {
     const tooltipWidth = 220; // max-width from CSS
     const tooltipHeight = 180; // approximate height
     const margin = 10;
