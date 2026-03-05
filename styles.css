@@ -714,13 +714,15 @@ button.phrase-end:active {
 }
 .harmony-buttons {
     display: flex;
-    gap: 8px;
+    gap: clamp(2px, 1vw, 8px);
     justify-content: center;
+    flex-wrap: nowrap;
 }
 .chord-btn {
-    flex: 1;
-    padding: 15px 20px;
-    font-size: 1.2em;
+    flex: 1 1 0;
+    min-width: 0;
+    padding: clamp(8px, 2vw, 15px) clamp(4px, 2vw, 20px);
+    font-size: clamp(0.9em, 2vw, 1.2em);
     font-weight: bold;
     background: rgba(255,255,255,0.1);
     color: #aaa;
@@ -745,11 +747,11 @@ button.phrase-end:active {
     display: none;
 }
 .harmony-buttons.show-extended .chord-btn.chord-extended {
-    display: block;
+    display: flex;
 }
-/* Wrap buttons to two rows when extended chords are shown */
+/* Never wrap - all buttons in one row */
 .harmony-buttons.show-extended {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 /* Inline MIDI Section */
@@ -1503,14 +1505,6 @@ button.phrase-end:active {
         grid-row: 4;
         align-self: start;
     }
-    /* Chord buttons: reduce padding/gap on tablet */
-    .harmony-buttons {
-        gap: 6px;
-    }
-    .chord-btn {
-        padding: 12px 12px;
-        font-size: 1.1em;
-    }
     /* Right sub-column: Use flex to stack without grid row alignment issues */
     .right-column {
         display: flex !important;
@@ -1709,20 +1703,6 @@ button.phrase-end:active {
     }
     .midi-toggle {
         display: none;
-    }
-    /* Chord buttons: shrink padding/gap on narrow screens, never hide */
-    .harmony-buttons {
-        gap: 4px;
-        flex-wrap: wrap;
-    }
-    .chord-btn {
-        padding: 12px 8px;
-        font-size: 1.1em;
-        min-width: 0;
-    }
-    .harmony-buttons.show-extended .chord-btn {
-        padding: 10px 6px;
-        font-size: 1em;
     }
     /* Score modal mobile adjustments */
     .score-modal-content {

@@ -4,7 +4,7 @@
  * Chord selection → always resets to default voicings
  * Inflection → minimal pitch deviation (closest octave)
  */
-console.log('[Harmony] Module loaded v4 - detune instead of playbackRate');
+console.log('[Harmony] Module loaded v5 - quarter-tone support');
 
 // Default voicings: pitch class + octave for each degree
 const defaultVoicings = {
@@ -219,16 +219,20 @@ export function setHarmonyChangeCallback(callback) {
 }
 
 // Convert our pitch class names to Tone.js format
+// Returns { note, quarterToneCents } where quarterToneCents is 50 for quarter-sharps
 function toToneNote(pc, oct) {
-    // Tone.js uses 'Bb' format, which should work, but let's be explicit
+    // Eqf = E quarter-flat = Eb + 50 cents
+    if (pc === 'Eqf') {
+        return { note: 'Eb' + oct, quarterToneCents: 50 };
+    }
+    // Standard pitch classes
     const tonePC = pc === 'Db' ? 'Db' :
                    pc === 'Eb' ? 'Eb' :
                    pc === 'Gb' ? 'Gb' :
                    pc === 'Ab' ? 'Ab' :
                    pc === 'Bb' ? 'Bb' :
-                   pc === 'Eqf' ? 'Eb' : // Quarter-tone: use Eb as base
                    pc;
-    return tonePC + oct;
+    return { note: tonePC + oct, quarterToneCents: 0 };
 }
 
 /**
@@ -416,13 +420,15 @@ export function setHarmonyChord(chord, startPlaying = true) {
 
             // Create new voice if needed
             if (!voices[deg] && samplesLoaded) {
-                const toneTargetNote = toToneNote(pc, oct);
+                const { note: toneTargetNote, quarterToneCents } = toToneNote(pc, oct);
                 const { sampleNote, semitoneShift } = findClosestSample(toneTargetNote);
+                // Add quarter-tone offset to detune (in cents)
+                const totalDetuneCents = (semitoneShift * 100) + quarterToneCents;
                 const buffer = loadedBuffers[sampleNote];
                 if (buffer) {
-                    const player = createCelloVoice(buffer, semitoneShift, toneTargetNote);
+                    const player = createCelloVoice(buffer, totalDetuneCents / 100, toneTargetNote);
                     player.start();
-                    console.log(`[Voice] ${deg}: ${pc}${oct} -> sample ${sampleNote}, shift ${semitoneShift}, rate ${Math.pow(2, semitoneShift/12).toFixed(3)}`);
+                    console.log(`[Voice] ${deg}: ${pc}${oct} -> sample ${sampleNote}, detune ${totalDetuneCents} cents`);
                     // Store sample info for inflection calculations
                     voices[deg] = { player, pc, oct, sampleNote };
                 }
@@ -499,13 +505,13 @@ export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
         ['root', 'fifth', 'third', 'seventh'].forEach(deg => {
             if (!changes[deg] && voices[deg] && voices[deg].sampleNote) {
                 const def = voicing[deg];
-                const toneTargetNote = toToneNote(def.pc, def.oct);
+                const { note: toneTargetNote, quarterToneCents } = toToneNote(def.pc, def.oct);
 
                 // Calculate pitch shift relative to the ACTUAL sample playing
                 const sampleMidi = Tone.Frequency(voices[deg].sampleNote).toMidi();
                 const targetMidi = Tone.Frequency(toneTargetNote).toMidi();
                 const semitones = (targetMidi - sampleMidi);
-                const detuneCents = semitones * 100;
+                const detuneCents = (semitones * 100) + quarterToneCents;
 
                 voices[deg].player.detune = detuneCents;
                 voices[deg].pc = def.pc;
@@ -532,16 +538,16 @@ export function inflectHarmony(melodyNote, shouldInflect, isLatch = true) {
             // Find closest octave to current pitch
             const currentFreq = getFreq(voice.pc, voice.oct);
             const closestOct = findClosestOctave(currentFreq, targetPC);
-            const toneTargetNote = toToneNote(targetPC, closestOct);
+            const { note: toneTargetNote, quarterToneCents } = toToneNote(targetPC, closestOct);
 
             // Calculate pitch shift relative to the ACTUAL sample playing
             const sampleMidi = Tone.Frequency(voice.sampleNote).toMidi();
             const targetMidi = Tone.Frequency(toneTargetNote).toMidi();
             const semitones = targetMidi - sampleMidi;
 
-            // Use detune in cents (100 cents = 1 semitone)
-            const detuneCents = semitones * 100;
-            console.log(`[Inflect] ${degree}: sample ${voice.sampleNote} -> ${toneTargetNote}, detune: ${detuneCents} cents`);
+            // Use detune in cents (100 cents = 1 semitone) + quarter-tone offset
+            const detuneCents = (semitones * 100) + quarterToneCents;
+            console.log(`[Inflect] ${degree}: sample ${voice.sampleNote} -> ${targetPC}${closestOct}, detune: ${detuneCents} cents`);
 
             voice.player.detune = detuneCents;
 
@@ -576,13 +582,13 @@ export function resetInflection() {
         ['root', 'fifth', 'third', 'seventh'].forEach(deg => {
             if (voices[deg] && voices[deg].player && voices[deg].sampleNote) {
                 const def = voicing[deg];
-                const toneTargetNote = toToneNote(def.pc, def.oct);
+                const { note: toneTargetNote, quarterToneCents } = toToneNote(def.pc, def.oct);
 
                 // Calculate pitch shift relative to the ACTUAL sample playing
                 const sampleMidi = Tone.Frequency(voices[deg].sampleNote).toMidi();
                 const targetMidi = Tone.Frequency(toneTargetNote).toMidi();
                 const semitones = (targetMidi - sampleMidi);
-                const detuneCents = semitones * 100;
+                const detuneCents = (semitones * 100) + quarterToneCents;
 
                 voices[deg].player.detune = detuneCents;
                 voices[deg].pc = def.pc;
