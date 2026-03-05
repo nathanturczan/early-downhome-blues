@@ -724,6 +724,7 @@ button.phrase-end:active {
     padding: clamp(8px, 2vw, 15px) clamp(4px, 2vw, 20px);
     font-size: 0.85em;
     font-weight: bold;
+    text-align: center;
     background: rgba(255,255,255,0.1);
     color: #aaa;
     border: 1px solid rgba(255,255,255,0.2);
@@ -747,7 +748,7 @@ button.phrase-end:active {
     display: none;
 }
 .harmony-buttons.show-extended .chord-btn.chord-extended {
-    display: flex;
+    display: block;
 }
 /* Never wrap - all buttons in one row */
 .harmony-buttons.show-extended {
