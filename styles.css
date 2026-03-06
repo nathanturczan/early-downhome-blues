@@ -399,6 +399,14 @@ button.phrase-end:active {
     margin-top: 8px;
     overflow: hidden;
 }
+.form-label {
+    display: block;
+    font-size: 0.7em;
+    font-weight: normal;
+    color: #888;
+    text-transform: uppercase;
+    padding: 6px 10px 0;
+}
 
 /* D3 Tree Styles */
 .stanza-tree {
