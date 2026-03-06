@@ -99,14 +99,13 @@ h1 {
     border: 1px solid #ddd;
     max-width: 100%;
     width: 100%;
-    padding-top: 4px;
 }
 .notation-label {
     display: block;
     font-size: 0.7em;
     color: #888;
     text-transform: uppercase;
-    padding: 4px 10px 0;
+    padding: 6px 10px 0;
 }
 #notation {
     width: 100%;
@@ -584,7 +583,7 @@ button.phrase-end:active {
     font-size: 0.7em;
     color: #888;
     text-transform: uppercase;
-    padding: 8px 10px 0;
+    padding: 6px 10px 0;
     flex-shrink: 0;
 }
 /* Score container - vertically scrollable */
@@ -592,7 +591,7 @@ button.phrase-end:active {
 #inline-score-canvas {
     flex: 1;
     min-height: 0;
-    padding: 10px;
+    padding: 0 10px 10px;
     overflow-x: hidden;
     overflow-y: auto;
     width: 100%;
