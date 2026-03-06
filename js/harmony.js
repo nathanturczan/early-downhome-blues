@@ -389,12 +389,16 @@ export function setHarmonyChord(chord, startPlaying = true) {
 
         const allDegrees = ['root', 'fifth', 'third', 'seventh'];
 
-        // Stop voices not in the new chord (with natural decay)
+        // Stop voices not in the new chord (with brief tail)
         allDegrees.forEach(deg => {
             if (voices[deg] && !degreesToPlay.includes(deg)) {
-                // Immediate stop when switching chords (no bleed)
-                voices[deg].player.stop();
-                voices[deg].player.dispose();
+                // Brief fade-out for smooth chord transition
+                const oldPlayer = voices[deg].player;
+                oldPlayer.volume.rampTo(-40, 0.15);
+                setTimeout(() => {
+                    oldPlayer.stop();
+                    oldPlayer.dispose();
+                }, 150);
                 delete voices[deg];
             }
         });
@@ -404,11 +408,15 @@ export function setHarmonyChord(chord, startPlaying = true) {
             const { pc, oct } = voicing[deg];
             const targetNote = pc + oct;
 
-            // If voice exists with different pitch, stop immediately and start new
+            // If voice exists with different pitch, fade out and start new
             if (voices[deg] && (voices[deg].pc !== pc || voices[deg].oct !== oct)) {
-                // Immediate stop when switching chords (no bleed)
-                voices[deg].player.stop();
-                voices[deg].player.dispose();
+                // Brief fade-out for smooth chord transition
+                const oldPlayer = voices[deg].player;
+                oldPlayer.volume.rampTo(-40, 0.15);
+                setTimeout(() => {
+                    oldPlayer.stop();
+                    oldPlayer.dispose();
+                }, 150);
                 delete voices[deg];
             }
 
