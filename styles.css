@@ -249,6 +249,7 @@ button.phrase-end:active {
 }
 .history h3 {
     font-size: 0.7em;
+    font-weight: normal;
     color: #888;
     margin-bottom: 0;
     text-transform: uppercase;
