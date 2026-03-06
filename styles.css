@@ -242,7 +242,7 @@ button.phrase-end:active {
 }
 .history {
     flex-shrink: 0;
-    padding: 8px 12px;
+    padding: 8px 10px;
     background: rgba(0,0,0,0.03);
     border-radius: 6px;
     margin: 0;
@@ -685,7 +685,7 @@ button.phrase-end:active {
 /* Harmony Section in left column */
 .harmony-section {
     flex-shrink: 0;
-    padding: 12px 15px;
+    padding: 12px 10px;
     background: rgb(54, 51, 50);
     border-radius: 8px;
 }
@@ -782,7 +782,7 @@ button.phrase-end:active {
 .midi-section-inline {
     background: rgb(54, 51, 50);
     border-radius: 8px;
-    padding: 12px 15px;
+    padding: 12px 10px;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1697,7 +1697,7 @@ button.phrase-end:active {
         font-size: 0.95em;
     }
     .history {
-        padding: 5px 9px;
+        padding: 5px 10px;
     }
     .history h3 {
         font-size: 0.68em;
