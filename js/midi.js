@@ -197,7 +197,7 @@ function addMidiRow() {
             <label>Type</label>
             <select class="midi-type">
                 <option value="melody"${nextType === 'melody' ? ' selected' : ''}>Melody</option>
-                <option value="drone"${nextType === 'drone' ? ' selected' : ''}>Drone</option>
+                <option value="drone"${nextType === 'drone' ? ' selected' : ''}>Chord</option>
                 <option value="root"${nextType === 'root' ? ' selected' : ''}>Chord Root</option>
             </select>
         </div>
@@ -215,10 +215,10 @@ function addMidiRow() {
                 ).join('')}
             </select>
         </div>
-        <label class="midi-mpe-label">
+        <div class="midi-mpe-wrapper">
+            <label class="midi-mpe-label">MPE</label>
             <input type="checkbox" class="midi-mpe">
-            MPE
-        </label>
+        </div>
         <button class="midi-remove-btn" title="Remove">&times;</button>
     `;
 
