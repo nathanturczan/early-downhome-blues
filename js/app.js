@@ -65,6 +65,7 @@ const moreToggle = document.getElementById('moreToggle');
 const harmonyButtonsContainer = document.querySelector('.harmony-buttons');
 const notationContainer = document.getElementById('notation');
 const stanzaIndicator = document.getElementById('stanzaIndicator');
+const stanzaTreeWrapper = document.querySelector('.stanza-tree-wrapper');
 const phrasingToggle = document.getElementById('phrasingToggle');
 const autoHarmonyToggle = document.getElementById('autoHarmonyToggle');
 const harmonyModeSelect = document.getElementById('harmonyModeSelect');
@@ -988,8 +989,8 @@ function init() {
     if (phrasingToggle) {
         // Initialize tree visibility and auto-harmony based on phrasing state
         if (!phrasingToggle.checked) {
-            if (stanzaIndicator) {
-                stanzaIndicator.style.display = 'none';
+            if (stanzaTreeWrapper) {
+                stanzaTreeWrapper.style.display = 'none';
             }
             if (autoHarmonyToggle) {
                 autoHarmonyToggle.disabled = true;
@@ -1003,8 +1004,8 @@ function init() {
         phrasingToggle.addEventListener('change', (e) => {
             setPhrasing(e.target.checked);
             // Hide/show stanza tree visualization
-            if (stanzaIndicator) {
-                stanzaIndicator.style.display = e.target.checked ? '' : 'none';
+            if (stanzaTreeWrapper) {
+                stanzaTreeWrapper.style.display = e.target.checked ? '' : 'none';
                 // Re-render tree when shown (dimensions were 0 when hidden)
                 if (e.target.checked) {
                     requestAnimationFrame(() => {

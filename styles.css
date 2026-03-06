@@ -389,15 +389,18 @@ button.phrase-end:active {
 }
 
 /* Stanza Tree Container */
-.stanza-tree-container {
+.stanza-tree-wrapper {
     flex-shrink: 0;
-    min-height: 150px;
     width: 100%;
     background: rgba(0,0,0,0.03);
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 6px;
     margin-top: 8px;
     overflow: hidden;
+}
+.stanza-tree-container {
+    min-height: 150px;
+    width: 100%;
 }
 .form-label {
     display: block;
@@ -1566,8 +1569,10 @@ button.phrase-end:active {
     .phrasing-toggles {
         /* No grid positioning needed - flex handles it */
     }
-    .stanza-tree-container {
+    .stanza-tree-wrapper {
         margin-top: 0;
+    }
+    .stanza-tree-container {
         min-height: 100px;
     }
     .inline-score {
@@ -1708,10 +1713,12 @@ button.phrase-end:active {
         display: block;  /* Show score button on mobile */
     }
     /* Smaller stanza tree for mobile */
-    .stanza-tree-container {
-        min-height: 90px;
+    .stanza-tree-wrapper {
         margin-top: 4px;
         order: 50; /* Before history */
+    }
+    .stanza-tree-container {
+        min-height: 90px;
     }
     .tree-node text {
         font-size: 8px;
