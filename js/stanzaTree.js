@@ -180,23 +180,10 @@ export function renderTree(treeData) {
 
     treeLayout(root);
 
-    // Find the active stanza to center on its lines/phrases
-    const activeStanza = root.descendants().find(d => d.data.nodeType === 'stanza' && d.data.state === 'active');
-
-    let yOffset;
-    if (activeStanza && activeStanza.children) {
-        // Center on the active stanza's children (lines/phrases)
-        const activeDescendants = activeStanza.descendants();
-        const yExtent = d3.extent(activeDescendants, d => d.x);
-        const activeHeight = yExtent[1] - yExtent[0];
-        const activeCenter = (yExtent[0] + yExtent[1]) / 2;
-        yOffset = innerHeight / 2 - activeCenter;
-    } else {
-        // Fallback: center entire tree
-        const yExtent = d3.extent(root.descendants(), d => d.x);
-        const treeHeight = yExtent[1] - yExtent[0];
-        yOffset = (innerHeight - treeHeight) / 2 - yExtent[0];
-    }
+    // Calculate vertical offset to center tree
+    const yExtent = d3.extent(root.descendants(), d => d.x);
+    const treeHeight = yExtent[1] - yExtent[0];
+    const yOffset = (innerHeight - treeHeight) / 2 - yExtent[0];
 
     // Apply transform to center tree
     g.attr('transform', `translate(${margin.left},${margin.top + yOffset})`);
