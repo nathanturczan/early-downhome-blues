@@ -787,6 +787,8 @@ button.phrase-end:active {
     flex-direction: column;
     gap: 10px;
     overflow-x: hidden;
+    max-height: 200px;
+    overflow-y: scroll;
 }
 .midi-section-inline .midi-header {
     display: flex;
