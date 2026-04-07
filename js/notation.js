@@ -19,13 +19,21 @@ export function renderNotation(container, highlightNote, onNoteClick) {
         notationHeight = 420;
     } else {
         // Desktop - compact but with space for arrows
-        staveSpacing = 130;
-        notationHeight = 420;
+        staveSpacing = 105;
+        notationHeight = 345;
     }
 
     const renderer = new Renderer(container, Renderer.Backends.SVG);
     renderer.resize(width, notationHeight);
     const context = renderer.getContext();
+
+    // Make SVG responsive: add viewBox so it scales to container width
+    const svgEl = container.querySelector('svg');
+    svgEl.setAttribute('viewBox', `0 0 ${width} ${notationHeight}`);
+    svgEl.removeAttribute('width');
+    svgEl.removeAttribute('height');
+    svgEl.style.width = '100%';
+    svgEl.style.height = 'auto';
     const staveWidth = width - 20;
     const staveX = 10;
 
