@@ -1488,8 +1488,8 @@ button.phrase-end:active {
         font-size: 1em;
     }
     .left-column {
-        flex: 0 1 500px;
-        max-width: 50%;
+        flex: 0 1 600px;
+        max-width: 60%;
     }
 }
 
