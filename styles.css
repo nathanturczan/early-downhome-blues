@@ -46,8 +46,8 @@ body {
     overflow: hidden;
 }
 .header-icon {
-    height: clamp(50px, 14vw, 80px);
-    width: clamp(50px, 14vw, 80px);
+    height: clamp(40px, 6vw, 65px);
+    width: clamp(40px, 6vw, 65px);
     border-radius: 8px;
     object-fit: cover;
     flex-shrink: 0;
@@ -558,7 +558,8 @@ button.phrase-end:active {
     overflow: hidden;
 }
 .left-column {
-    flex: 0 0 580px;
+    flex: 0 1 580px;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -1106,8 +1107,8 @@ button.phrase-end:active {
     opacity: 1;
 }
 .audio-toggle {
-    width: clamp(50px, 14vw, 80px);
-    height: clamp(50px, 14vw, 80px);
+    width: clamp(40px, 6vw, 65px);
+    height: clamp(40px, 6vw, 65px);
 }
 .audio-icon {
     width: 100%;
@@ -1173,8 +1174,8 @@ button.phrase-end:active {
     color: rgb(145, 56, 47);
     opacity: 0.6;
     transition: opacity 0.2s;
-    width: clamp(50px, 14vw, 80px);
-    height: clamp(50px, 14vw, 80px);
+    width: clamp(40px, 6vw, 65px);
+    height: clamp(40px, 6vw, 65px);
     flex-shrink: 0;
 }
 .info-btn:hover {
@@ -1486,9 +1487,8 @@ button.phrase-end:active {
         font-size: 1em;
     }
     .left-column {
-        width: 500px;
-        max-width: 45%;
-        flex-shrink: 1;
+        flex: 0 1 500px;
+        max-width: 50%;
     }
 }
 
