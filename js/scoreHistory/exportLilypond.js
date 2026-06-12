@@ -5,8 +5,9 @@ const phraseLabels = ['a', 'b', 'c', 'd', 'e', 'f'];
 
 /**
  * Group history notes by phrase for export
- * @param {Array} historyData - Array of {note, position, stanza}
- * @returns {Array} Array of phrase groups
+ * Each phrase group includes notes, label, stanza, and chord info
+ * @param {Array} historyData - Array of {note, position, stanza, chord}
+ * @returns {Array} Array of phrase groups with chord information
  */
 function groupByPhrase(historyData) {
     const phrases = [];
@@ -15,27 +16,32 @@ function groupByPhrase(historyData) {
     historyData.forEach(entry => {
         const phraseIndex = entry.position?.phraseIndex ?? null;
         const stanza = entry.stanza ?? 1;
+        const chord = entry.chord ?? null;
 
         if (phraseIndex !== null) {
             if (currentPhrase === null ||
                 currentPhrase.phraseIndex !== phraseIndex ||
                 currentPhrase.stanza !== stanza) {
+                // Start a new phrase
                 if (currentPhrase) phrases.push(currentPhrase);
                 currentPhrase = {
                     phraseIndex,
                     stanza,
                     label: phraseLabels[phraseIndex] || `${phraseIndex}`,
+                    chord,
                     notes: [entry.note]
                 };
             } else {
                 currentPhrase.notes.push(entry.note);
             }
         } else {
+            // Notes without phrase info go into their own ungrouped section
+            // Don't dump them into the previous phrase
             if (currentPhrase) {
-                currentPhrase.notes.push(entry.note);
-            } else {
-                phrases.push({ phraseIndex: null, stanza: null, label: null, notes: [entry.note] });
+                phrases.push(currentPhrase);
+                currentPhrase = null;
             }
+            phrases.push({ phraseIndex: null, stanza: null, label: null, chord, notes: [entry.note] });
         }
     });
 
@@ -45,7 +51,7 @@ function groupByPhrase(historyData) {
 
 /**
  * Export history data to LilyPond format
- * @param {Array} historyData - Array of {note, position, stanza}
+ * @param {Array} historyData - Array of {note, position, stanza, chord}
  * @returns {string} LilyPond source code
  */
 export function exportToLilypond(historyData) {
@@ -70,7 +76,7 @@ export function exportToLilypond(historyData) {
     \\override Flag.transparent = ##t
 `;
 
-    // Build notes with phrase markers as comments
+    // Build notes with phrase markers, chord names, and barlines
     let notesContent = '';
     let currentStanza = null;
 
@@ -81,18 +87,29 @@ export function exportToLilypond(historyData) {
             currentStanza = phrase.stanza;
         }
 
-        // Add phrase label as comment
-        if (phrase.label) {
-            notesContent += `    % phrase ${phrase.label}\n    `;
-        } else {
-            notesContent += '    ';
+        // Add phrase label and chord as markup above staff
+        if (phrase.label || phrase.chord) {
+            const labelPart = phrase.label ? `phrase ${phrase.label}` : '';
+            const chordPart = phrase.chord ? `(${phrase.chord})` : '';
+            const markText = [labelPart, chordPart].filter(Boolean).join(' ');
+            notesContent += `    \\mark \\markup { \\small "${markText}" }\n`;
         }
 
-        // Convert notes to LilyPond (they're already in LilyPond format!)
-        // Just add duration (quarter note = 4)
+        // Add notes (they're already in LilyPond format)
+        // Add duration (quarter note = 4)
+        notesContent += '    ';
         const notes = phrase.notes.map(note => note + '4').join(' ');
-        notesContent += notes + '\n';
+        notesContent += notes;
+
+        // Add barline at end of phrase (except for last phrase)
+        if (i < phrases.length - 1) {
+            notesContent += ' \\bar "|"';
+        }
+        notesContent += '\n';
     });
+
+    // Add final barline
+    notesContent += '    \\bar "|."\n';
 
     const footer = `  }
   \\layout { }

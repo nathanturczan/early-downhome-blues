@@ -3,7 +3,7 @@
 
 /**
  * Export SVG element to PDF
- * Uses jsPDF and svg2pdf.js loaded dynamically
+ * Uses jsPDF with canvas-based rendering for reliability
  * @param {SVGElement} svgElement - The SVG element to export
  * @param {string} filename - Output filename
  */
@@ -14,19 +14,48 @@ export async function exportToPdf(svgElement, filename = 'blues-melody.pdf') {
     }
 
     try {
-        // Dynamically load jsPDF and svg2pdf if not already loaded
+        // Dynamically load jsPDF if not already loaded
         if (typeof window.jspdf === 'undefined') {
             await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-        }
-        if (typeof window.svg2pdf === 'undefined') {
-            await loadScript('https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.3/dist/svg2pdf.umd.min.js');
         }
 
         const { jsPDF } = window.jspdf;
 
         // Get SVG dimensions
-        const svgWidth = svgElement.clientWidth || svgElement.getAttribute('width') || 800;
-        const svgHeight = svgElement.clientHeight || svgElement.getAttribute('height') || 400;
+        const svgWidth = parseFloat(svgElement.getAttribute('width')) || svgElement.clientWidth || 800;
+        const svgHeight = parseFloat(svgElement.getAttribute('height')) || svgElement.clientHeight || 400;
+
+        // Create a clean SVG string with proper namespace and dimensions
+        const svgClone = svgElement.cloneNode(true);
+        svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        svgClone.setAttribute('width', svgWidth);
+        svgClone.setAttribute('height', svgHeight);
+
+        // Convert SVG to data URL via canvas for reliable rendering
+        const svgString = new XMLSerializer().serializeToString(svgClone);
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        // Load SVG into an image
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+            img.src = svgUrl;
+        });
+
+        // Draw to canvas at higher resolution for quality
+        const scale = 2;
+        const canvas = document.createElement('canvas');
+        canvas.width = svgWidth * scale;
+        canvas.height = svgHeight * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0);
+
+        URL.revokeObjectURL(svgUrl);
 
         // Create PDF with appropriate orientation
         const isLandscape = svgWidth > svgHeight;
@@ -40,16 +69,9 @@ export async function exportToPdf(svgElement, filename = 'blues-melody.pdf') {
         pdf.setFontSize(16);
         pdf.text('Early Downhome Blues - Melody', 20, 25);
 
-        // Clone SVG to avoid modifying original
-        const svgClone = svgElement.cloneNode(true);
-
-        // Render SVG to PDF
-        await window.svg2pdf(svgClone, pdf, {
-            x: 20,
-            y: 40,
-            width: svgWidth,
-            height: svgHeight
-        });
+        // Add canvas image to PDF
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 20, 40, svgWidth, svgHeight);
 
         // Save
         pdf.save(filename);
