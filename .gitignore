@@ -7,3 +7,8 @@ notes/
 # Photos (temporary)
 PXL_*.jpg
 .vercel
+
+# Node / Playwright
+node_modules/
+test-results/
+playwright-report/

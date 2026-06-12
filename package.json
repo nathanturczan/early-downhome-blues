@@ -1,4 +1,11 @@
 {
   "type": "module",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "scripts": {
+    "test": "node tests/test-runner.js 50 && node js/test/nodeTest.js 10",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
 }
