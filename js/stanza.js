@@ -4,6 +4,7 @@
 // Tracks position within the 12-bar blues form
 
 import { random } from './random.js';
+import { resetLineTargets } from './rules/contourSteering.js';
 
 /**
  * Stanza structure:
@@ -168,6 +169,7 @@ export function resetStanza() {
   currentPhraseIndex = 0;
   stepInPhrase = 0;
   chooseContourType();
+  resetLineTargets();
   // Don't reset stanza counter - it tracks overall progress
 }
 
@@ -179,6 +181,7 @@ export function resetSong() {
   currentPhraseIndex = 0;
   stepInPhrase = 0;
   chooseContourType();
+  resetLineTargets();
 }
 
 /**

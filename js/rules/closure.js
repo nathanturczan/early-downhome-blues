@@ -5,6 +5,7 @@
 
 import { frequencies } from '../network.js';
 import { random } from '../random.js';
+import { getLineTarget } from './contourSteering.js';
 
 // === Constants ===
 export const MIN_LENGTH = 5;
@@ -281,7 +282,7 @@ function getHarmonyMult(note, chord) {
  * @returns {{ shouldEnd: boolean, probability: number, weight: number }}
  */
 export function evaluateClosure(note, context) {
-  const { stepInPhrase, phrase, contourType, chord, previousNote } = context;
+  const { stepInPhrase, phrase, contourType, chord, previousNote, lineTarget } = context;
 
   // noteCount is 1-indexed (step 0 = note 1, step 4 = note 5, etc.)
   const noteCount = stepInPhrase + 1;
@@ -297,7 +298,15 @@ export function evaluateClosure(note, context) {
   }
 
   // Calculate composite weight
-  const pitchWeight = getPitchWeight(note, phrase);
+  let pitchWeight = getPitchWeight(note, phrase);
+
+  // Contour context (issue #44): falling-target lines (IA/IB) must complete
+  // their descent to c' - suppress mid-route stops on E/G in cadential phrases
+  const isCadential = phrase === 'b' || phrase === 'd' || phrase === 'f';
+  const fallingLine = lineTarget === 'IA' || lineTarget === 'IB';
+  if (isCadential && fallingLine && !isC(note)) {
+    pitchWeight *= 0.5;
+  }
   const directionMult = getDirectionMult(previousNote, note);
   const progress = noteCount / MAX_LENGTH;
   const contourMult = getContourMult(progress, contourType);
@@ -329,6 +338,7 @@ export function buildClosureContext(position, previousNote, chord) {
     phrase: position.phrase,
     contourType: position.contourType || 'IB',
     chord: chord || 'I',
-    previousNote
+    previousNote,
+    lineTarget: getLineTarget(position)
   };
 }

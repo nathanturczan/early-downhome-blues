@@ -4,6 +4,7 @@
 // These rules apply weights based on current position in the stanza
 
 import { frequencies, adjacency } from '../network.js';
+import { steerContour, getLineTarget } from './contourSteering.js';
 
 // Sabotage flag for testing
 let cadenceDisabled = false;
@@ -49,6 +50,13 @@ function canNoteReachC(note) {
 }
 
 /**
+ * Check if a note has an edge to a specific C
+ */
+function canNoteReach(note, targetNote) {
+  return (adjacency[note] || []).includes(targetNote);
+}
+
+/**
  * Check if note is G (any octave)
  */
 function isG(note) {
@@ -78,47 +86,6 @@ function isEComplex(note) {
   return note.startsWith('ee') || note.startsWith("e'") || note === "e''";
 }
 
-// === Contour Configuration ===
-// Based on Titon's Figure 69 contour classifications
-
-// Contour multiplier strengths (shared)
-const CONTOUR_BOOST = 1.15;
-const CONTOUR_PENALTY = 0.95;
-
-// IB: Rise-then-fall (inverted bowl) - most common (46%)
-// F=L, H>S: Start, rise to highest, fall to lowest/final
-const IB_CROSSOVER = 0.45;
-
-// IA: Pure descent (8%)
-// S=H, F=L: Start at highest, fall throughout to lowest/final
-// No crossover - always falling
-
-// IIB: Rising overall (5%)
-// S=L, H>F: Start at lowest, rise to peak (~60%), fall but end above start
-const IIB_PEAK = 0.60;
-
-/**
- * Calculate overall progress through stanza (0 to 1)
- */
-function getStanzaProgress(position) {
-  const phraseIndex = position.phraseIndex || 0;
-  const step = position.stepInPhrase || 0;
-  const stepsPerPhrase = position.stepsPerPhrase || 8;
-  const totalSteps = 6 * stepsPerPhrase; // 6 phrases per stanza
-  const currentStep = phraseIndex * stepsPerPhrase + step;
-  return currentStep / totalSteps;
-}
-
-/**
- * Check if we're in the cadence window (last 2 notes of b/d/f)
- */
-function isInCadenceWindow(position) {
-  const phrase = position.phrase;
-  if (phrase !== 'b' && phrase !== 'd' && phrase !== 'f') return false;
-  const stepsRemaining = position.stepsPerPhrase - position.stepInPhrase;
-  return stepsRemaining <= 2;
-}
-
 /**
  * Check if we're in phrase-start lift window (first 2 notes of a/b/e)
  */
@@ -134,14 +101,15 @@ function isInPhraseStartLiftWindow(position) {
  */
 export const phase2Rules = {
   /**
-   * CONTOUR: Macro contour bias across the stanza
-   * Polymorphic based on position.contourType (IB, IA, IIB)
+   * CONTOUR: Multi-level contour steering (issue #41)
+   * Delegates to contourSteering.js: a per-line target contour
+   * (IB/IA/IIB, Fig. 69 weighted, biased toward the stanza type)
+   * plus realized S/H/L tracking constrain candidate weights so the
+   * generated line actually classifies as the target.
    *
-   * IB (inverted bowl): rise first half, fall second half
-   * IA (pure descent): fall throughout
-   * IIB (rising): rise to peak, fall but stay high
-   *
-   * Gated: only when phrasing ON, not during repetition/cadence/phrase-start-lift
+   * Gated: only when phrasing ON, not during repetition.
+   * In the phrase-start lift window only the range guards apply
+   * (PHRASE-START-LIFT owns direction there).
    */
   'CONTOUR': (edge, ctx, position) => {
     // Skip if phrasing is disabled
@@ -150,64 +118,7 @@ export const phase2Rules = {
     // Skip during repetition playback (c/d/f bypass generator anyway, but be explicit)
     if (position.isRepeating) return 1.0;
 
-    // Skip in cadence window (let cadence rules dominate)
-    if (isInCadenceWindow(position)) return 1.0;
-
-    // Skip in phrase-start lift window (let lift rule dominate)
-    if (isInPhraseStartLiftWindow(position)) return 1.0;
-
-    const progress = getStanzaProgress(position);
-    const contourType = position.contourType || 'IB';
-
-    // Determine direction preference based on contour type and progress
-    let preferUp = false;
-    let preferDown = false;
-
-    switch (contourType) {
-      case 'IB':
-        // Inverted bowl: rise in first half, fall in second half
-        if (progress < IB_CROSSOVER) {
-          preferUp = true;
-        } else {
-          preferDown = true;
-        }
-        break;
-
-      case 'IA':
-        // Pure descent: always prefer downward motion
-        preferDown = true;
-        break;
-
-      case 'IIB':
-        // Rising overall: rise to peak, then gentle fall (but still high)
-        if (progress < IIB_PEAK) {
-          preferUp = true;
-        } else {
-          // After peak: slight fall preference but weaker than IB
-          preferDown = true;
-        }
-        break;
-
-      default:
-        // Fallback to IB behavior
-        if (progress < IB_CROSSOVER) {
-          preferUp = true;
-        } else {
-          preferDown = true;
-        }
-    }
-
-    // Apply boost/penalty based on preference and edge direction
-    if (edge.direction > 0) {
-      // Upward motion
-      return preferUp ? CONTOUR_BOOST : CONTOUR_PENALTY;
-    } else if (edge.direction < 0) {
-      // Downward motion
-      return preferDown ? CONTOUR_BOOST : CONTOUR_PENALTY;
-    }
-
-    // Same note - no change
-    return 1.0;
+    return steerContour(edge, ctx, position, isInPhraseStartLiftWindow(position));
   },
 
   /**
@@ -221,8 +132,8 @@ export const phase2Rules = {
     // Skip if phrasing is disabled
     if (!position.phrasingEnabled) return 1.0;
 
-    // Skip for IA contour (pure descent - should not rise at phrase starts)
-    if (position.contourType === 'IA') return 1.0;
+    // Skip for IA-target lines (pure descent - should not rise at phrase starts)
+    if (getLineTarget(position) === 'IA') return 1.0;
 
     // Only apply to non-repeated phrases (a, b, e)
     const phrase = position.phrase;
@@ -268,17 +179,34 @@ export const phase2Rules = {
     // Step 4 = low urgency, step 8+ = high urgency
     const urgency = Math.min(1.0, (step - MIN_LENGTH + 2) / 5);
 
-    // Direct C/C' bias - scales with urgency
+    // Contour context (issue #44): falling-target lines (IA/IB) must cadence
+    // on the LOW c' (F=L for the whole line); rising lines (IIB) on the
+    // high c'' (a low final would end below the line's start)
+    const fallingLine = (phrase => phrase === 'IA' || phrase === 'IB')(getLineTarget(position));
+    const targetC = fallingLine ? "c'" : "c''";
+    const offTargetC = fallingLine ? "c''" : "c'";
+
+    // Direct C bias - scales with urgency, concentrated on the target C
     if (isC(edge.to)) {
-      // Strong boost to C: 8x at step 4, up to 25x at step 8+
-      weight *= 8 + (urgency * 17);
+      if (edge.to === targetC) {
+        // Strong boost: 8x at step 4, up to 25x at step 8+
+        weight *= 8 + (urgency * 17);
+      } else if (edge.to === offTargetC && fallingLine) {
+        // Fallback cadence if the melody is stranded high - modest boost
+        weight *= 2;
+      }
+      // Rising lines get no boost toward c' (it would break the contour)
     }
 
-    // Boost notes that can reach C (approach tones)
-    // Critical for reachability - ensures melody has path to C
-    if (!isC(edge.to) && canNoteReachC(edge.to)) {
-      // Moderate boost: 3x at step 4, up to 6x at step 8+
-      weight *= 3 + (urgency * 3);
+    // Boost approach tones into the target C
+    // Critical for reachability - ensures melody has a path to its cadence
+    if (!isC(edge.to)) {
+      if (canNoteReach(edge.to, targetC)) {
+        // Moderate boost: 3x at step 4, up to 6x at step 8+
+        weight *= 3 + (urgency * 3);
+      } else if (canNoteReach(edge.to, offTargetC)) {
+        weight *= 1.5;
+      }
     }
 
     return weight;
@@ -286,15 +214,23 @@ export const phase2Rules = {
 
   /**
    * MM-C-04: Upward motion G→C' common at beginnings of a, c
+   * Titon: "Motion upward from G to C' (sometimes through A) is common,
+   * especially at the beginnings of phrases a and c"
+   * The network has no direct G→C'' edge, so realize the gesture as
+   * G→A→C'' (issue #47): boost both legs near the phrase start.
    */
   'MM-C-04': (edge, ctx, position) => {
     const phrase = position.phrase;
     if (phrase !== 'a' && phrase !== 'c') return 1.0;
     if (!position.isNearPhraseStart) return 1.0;
 
-    // At start of a or c: boost G→C' motion
-    if (isG(ctx.currentNote) && edge.to === "c''") {
-      return 1.8;
+    // First leg: G→A heads toward C'
+    if (isG(ctx.currentNote) && edge.to === "a'") {
+      return 1.5;
+    }
+    // Second leg: complete the gesture A→C'', strongest when we came from G
+    if (ctx.currentNote === "a'" && edge.to === "c''") {
+      return isG(ctx.previousNote) ? 2.0 : 1.5;
     }
     // Also boost upward motion generally
     if (edge.direction > 0) {

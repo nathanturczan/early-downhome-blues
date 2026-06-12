@@ -9,6 +9,7 @@ import { melodicMotionEdgeWeightRules } from './melodicMotionRules.js';
 import { MIN_LENGTH } from './closure.js';
 import { applyPhase2Rules } from './positionRules.js';
 import { shouldRepeat, getRepetitionNote, recordNote, getFrozenPhrase } from '../phraseMemory.js';
+import { getLineTarget } from './contourSteering.js';
 import { random } from '../random.js';
 
 // Debug mode - set to true to see weight calculations in console
@@ -232,16 +233,16 @@ export function selectWeightedNote(currentNote, history, candidates, stepsInPhra
   const effectiveSteps = position ? position.stepInPhrase : stepsInPhrase;
 
   // Score all candidates
-  const scored = candidates.map(note => scoreCandidate(currentNote, note, ctx, effectiveSteps, position));
+  let scored = candidates.map(note => scoreCandidate(currentNote, note, ctx, effectiveSteps, position));
 
-  // Anti-sink penalty: before MIN_LENGTH, heavily penalize sink nodes
-  // This prevents forced short endings from polluting cadence stats
+  // Anti-sink exclusion (issue #49): before MIN_LENGTH, never auto-select a
+  // sink node - it would force the phrase to end too short. Manual clicks
+  // bypass weighted selection, so the sink stays clickable at any time.
+  // Fall back to the full list in the degenerate all-sinks case.
   if (position && position.stepInPhrase < (MIN_LENGTH - 1)) {
-    for (const s of scored) {
-      if (isSinkNode(s.note)) {
-        s.weight *= 0.1;
-        s.ruleContributions['ANTI_SINK'] = 0.1;
-      }
+    const nonSink = scored.filter(s => !isSinkNode(s.note));
+    if (nonSink.length > 0) {
+      scored = nonSink;
     }
   }
 
@@ -321,6 +322,11 @@ export function getRestartNote(position = null) {
     // Phrase b: varies by blues family (see blues-families.md)
     // Family 1 & 2: E' complex, Family 2: C', Family 4: G
     if (phrase === 'b') {
+      // IA-target lines are pure descents: a high restart here would
+      // instantly break the S=H invariant (issue #41 contour steering)
+      if (phrasingEnabled && getLineTarget(position) === 'IA') {
+        return "g'";
+      }
       const roll = random();
       if (roll < 0.40) {
         return "g'";      // Family 4 style

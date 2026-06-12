@@ -5,7 +5,8 @@
 import { adjacency } from '../js/network.js';
 import { selectWeightedNote, getRestartNote, setPhrasing } from '../js/rules/weightedSelection.js';
 import { evaluateClosure, buildClosureContext, MIN_LENGTH } from '../js/rules/closure.js';
-import { recordNote, freezePhrase, resetPhraseMemory } from '../js/phraseMemory.js';
+import { recordNote, freezePhrase, resetPhraseMemory, getPhraseNotesSnapshot } from '../js/phraseMemory.js';
+import { analyzeLine, analyzeStanza } from '../js/contourAnalysis.js';
 import { getPosition, advanceStep, advancePhrase, setPosition, decideSplits, chooseContourType, getChordForPosition, PHRASE_SEQUENCE } from '../js/stanza.js';
 import { frequencies } from '../js/network.js';
 import { setSeed, clearSeed, generateSeed } from '../js/random.js';
@@ -101,7 +102,10 @@ function runTest(numStanzas = 200, seed = null) {
     // MM-BB-02: C'→Bb transitions by phrase
     cPrimeToBb: { ac: 0, bd: 0, acTotal: 0, bdTotal: 0 },
     // MM-BB-03: Bb frequency and approach in phrase e
-    bbInPhraseE: { fromGA: 0, other: 0, totalBb: 0 }
+    bbInPhraseE: { fromGA: 0, other: 0, totalBb: 0 },
+    // Contour (issue #41): realized line/stanza contour type distribution
+    lineContourCounts: { 1: {}, 2: {}, 3: {} },
+    stanzaContourCounts: {}
   };
 
   for (let stanza = 0; stanza < numStanzas; stanza++) {
@@ -136,7 +140,7 @@ function runTest(numStanzas = 200, seed = null) {
           results.closureStats.forcedShortEndings++;
         }
 
-        const noteKey = currentNote.replace(/'/g, '');
+        const noteKey = currentNote;
         results.closureStats.endingNotes[position.phrase][noteKey] =
           (results.closureStats.endingNotes[position.phrase][noteKey] || 0) + 1;
 
@@ -189,7 +193,7 @@ function runTest(numStanzas = 200, seed = null) {
 
         // MM-GP-03: Same-note repetitions
         if (direction === 0) {
-          const noteKey = currentNote.replace(/'/g, '');
+          const noteKey = currentNote;
           results.sameNoteRepsByNote[noteKey] = (results.sameNoteRepsByNote[noteKey] || 0) + 1;
         }
 
@@ -303,7 +307,7 @@ function runTest(numStanzas = 200, seed = null) {
           results.phraseNoteCounts[position.phrase].push(phraseLength);
           results.closureStats.closureEndings[position.phrase]++;
 
-          const noteKey = currentNote.replace(/'/g, '');
+          const noteKey = currentNote;
           results.closureStats.endingNotes[position.phrase][noteKey] =
             (results.closureStats.endingNotes[position.phrase][noteKey] || 0) + 1;
 
@@ -331,6 +335,30 @@ function runTest(numStanzas = 200, seed = null) {
 
         if (history.length > 10) history = history.slice(-10);
       }
+    }
+
+    // Contour measurement (issue #41): classify realized line/stanza contours
+    const snapshot = getPhraseNotesSnapshot();
+    const lines = [
+      [1, snapshot.a, snapshot.b],
+      [2, snapshot.c, snapshot.d],
+      [3, snapshot.e, snapshot.f]
+    ];
+    for (const [lineNum, p1, p2] of lines) {
+      const analysis = analyzeLine(p1, p2);
+      if (analysis?.type) {
+        results.lineContourCounts[lineNum][analysis.type] =
+          (results.lineContourCounts[lineNum][analysis.type] || 0) + 1;
+      }
+    }
+    const stanzaAnalysis = analyzeStanza(
+      [...snapshot.a, ...snapshot.b],
+      [...snapshot.c, ...snapshot.d],
+      [...snapshot.e, ...snapshot.f]
+    );
+    if (stanzaAnalysis?.type) {
+      results.stanzaContourCounts[stanzaAnalysis.type] =
+        (results.stanzaContourCounts[stanzaAnalysis.type] || 0) + 1;
     }
   }
 
@@ -395,6 +423,39 @@ function runTest(numStanzas = 200, seed = null) {
       .join(', ');
     console.log(`  ${p}: ${breakdown}`);
   }
+
+  // === CONTOUR METRICS (issue #41) ===
+  console.log('\nLINE CONTOURS (Fig. 69 expectation: IB 46%, IA 8%, IIB 5%):');
+  const combinedLineContours = {};
+  for (const lineNum of [1, 2, 3]) {
+    const counts = results.lineContourCounts[lineNum];
+    const total = Object.values(counts).reduce((a, b) => a + b, 0);
+    const breakdown = Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([type, count]) => `${type}:${Math.round(100 * count / total)}%`)
+      .join(', ');
+    console.log(`  line ${lineNum}: ${breakdown}`);
+    for (const [type, count] of Object.entries(counts)) {
+      combinedLineContours[type] = (combinedLineContours[type] || 0) + count;
+    }
+  }
+  const lineTotal = Object.values(combinedLineContours).reduce((a, b) => a + b, 0);
+  const lineBreakdown = Object.entries(combinedLineContours)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([type, count]) => `${type}:${Math.round(100 * count / lineTotal)}%`)
+    .join(', ');
+  console.log(`  all:    ${lineBreakdown}`);
+
+  console.log('\nSTANZA CONTOURS:');
+  const stanzaTotal = Object.values(results.stanzaContourCounts).reduce((a, b) => a + b, 0);
+  const stanzaBreakdown = Object.entries(results.stanzaContourCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([type, count]) => `${type}:${Math.round(100 * count / stanzaTotal)}%`)
+    .join(', ');
+  console.log(`  ${stanzaBreakdown}`);
 
   // === RULE METRICS ===
   console.log('\n' + '='.repeat(50));
