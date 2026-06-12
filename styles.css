@@ -563,7 +563,11 @@ button.phrase-end:active {
     flex-direction: column;
     gap: 10px;
     min-width: 0;
-    overflow: hidden;
+    /* Scroll on short viewports instead of clipping the MIDI panel */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Keep the scrolled-to-bottom MIDI panel clear of the fixed attribution */
+    padding-bottom: 26px;
 }
 .right-column {
     flex: 1;
@@ -1504,7 +1508,11 @@ button.phrase-end:active {
         min-height: 100dvh;
     }
     .main-content {
-        overflow: hidden;
+        /* Scroll when content exceeds the viewport - a hidden overflow here
+           made the height-constrained grid below collide its rows (the
+           CURRENT NOTE / PATHS controls overlapped the notation canvas) */
+        overflow-y: auto;
+        overflow-x: hidden;
         flex: 1;
         padding: 8px 15px;
         gap: 8px;
@@ -1516,6 +1524,10 @@ button.phrase-end:active {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
         min-width: 0;
+        /* Size rows to content; never clamp to leftover viewport height */
+        flex: none;
+        height: auto;
+        overflow: visible;
     }
     /* Flatten both columns so children become grid items */
     .left-column,
@@ -1615,7 +1627,9 @@ button.phrase-end:active {
         min-height: 100dvh;
     }
     .main-content {
-        overflow: hidden;
+        /* Scroll instead of clipping content that exceeds the viewport */
+        overflow-y: auto;
+        overflow-x: hidden;
         flex: 1;
         padding: 4px 8px;
         gap: 4px;

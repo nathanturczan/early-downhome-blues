@@ -137,3 +137,33 @@ test('rapid stepping across stanza boundaries stays consistent', async ({ page }
 
     expect(jsErrorsOnly(pageErrors)).toEqual([]);
 });
+
+// The height-constrained tablet grid used to collide its rows: the
+// CURRENT NOTE / PATHS controls rendered on top of the notation canvas
+test('controls never overlap the notation canvas at responsive breakpoints', async ({ page }) => {
+    const viewports = [
+        { width: 868, height: 964 },   // tablet grid (the reported bug)
+        { width: 1024, height: 700 },  // tablet, short
+        { width: 1150, height: 800 },  // desktop, short
+        { width: 1440, height: 900 }   // desktop
+    ];
+
+    for (const viewport of viewports) {
+        await page.setViewportSize(viewport);
+        await page.goto('/');
+        await page.locator('#phrasingToggle').check();
+        await page.keyboard.press('Space');
+        await expect(page.locator('.history-note')).toHaveCount(1, { timeout: 30000 });
+        for (let i = 0; i < 10; i++) {
+            await page.keyboard.press('Space');
+        }
+
+        const { notationBottom, controlsTop } = await page.evaluate(() => ({
+            notationBottom: document.querySelector('.notation-container').getBoundingClientRect().bottom,
+            controlsTop: document.querySelector('.controls').getBoundingClientRect().top
+        }));
+
+        expect(controlsTop, `controls overlap notation at ${viewport.width}x${viewport.height}`)
+            .toBeGreaterThanOrEqual(notationBottom);
+    }
+});
