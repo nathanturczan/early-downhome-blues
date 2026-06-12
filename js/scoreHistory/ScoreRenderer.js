@@ -21,19 +21,19 @@ const MAX_NOTES_PER_LINE = 20;   // Maximum notes before forcing a line break
 const lilyToVex = {
     "c'": { key: "c/4", acc: null },
     "d'": { key: "d/4", acc: null },
-    "ees'": { key: "e/4", acc: "b" },
-    "eeh'": { key: "e/4", acc: "d" },   // quarter-flat (half-flat) - matches network.js
+    "ef'": { key: "e/4", acc: "b" },
+    "eqf'": { key: "e/4", acc: "d" },   // quarter-flat (half-flat) - matches network.js
     "e'": { key: "e/4", acc: "n" },     // E natural - explicit
     "f'": { key: "f/4", acc: null },
-    "ges'": { key: "g/4", acc: "b" },
+    "gf'": { key: "g/4", acc: "b" },
     "g'": { key: "g/4", acc: "n" },     // G natural - explicit
     "a'": { key: "a/4", acc: null },
-    "bes'": { key: "b/4", acc: "b" },
+    "bf'": { key: "b/4", acc: "b" },
     "b'": { key: "b/4", acc: "n" },     // B natural - explicit
     "c''": { key: "c/5", acc: null },
     "d''": { key: "d/5", acc: null },
-    "ees''": { key: "e/5", acc: "b" },
-    "eeh''": { key: "e/5", acc: "d" },  // quarter-flat (half-flat) - matches network.js
+    "ef''": { key: "e/5", acc: "b" },
+    "eqf''": { key: "e/5", acc: "d" },  // quarter-flat (half-flat) - matches network.js
     "e''": { key: "e/5", acc: "n" }     // E natural - explicit
 };
 

@@ -630,8 +630,8 @@ async function nextNote() {
             currentNote = getRestartNote(position);
             const chord = getCurrentChord();
             phraseNoteBuffers[position.phraseIndex].push(currentNote);
-            history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, chord });
             fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza, chord });
+            history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza, chord, fullHistoryIndex: fullHistory.length - 1 });
             lastPlayedPosition = { ...position };
             recordNote(position.phrase, currentNote);
             console.log(`📍 Starting phrase ${position.phrase} (after closure)`);
@@ -668,30 +668,9 @@ async function nextNote() {
                 const stanzaEnded = advancePhrase();
                 const newPosition = getPosition();
 
-                // Decide splits for phrases e and f
-                if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
-                    decideSplits(newPosition.phrase);
-                }
-
-                currentNote = getRestartNote(newPosition);
-                const newChord = getCurrentChord();
-                // Buffer first note of new phrase
-                phraseNoteBuffers[newPosition.phraseIndex].push(currentNote);
-                // Store with new position for history rewind
-                history.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase }, chord: newChord });
-                // Also store in full history for score rendering
-                fullHistory.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase }, stanza: newPosition.stanza, chord: newChord });
-                lastPlayedPosition = { ...newPosition }; // Sync stanza indicator
-                recordNote(newPosition.phrase, currentNote);
-                console.log(`📍 Phrase ${position.phrase} ended (sink) → starting phrase ${newPosition.phrase}`);
-
                 if (stanzaEnded) {
-                    // Analyze complete stanza contour before clearing
-                    const stanzaContour = analyzeStanza(
-                        [...phraseNoteBuffers[0], ...phraseNoteBuffers[1]],
-                        [...phraseNoteBuffers[2], ...phraseNoteBuffers[3]],
-                        [...phraseNoteBuffers[4], ...phraseNoteBuffers[5]]
-                    );
+                    // Analyze complete stanza contour before clearing buffers
+                    const stanzaContour = analyzeStanza(phraseNoteBuffers);
                     console.log('📊 Stanza contour:', stanzaContour);
 
                     // Save completed stanza data for tree visualization
@@ -703,23 +682,39 @@ async function nextNote() {
                     });
 
                     clearPhrases(); // Clear melodic memory for new stanza
-                    // Reset contour buffers for new stanza (delay to allow display update)
-                    setTimeout(() => {
-                        phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
-                        phraseContours = {};
-                        lineContours = {};
-                    }, 100);
+                    // Reset contour buffers synchronously, before the new stanza's
+                    // first note is buffered below (a delayed reset would wipe it)
+                    phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+                    phraseContours = {};
+                    lineContours = {};
                     console.log('🎼 New stanza started');
                     track('stanza_completed', { stanza_number: position.stanza });
                 }
+
+                // Decide splits for phrases e and f
+                if (newPosition.phrase === 'e' || newPosition.phrase === 'f') {
+                    decideSplits(newPosition.phrase);
+                }
+
+                currentNote = getRestartNote(newPosition);
+                const newChord = getCurrentChord();
+                // Buffer first note of new phrase
+                phraseNoteBuffers[newPosition.phraseIndex].push(currentNote);
+                // Also store in full history for score rendering
+                fullHistory.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase }, stanza: newPosition.stanza, chord: newChord });
+                // Store with new position for history rewind
+                history.push({ note: currentNote, position: { phraseIndex: newPosition.phraseIndex, stepInPhrase: newPosition.stepInPhrase }, stanza: newPosition.stanza, chord: newChord, fullHistoryIndex: fullHistory.length - 1 });
+                lastPlayedPosition = { ...newPosition }; // Sync stanza indicator
+                recordNote(newPosition.phrase, currentNote);
+                console.log(`📍 Phrase ${position.phrase} ended (sink) → starting phrase ${newPosition.phrase}`);
                 track('phrase_completed', { phrase: position.phrase, method: 'sink' });
             } else {
                 // Phrasing OFF: Simple restart to hub note (G)
                 // No phrase advancement, just pick a connected note to continue
                 currentNote = "g'"; // G is the hub note with most connections
                 const chord = getCurrentChord();
-                history.push({ note: currentNote, position: null, chord });
                 fullHistory.push({ note: currentNote, position: null, stanza: null, chord });
+                history.push({ note: currentNote, position: null, stanza: null, chord, fullHistoryIndex: fullHistory.length - 1 });
                 console.log('📍 Sink reached (phrasing OFF) → restarting from G');
             }
         } else {
@@ -731,10 +726,10 @@ async function nextNote() {
             const chord = getCurrentChord();
             // Buffer note for contour analysis
             phraseNoteBuffers[position.phraseIndex].push(currentNote);
-            // Store with position for history rewind
-            history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, chord });
             // Also store in full history for score rendering
             fullHistory.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza, chord });
+            // Store with position for history rewind (include fullHistory index for rollback)
+            history.push({ note: currentNote, position: { phraseIndex: position.phraseIndex, stepInPhrase: position.stepInPhrase }, stanza: position.stanza, chord, fullHistoryIndex: fullHistory.length - 1 });
             lastPlayedPosition = { ...position }; // Sync stanza indicator with this note
             recordNote(position.phrase, currentNote);
 
@@ -783,12 +778,8 @@ async function nextNote() {
                 track('phrase_completed', { phrase: position.phrase, method: 'closure' });
 
                 if (stanzaEnded) {
-                    // Analyze complete stanza contour before clearing
-                    const stanzaContour = analyzeStanza(
-                        [...phraseNoteBuffers[0], ...phraseNoteBuffers[1]],
-                        [...phraseNoteBuffers[2], ...phraseNoteBuffers[3]],
-                        [...phraseNoteBuffers[4], ...phraseNoteBuffers[5]]
-                    );
+                    // Analyze complete stanza contour before clearing buffers
+                    const stanzaContour = analyzeStanza(phraseNoteBuffers);
                     console.log('📊 Stanza contour:', stanzaContour);
 
                     // Save completed stanza data for tree visualization
@@ -800,12 +791,14 @@ async function nextNote() {
                     });
 
                     clearPhrases();
-                    // Reset contour buffers for new stanza (delay to allow display update)
-                    setTimeout(() => {
-                        phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
-                        phraseContours = {};
-                        lineContours = {};
-                    }, 100);
+                    // Reset contour buffers synchronously - the previous delayed reset
+                    // raced with (and could wipe) the next stanza's first notes
+                    phraseNoteBuffers = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [] };
+                    phraseContours = {};
+                    lineContours = {};
+                    // Point the stanza indicator at the new (empty) stanza rather than
+                    // rendering the completed stanza twice
+                    lastPlayedPosition = null;
                     console.log('🎼 New stanza started');
                     track('stanza_completed', { stanza_number: position.stanza });
                 }
@@ -818,16 +811,16 @@ async function nextNote() {
         // Phase 1.5 fallback: Simple step tracking
         if (possible.length === 0) {
             currentNote = getRestartNote();
-            history.push({ note: currentNote, position: null, chord: null });
             fullHistory.push({ note: currentNote, position: null, stanza: null, chord: null });
+            history.push({ note: currentNote, position: null, stanza: null, chord: null, fullHistoryIndex: fullHistory.length - 1 });
             stepsInPhrase = 0;
             console.log('📍 New phrase started (sink reached)');
         } else {
             const historyNotes = history.map(h => h.note);
             const result = selectWeightedNote(currentNote, historyNotes, possible, stepsInPhrase);
             currentNote = result.note;
-            history.push({ note: currentNote, position: null, chord: null });
             fullHistory.push({ note: currentNote, position: null, stanza: null, chord: null });
+            history.push({ note: currentNote, position: null, stanza: null, chord: null, fullHistoryIndex: fullHistory.length - 1 });
             stepsInPhrase++;
 
             if (result.shouldRestart) {
@@ -946,8 +939,10 @@ function init() {
         sendHarmonyMidi(notes, isOn);
     });
 
-    // Ensemble
-    initEnsemble(handleEnsembleRoomUpdate);
+    // Ensemble (no-op while #ensemble-btn is disabled in the HTML)
+    initEnsemble(handleEnsembleRoomUpdate).catch(err => {
+        console.warn('[App] Ensemble init failed:', err);
+    });
 
     // Audio toggle
     audioToggleBtn.addEventListener('click', async () => {
@@ -1108,7 +1103,11 @@ function init() {
     // Keyboard controls
     document.addEventListener('keydown', async (e) => {
         // Don't trigger if user is typing in a text field
-        if (e.target.tagName === 'TEXTAREA') {
+        const isTextEntry = e.target.tagName === 'TEXTAREA' ||
+                            e.target.isContentEditable ||
+                            (e.target.tagName === 'INPUT' &&
+                             !['checkbox', 'radio', 'button', 'submit', 'reset', 'range'].includes(e.target.type));
+        if (isTextEntry) {
             return;
         }
 

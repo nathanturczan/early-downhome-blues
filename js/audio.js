@@ -5,19 +5,19 @@
 export const lilyToNote = {
     "c'": { note: "C4", detune: 0 },
     "d'": { note: "D4", detune: 0 },
-    "ees'": { note: "Eb4", detune: 0 },
-    "eeh'": { note: "Eb4", detune: 50 },
+    "ef'": { note: "Eb4", detune: 0 },
+    "eqf'": { note: "Eb4", detune: 50 },
     "e'": { note: "E4", detune: 0 },
     "f'": { note: "F4", detune: 0 },
-    "ges'": { note: "Gb4", detune: 0 },
+    "gf'": { note: "Gb4", detune: 0 },
     "g'": { note: "G4", detune: 0 },
     "a'": { note: "A4", detune: 0 },
-    "bes'": { note: "Bb4", detune: 0 },
+    "bf'": { note: "Bb4", detune: 0 },
     "b'": { note: "B4", detune: 0 },
     "c''": { note: "C5", detune: 0 },
     "d''": { note: "D5", detune: 0 },
-    "ees''": { note: "Eb5", detune: 0 },
-    "eeh''": { note: "Eb5", detune: 50 },
+    "ef''": { note: "Eb5", detune: 0 },
+    "eqf''": { note: "Eb5", detune: 50 },
     "e''": { note: "E5", detune: 0 }
 };
 

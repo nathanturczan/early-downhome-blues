@@ -57,8 +57,8 @@ This tool lets you walk through Titon's pitch transition network, which maps how
 ## Quarter-tone Support
 
 The app uses LilyPond notation internally:
-- `ees'` = E♭ (E flat)
-- `eeh'` = E quarter-flat (halfway between E♭ and E)
+- `ef'` = E♭ (E flat)
+- `eqf'` = E quarter-flat (halfway between E♭ and E)
 - `e'` = E natural
 
 For MIDI, quarter-tones are achieved via pitch bend (50 cents up from the flat).

@@ -36,6 +36,11 @@ function waitForFirebase() {
 export async function initEnsemble(onRoomUpdate) {
     // Get DOM elements
     ensembleBtn = document.getElementById('ensemble-btn');
+    if (!ensembleBtn) {
+        // Ensemble mode is disabled (button commented out in index.html)
+        console.log('[Ensemble] Disabled: #ensemble-btn not present');
+        return;
+    }
     ensembleModal = document.getElementById('ensemble-modal');
     modalClose = ensembleModal.querySelector('.modal-close');
     modalBackdrop = ensembleModal.querySelector('.modal-backdrop');

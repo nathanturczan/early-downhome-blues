@@ -7,19 +7,19 @@ const phraseLabels = ['a', 'b', 'c', 'd', 'e', 'f'];
 const lilyToMusicXml = {
     "c'": { step: 'C', octave: 4, alter: 0 },
     "d'": { step: 'D', octave: 4, alter: 0 },
-    "ees'": { step: 'E', octave: 4, alter: -1 },
-    "eeh'": { step: 'E', octave: 4, alter: -0.5 },  // quarter-flat
+    "ef'": { step: 'E', octave: 4, alter: -1 },
+    "eqf'": { step: 'E', octave: 4, alter: -0.5 },  // quarter-flat
     "e'": { step: 'E', octave: 4, alter: 0 },
     "f'": { step: 'F', octave: 4, alter: 0 },
-    "ges'": { step: 'G', octave: 4, alter: -1 },
+    "gf'": { step: 'G', octave: 4, alter: -1 },
     "g'": { step: 'G', octave: 4, alter: 0 },
     "a'": { step: 'A', octave: 4, alter: 0 },
-    "bes'": { step: 'B', octave: 4, alter: -1 },
+    "bf'": { step: 'B', octave: 4, alter: -1 },
     "b'": { step: 'B', octave: 4, alter: 0 },
     "c''": { step: 'C', octave: 5, alter: 0 },
     "d''": { step: 'D', octave: 5, alter: 0 },
-    "ees''": { step: 'E', octave: 5, alter: -1 },
-    "eeh''": { step: 'E', octave: 5, alter: -0.5 },  // quarter-flat
+    "ef''": { step: 'E', octave: 5, alter: -1 },
+    "eqf''": { step: 'E', octave: 5, alter: -0.5 },  // quarter-flat
     "e''": { step: 'E', octave: 5, alter: 0 }
 };
 

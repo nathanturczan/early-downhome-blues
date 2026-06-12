@@ -56,6 +56,7 @@ export function exportToLilypond(historyData) {
     const phrases = groupByPhrase(historyData);
 
     const header = `\\version "2.24.0"
+\\language "english"
 
 \\header {
   title = "Early Downhome Blues"

@@ -26,73 +26,74 @@ const defaultVoicings = {
 const inflectionRules = {
     'I': {
         'e':   { third: 'E' },
-        'ees': { third: 'Eb' },
-        'eeh': { third: 'Eqf' },
+        'ef': { third: 'Eb' },
+        'eqf': { third: 'Eqf' },
         'f':   { third: 'F' },
-        'bes': { seventh: 'Bb' },
+        'bf': { seventh: 'Bb' },
         'b':   { seventh: 'B' }
     },
     'IV': {
         'a':   { third: 'A' },
-        'bes': { third: 'Bb' },
+        'bf': { third: 'Bb' },
         'e':   { seventh: 'E' },
-        'ees': { seventh: 'Eb' },
-        'eeh': { seventh: 'Eqf' }
+        'ef': { seventh: 'Eb' },
+        'eqf': { seventh: 'Eqf' }
     },
     'V': {
         'b':   { third: 'B' },
-        'bes': { third: 'Bb' },
+        'bf': { third: 'Bb' },
         'f':   { seventh: 'F' },
-        'ges': { seventh: 'Gb' }
+        'gf': { seventh: 'Gb' }
     },
     // Extended chords - inflections that create audible chromatic bends
     'ii': {
         // ii = D-F-A-C (D minor 7)
-        'ees': { third: 'Eb' },      // F→Eb (flatten third)
-        'eeh': { third: 'Eqf' },     // F→Eqf
+        'ef': { third: 'Eb' },      // F→Eb (flatten third)
+        'eqf': { third: 'Eqf' },     // F→Eqf
         'e':   { third: 'E' },       // F→E (flatten third further)
-        'ges': { third: 'Gb' },      // F→Gb (sharpen third)
-        'bes': { fifth: 'Bb' },      // A→Bb (sharpen fifth)
+        'gf': { third: 'Gb' },      // F→Gb (sharpen third)
+        'bf': { fifth: 'Bb' },      // A→Bb (sharpen fifth)
         'b':   { seventh: 'B' }      // C→B (sharpen seventh)
     },
     'iii': {
         // iii = E-G-B-D (E minor 7)
-        'ees': { root: 'Eb' },       // E→Eb (flatten root)
-        'eeh': { root: 'Eqf' },      // E→Eqf
+        'ef': { root: 'Eb' },       // E→Eb (flatten root)
+        'eqf': { root: 'Eqf' },      // E→Eqf
         'f':   { root: 'F' },        // E→F (sharpen root)
-        'ges': { third: 'Gb' },      // G→Gb (flatten third)
+        'gf': { third: 'Gb' },      // G→Gb (flatten third)
         'a':   { third: 'A' },       // G→A (sharpen third)
-        'bes': { fifth: 'Bb' },      // B→Bb (flatten fifth)
-        'c':   { fifth: 'C' },       // B→C (sharpen fifth)
-        'ees': { seventh: 'Eb' }     // D→Eb (sharpen seventh)
+        'bf': { fifth: 'Bb' },      // B→Bb (flatten fifth)
+        'c':   { fifth: 'C' }        // B→C (sharpen fifth)
+        // Note: 'ef' already maps to root above (E→Eb); a duplicate key
+        // here previously shadowed it with { seventh: 'Eb' }
     },
     'vi': {
         // vi = A-C-E-G (A minor 7)
-        'bes': { root: 'Bb' },       // A→Bb (sharpen root)
+        'bf': { root: 'Bb' },       // A→Bb (sharpen root)
         'b':   { third: 'B' },       // C→B (flatten third)
-        'ees': { fifth: 'Eb' },      // E→Eb (flatten fifth)
-        'eeh': { fifth: 'Eqf' },     // E→Eqf
+        'ef': { fifth: 'Eb' },      // E→Eb (flatten fifth)
+        'eqf': { fifth: 'Eqf' },     // E→Eqf
         'f':   { fifth: 'F' },       // E→F (sharpen fifth)
-        'ges': { seventh: 'Gb' },    // G→Gb (flatten seventh)
+        'gf': { seventh: 'Gb' },    // G→Gb (flatten seventh)
         'a':   { seventh: 'A' }      // G→A (sharpen seventh)
     },
     'bIII': {
         // bIII = Eb-G-Bb-D (Eb major 7)
-        'eeh': { root: 'Eqf' },      // Eb→Eqf (quarter tone up)
+        'eqf': { root: 'Eqf' },      // Eb→Eqf (quarter tone up)
         'e':   { root: 'E' },        // Eb→E (sharpen root)
         'f':   { root: 'F' },        // Eb→F (sharpen root more)
-        'ges': { third: 'Gb' },      // G→Gb (flatten third)
+        'gf': { third: 'Gb' },      // G→Gb (flatten third)
         'a':   { third: 'A' },       // G→A (sharpen third)
         'b':   { fifth: 'B' },       // Bb→B (sharpen fifth)
         'c':   { fifth: 'C' },       // Bb→C (sharpen fifth more)
-        'ees': { seventh: 'Eb' }     // D→Eb (sharpen seventh)
+        'ef': { seventh: 'Eb' }     // D→Eb (sharpen seventh)
     },
     'bVII': {
         // bVII = Bb-D-F-A (Bb major 7)
         'b':   { root: 'B' },        // Bb→B (sharpen root)
-        'ees': { third: 'Eb' },      // D→Eb (flatten third)
+        'ef': { third: 'Eb' },      // D→Eb (flatten third)
         'e':   { fifth: 'E' },       // F→E (flatten fifth)
-        'ges': { fifth: 'Gb' },      // F→Gb (flatten fifth)
+        'gf': { fifth: 'Gb' },      // F→Gb (flatten fifth)
         'g':   { fifth: 'G' }        // F→G (sharpen fifth)
     }
 };
@@ -608,7 +609,7 @@ export function resetInflection() {
 
 // Extract the base note pattern from a LilyPond note (strip octave marks)
 function getNotePattern(melodyNote) {
-    const patterns = ['ees', 'eeh', 'ges', 'bes'];
+    const patterns = ['ef', 'eqf', 'gf', 'bf'];
     for (const p of patterns) {
         if (melodyNote.includes(p)) return p;
     }

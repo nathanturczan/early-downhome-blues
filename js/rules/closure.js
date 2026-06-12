@@ -63,8 +63,8 @@ function isF(note) {
  * These should not be cadence points per Titon's "tonic triad" rule
  */
 function isMicrotonal(note) {
-  // LilyPond: eeh = E quarter-flat, other quarter-tones would have 'h' suffix
-  return note.includes('eeh') || note.includes('eh');
+  // English LilyPond: quarter-flat = 'qf' suffix, quarter-sharp = 'qs' suffix
+  return note.includes('qf') || note.includes('qs');
 }
 
 /**
@@ -72,8 +72,8 @@ function isMicrotonal(note) {
  * Eb, Eqf are not valid tonic triad members
  */
 function isEComplexNotNatural(note) {
-  // ees = Eb, eeh = E quarter-flat
-  return note.startsWith('ees') || note.startsWith('eeh');
+  // ef = Eb, eqf = E quarter-flat
+  return note.startsWith('ef') || note.startsWith('eqf');
 }
 
 // === Weight Tables ===

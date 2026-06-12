@@ -328,7 +328,7 @@ export function getRestartNote(position = null) {
         return "c''";     // Family 2 style
       } else {
         // E' complex (Family 1 & 2 style)
-        const eComplex = ["e''", "ees''", "eeh''"];
+        const eComplex = ["e''", "ef''", "eqf''"];
         return eComplex[Math.floor(random() * eComplex.length)];
       }
     }

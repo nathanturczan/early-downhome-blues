@@ -5,13 +5,13 @@
 // Bend value 1024 = 50 cents with ±4 semitone range
 export const midiNotes = {
     "c'": { note: 60, bend: 0 }, "d'": { note: 62, bend: 0 },
-    "ees'": { note: 63, bend: 0 }, "eeh'": { note: 63, bend: 1024 },
+    "ef'": { note: 63, bend: 0 }, "eqf'": { note: 63, bend: 1024 },
     "e'": { note: 64, bend: 0 }, "f'": { note: 65, bend: 0 },
-    "ges'": { note: 66, bend: 0 }, "g'": { note: 67, bend: 0 },
-    "a'": { note: 69, bend: 0 }, "bes'": { note: 70, bend: 0 },
+    "gf'": { note: 66, bend: 0 }, "g'": { note: 67, bend: 0 },
+    "a'": { note: 69, bend: 0 }, "bf'": { note: 70, bend: 0 },
     "b'": { note: 71, bend: 0 }, "c''": { note: 72, bend: 0 },
-    "d''": { note: 74, bend: 0 }, "ees''": { note: 75, bend: 0 },
-    "eeh''": { note: 75, bend: 1024 }, "e''": { note: 76, bend: 0 }
+    "d''": { note: 74, bend: 0 }, "ef''": { note: 75, bend: 0 },
+    "eqf''": { note: 75, bend: 1024 }, "e''": { note: 76, bend: 0 }
 };
 
 // Note name to MIDI conversion (handles harmony note format like 'Eqf3', 'Bb4')
@@ -134,6 +134,9 @@ function updateAllPortSelects() {
 }
 
 function setupRowListeners(rowEl, rowIndex) {
+    // Capture the row object itself - it stays valid when midiRows is spliced,
+    // unlike a captured index (stale indices caused removed/duplicated listeners)
+    const row = midiRows[rowIndex];
     const typeSelect = rowEl.querySelector('.midi-type');
     const portSelect = rowEl.querySelector('.midi-port');
     const channelSelect = rowEl.querySelector('.midi-channel');
@@ -149,26 +152,26 @@ function setupRowListeners(rowEl, rowIndex) {
     };
 
     typeSelect.addEventListener('change', (e) => {
-        midiRows[rowIndex].type = e.target.value;
+        row.type = e.target.value;
     });
     portSelect.addEventListener('change', (e) => {
-        midiRows[rowIndex].portId = e.target.value;
+        row.portId = e.target.value;
     });
     channelSelect.addEventListener('change', (e) => {
-        midiRows[rowIndex].channel = parseInt(e.target.value);
+        row.channel = parseInt(e.target.value);
     });
     if (mpeCheckbox) {
         // Set initial visibility
         updateChannelVisibility(mpeCheckbox.checked);
 
         mpeCheckbox.addEventListener('change', (e) => {
-            midiRows[rowIndex].mpe = e.target.checked;
+            row.mpe = e.target.checked;
             updateChannelVisibility(e.target.checked);
-            console.log(`[MIDI] Row ${rowIndex} MPE: ${e.target.checked}`);
+            console.log(`[MIDI] Row ${row.rowId} MPE: ${e.target.checked}`);
         });
     }
     removeBtn.addEventListener('click', () => {
-        removeMidiRow(rowEl, rowIndex);
+        removeMidiRow(rowEl, row);
     });
 }
 
@@ -255,14 +258,10 @@ function addMidiRow() {
     updateRemoveButtons();
 }
 
-function removeMidiRow(rowEl, rowIndex) {
+function removeMidiRow(rowEl, row) {
     rowEl.remove();
-    midiRows.splice(rowIndex, 1);
-
-    // Re-setup listeners with correct indices
-    document.querySelectorAll('.midi-row').forEach((el, i) => {
-        setupRowListeners(el, i);
-    });
+    const idx = midiRows.indexOf(row);
+    if (idx !== -1) midiRows.splice(idx, 1);
 
     updateRemoveButtons();
 }

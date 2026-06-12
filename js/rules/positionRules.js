@@ -74,7 +74,7 @@ function isBbComplex(note) {
  * Check if note is in E complex (Eb, Eqf, E)
  */
 function isEComplex(note) {
-  // LilyPond: ees = Eb, eeh = E quarter-flat, e = E
+  // LilyPond: ef = Eb, eqf = E quarter-flat, e = E
   return note.startsWith('ee') || note.startsWith("e'") || note === "e''";
 }
 
