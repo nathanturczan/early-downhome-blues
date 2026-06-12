@@ -184,10 +184,12 @@ export function getLoadingStatus() {
 // Varied loop parameters per register for organic phasing
 // Loop points are in the MIDDLE of sustain (avoiding attack ~0-0.8s and decay ~2.5s+)
 // Each register has slightly different loop lengths for natural phasing
+// Loop lengths are integer multiples of grainSize so the loop wrap lands on
+// a grain boundary - fractional wraps caused intermittent pops/clicks (#50)
 const LOOP_PARAMS = {
-    low:  { loopStart: 1.1, loopEnd: 2.2, grainSize: 0.3, overlap: 0.15 },   // bass: 1.1s loop, longer grains
-    mid:  { loopStart: 1.0, loopEnd: 1.95, grainSize: 0.25, overlap: 0.12 }, // mid: 0.95s loop
-    high: { loopStart: 0.95, loopEnd: 1.75, grainSize: 0.2, overlap: 0.1 }   // high: 0.8s loop, tighter
+    low:  { loopStart: 1.1, loopEnd: 2.3, grainSize: 0.3, overlap: 0.15 },  // bass: 1.2s loop (4 grains)
+    mid:  { loopStart: 1.0, loopEnd: 2.0, grainSize: 0.25, overlap: 0.12 }, // mid: 1.0s loop (4 grains)
+    high: { loopStart: 0.95, loopEnd: 1.75, grainSize: 0.2, overlap: 0.1 }  // high: 0.8s loop (4 grains)
 };
 
 function getLoopParamsForNote(note) {
@@ -430,7 +432,11 @@ export function setHarmonyChord(chord, startPlaying = true) {
                 const buffer = loadedBuffers[sampleNote];
                 if (buffer) {
                     const player = createCelloVoice(buffer, totalDetuneCents / 100, toneTargetNote);
+                    // Fade in: the grain starts mid-sustain at nonzero
+                    // amplitude, so starting at full volume clicks (#50)
+                    player.volume.value = -40;
                     player.start();
+                    player.volume.rampTo(-6, 0.15);
                     console.log(`[Voice] ${deg}: ${pc}${oct} -> sample ${sampleNote}, detune ${totalDetuneCents} cents`);
                     // Store sample info for inflection calculations
                     voices[deg] = { player, pc, oct, sampleNote };
